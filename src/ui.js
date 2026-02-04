@@ -198,10 +198,10 @@ export const ui = {
 
         this.router();
 
-        const isPasswordRecovery = params.get( "verifyEmail" ) === "true";
+        const isEmailVerification = params.get( "verifyEmail" ) === "true";
         const queryPasswordRecoverySecret = params.get( "secret" );
         const queryPasswordRecoveryUserId = params.get( "userId" );
-        if( isPasswordRecovery )
+        if( isEmailVerification )
         {
             // use data for email verification
             const result = await fs.account.updateEmailVerification({
@@ -621,7 +621,7 @@ export const ui = {
             const filtersPanel = new LX.Panel( { className: "p-4 bg-none flex-auto-fill", height: "auto" } );
             filtersPanel.sameLine();
 
-            filtersPanel.addLabel( "Filter Features", { fit: true } );
+            filtersPanel.addLabel( "Features", { fit: true } );
 
             for( let f of Constants.FEATURES )
             {
@@ -836,7 +836,8 @@ export const ui = {
 
         this.currentView = ( shaderUid === 'new' ) ? 'create' : 'view';
 
-        this.area.root.style.height = "100dvh";
+        // force expand as much as possible
+        this.area.root.style.height = "calc(100dvh - 48px)";
 
         const shader = await ShaderHub.getShaderById( shaderUid );
         if( !shader ) return;
