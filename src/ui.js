@@ -1,6 +1,5 @@
 import { LX } from 'lexgui';
 import 'lexgui/extensions/CodeEditor.js';
-import { DocMaker } from 'lexgui/extensions/DocMaker.js';
 import * as Constants from "./constants.js";
 import * as Utils from './utils.js';
 import { FS } from './fs.js';
@@ -452,7 +451,7 @@ export const ui = {
                 <span class="text-muted-foreground text-2xl sm:text-3xl font-medium">ShaderHub (Pre alpha ${ ShaderHub.version })</span>
                 <span class="text-balanced text-4xl sm:text-5xl font-medium">Create and share shaders using latest WebGPU!</span>
                 <a onclick='ui._openShader("new")' class="flex flex-row gap-1 items-center text-sm p-1 px-4 rounded-full text-secondary-foreground decoration-none hover:bg-secondary cursor-pointer"><span class="flex flex-auto-keep bg-orange-500 w-2 h-2 rounded-full"></span>
-                <span class="flex flex-auto-fill">Texture Mipmaps, New Sound Channel, and New Docs</span>${ LX.makeIcon( "ArrowRight", { svgClass: "flex flex-auto-keep sm" } ).innerHTML }</a>
+                <span class="flex flex-auto-fill">New WebGL Renderer, New Sound Channel, and New Docs</span>${ LX.makeIcon( "ArrowRight", { svgClass: "flex flex-auto-keep sm" } ).innerHTML }</a>
             `, container );
 
             if( !mobile )

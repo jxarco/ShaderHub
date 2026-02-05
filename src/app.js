@@ -3,8 +3,10 @@ import * as Constants from "./constants.js";
 import * as Utils from './utils.js';
 import { FS } from './fs.js';
 import { ui } from './ui.js';
-import { GPURenderer, GLRenderer } from './renderer.js';
-import { Shader, GLShader, ShaderPass, GLShaderPass } from './shader.js';
+import { GPURenderer } from './graphics/gpu_renderer.js';
+import { GLRenderer } from './graphics/gl_renderer.js';
+import { Shader, ShaderPass } from './graphics/shader.js';
+import { GLShader, GLShaderPass } from './graphics/gl_shader.js';
 import { FPSCounter } from './fps.js';
 
 const ERROR_CODE_DEFAULT    = 0;
@@ -17,7 +19,7 @@ const Query =   Appwrite.Query;
 
 const ShaderHub =
 {
-    version:            "1.3",
+    version:            "1.4",
 
     keyState:           new Map(),
     keyToggleState:     new Map(),
@@ -68,7 +70,7 @@ const ShaderHub =
 
         if( !this.timePaused )
         {
-            this.renderer.updateFrame( this.timeDelta, this.elapsedTime, this.frameCount );
+            this.renderer.updateFrame( this.timeDelta, this.elapsedTime, this.frameCount, this.shader );
 
             this.elapsedTime += this.timeDelta;
 
@@ -78,7 +80,7 @@ const ShaderHub =
             LX.emitSignal( "@fps", `${ fps.get() } FPS` );
         }
 
-        this.renderer.updateResolution( this.resolutionX, this.resolutionY );
+        this.renderer.updateResolution( this.resolutionX, this.resolutionY, this.shader );
 
         // Write mouse data
         {
@@ -232,7 +234,7 @@ const ShaderHub =
     {
         this.resizeBuffers( xResolution, yResolution );
 
-        this.renderer.updateResolution( xResolution, yResolution );
+        this.renderer.updateResolution( xResolution, yResolution, this.shader );
 
         LX.emitSignal( '@resolution', `${ xResolution }x${ yResolution }` );
 
@@ -513,7 +515,7 @@ const ShaderHub =
         this.elapsedTime    = 0;
         this.timeDelta      = 0;
 
-        this.renderer.updateFrame( 0, 0, 0 );
+        this.renderer.updateFrame( 0, 0, 0, this.shader );
 
         // Reset mouse data
         {

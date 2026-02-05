@@ -25,11 +25,11 @@ export const ORDER_BY_MAPPING = {
 
 export const UNIFORM_CHANNELS_COUNT = 4;
 export const DEFAULT_UNIFORMS_LIST = [
-    { name: "iTime", type: "f32", info: "Shader playback time (s)" },
-    { name: "iTimeDelta", type: "f32", info: "Render time (s)" },
-    { name: "iFrame", type: "i32", info: "Shader playback frame" },
-    { name: "iResolution", type: "vec2f", info: "Viewport resolution (px)" },
-    { name: "iMouse", type: "MouseData", info: "{ pos, start, delta, press, click }" },
-    { name: "iChannel0..3", type: "texture_2d<f32>", info: "Texture input channel", skipBindings: true }
+    { name: "iTime", type: { webgpu: "f32", webgl: "float" }, info: "Shader playback time (s)" },
+    { name: "iTimeDelta", type: { webgpu: "f32", webgl: "float" }, info: "Render time (s)" },
+    { name: "iFrame", type: { webgpu: "i32", webgl: "int" }, info: "Shader playback frame" },
+    { name: "iResolution", type: { webgpu: "vec2f", webgl: "vec2" }, info: "Viewport resolution (px)" },
+    { name: "iMouse", type: { webgpu: "MouseData", webgl: "MouseData" }, info: "{ pos, start, delta, press, click }" },
+    { name: "iChannel0..3", type: { webgpu: "texture_2d<f32>", webgl: "sampler2D" }, info: "Texture input channel", skipBindings: true }
 ];
 export const DEFAULT_UNIFORM_NAMES = DEFAULT_UNIFORMS_LIST.map( u => u.name );
