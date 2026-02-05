@@ -341,6 +341,7 @@ const ShaderHub =
         LX.emitSignal( '@on_like_changed', [ shaderLikes.total, alreadyLiked ] );
 
         ui.editor.loadTab( this.currentPass.name );
+        ui.editor._changeLanguage( this.renderer.lang );
     },
 
     async onShaderLike()
@@ -989,8 +990,8 @@ const ShaderHub =
 
     async initGraphics( canvas )
     {
-        const rendererClass = this.backend === 'webgpu' ? GPURenderer : GLRenderer;
-        this.renderer = new rendererClass( canvas, this.backend );
+        const RendererClass = this.backend === 'webgpu' ? GPURenderer : GLRenderer;
+        this.renderer = new RendererClass( canvas, this.backend );
 
         await this.renderer.init();
 

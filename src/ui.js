@@ -1157,7 +1157,7 @@ export const ui = {
                         Utils.toast( `✅ Shader updated`, `Shader: ${ r.name } by ${ this.fs.user.name }` );
                     }
                     
-                }, { disabled: !ownProfile, tagClass: 'text-xs' } );
+                }, { disabled: !ownProfile, tagClass: 'items-center text-xs' } );
                 tags.set( shader.tags, true );
                 shaderDataContainer.appendChild( tags.root );
             }

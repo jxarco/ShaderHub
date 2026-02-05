@@ -6,6 +6,7 @@ class Renderer
     {
         this.backend = backend;
         this.canvas = canvas;
+        this.lang = 'WGSL';
 
         this.gpuTextures    = {};
         this.gpuBuffers     = {};

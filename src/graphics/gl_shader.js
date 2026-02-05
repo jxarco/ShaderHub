@@ -119,7 +119,26 @@ class GLShaderPass extends ShaderPass
             const err = gl.getShaderInfoLog( shader );
             console.error( err );
             gl.deleteShader( shader );
-            return { log: [ err ] };
+
+            const log = err
+                .replace( '\x00', '' )
+                .split( '\n' )
+                .map( line => line.trim() )
+                .filter( Boolean )
+                .map( line => {
+                    // Attempt to parse line number
+                    const match = line.match(/0:(\d+):\s*(.*)/);
+                    if ( match )
+                    {
+                        const lineNum = parseInt( match[1], 10 );
+                        const message = match[2];
+                        return { linePos: 0, lineNum, message, type: 'error' };
+                    }
+                    // fallback if parsing fails
+                    return { linePos: 0, lineNum: 0, message: line, type: 'error' };
+                } );
+
+            return { log };
         }
 
         return { shader, log };
@@ -130,7 +149,7 @@ class GLShaderPass extends ShaderPass
         const result = await this.validate();
         if( !result.valid )
         {
-            return null;
+            return result;
         }
 
         const vs = result.vs;
@@ -187,9 +206,10 @@ class GLShaderPass extends ShaderPass
         };
 
         const program = await this.createProgram( gl );
-        if ( !program )
+        if ( program?.constructor !== WebGLProgram )
         {
-            return Constants.WEBGL_ERROR;
+            // This is an error..
+            return program;
         }
 
         // Cache locations (minimal for now)
@@ -219,7 +239,7 @@ class GLShaderPass extends ShaderPass
         if( errorLog.length > 0 )
         {
             console.log( entryCode ?? "" );
-            return { valid: false, code: r.vs_code + r.fs_code, messages: errorLog };
+            return { valid: false, code: r.fs_code, messages: errorLog }; // only fs is important log-wise
         }
 
         return { valid: true, ...r, vs, fs };

@@ -26,6 +26,8 @@ class GLRenderer extends Renderer
     constructor( canvas, backend )
     {
         super( canvas, backend );
+
+        this.lang = 'GLSL';
     }
 
     async init()
