@@ -3,7 +3,9 @@ import * as Constants from "./constants.js";
 import * as Utils from './utils.js';
 import { FS } from './fs.js';
 import { ui } from './ui.js';
-import { Renderer, FPSCounter, Shader, ShaderPass } from './graphics.js';
+import { GPURenderer } from './renderer.js';
+import { Shader, ShaderPass } from './shader.js';
+import { FPSCounter } from './fps.js';
 
 const ERROR_CODE_DEFAULT    = 0;
 const ERROR_CODE_SUCCESS    = 1;
@@ -967,7 +969,7 @@ const ShaderHub =
 
     async initGraphics( canvas )
     {
-        this.renderer = new Renderer( canvas );
+        this.renderer = new GPURenderer( canvas );
 
         await this.renderer.init();
 
