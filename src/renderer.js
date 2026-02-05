@@ -59,8 +59,8 @@ class Renderer
 
     createBuffer( desc = {} ) {}
     createSampler( desc = {} ) {}
-    async createTexture( data, id, label = "", options = {} ) { return null; }
-    async createCubemapTexture( arrayBuffer, id, label = "", options = {} ) { return null; }
+    async createTextureFromImage( data, id, label = "", options = {} ) { return null; }
+    async createCubemapTextureFromImage( arrayBuffer, id, label = "", options = {} ) { return null; }
 
     updateFrame( timeDelta, elapsedTime, frameCount ) {}
     updateResolution( resolutionX, resolutionY ) {}
@@ -133,7 +133,12 @@ class GPURenderer extends Renderer
         return this.device.createSampler( desc );
     }
 
-    async createTexture( data, id, label = "", options = {} )
+    createTexture( desc = {} )
+    {
+        return this.device.createTexture( desc );
+    }
+
+    async createTextureFromImage( data, id, label = "", options = {} )
     {
         options.flipY = options.flipY ?? true;
         options.useMipmaps = options.useMipmaps ?? true;
@@ -142,7 +147,7 @@ class GPURenderer extends Renderer
         const mipLevelCount = options.useMipmaps ? 
             ( Math.floor( Math.log2( Math.max( imageBitmap.width, imageBitmap.height ) ) ) + 1 ) : undefined;
         const dimensions = [ imageBitmap.width, imageBitmap.height ];
-        const texture = this.device.createTexture({
+        const texture = this.createTexture({
             label,
             size: [ imageBitmap.width, imageBitmap.height, 1 ],
             mipLevelCount,
@@ -406,6 +411,19 @@ class GLRenderer extends Renderer
         gl.bindBufferBase( gl.UNIFORM_BUFFER, 2, this.gpuBuffers.iFrame );
         gl.bindBufferBase( gl.UNIFORM_BUFFER, 3, this.gpuBuffers.iResolution );
         gl.bindBufferBase( gl.UNIFORM_BUFFER, 4, this.gpuBuffers.iMouse );
+
+        // Create vertex data
+        const FULLSCREEN_VERTICES = new Float32Array([
+            // x,  y,
+            -1, -1,
+            3, -1,
+            -1,  3,
+        ]);
+
+        this.fullscreenVBO = gl.createBuffer();
+        gl.bindBuffer( gl.ARRAY_BUFFER, this.fullscreenVBO );
+        gl.bufferData( gl.ARRAY_BUFFER, FULLSCREEN_VERTICES, gl.STATIC_DRAW );
+        gl.bindBuffer( gl.ARRAY_BUFFER, null );
     }
 
     createBuffer( desc = {} )
@@ -447,7 +465,77 @@ class GLRenderer extends Renderer
         return sampler;
     }
 
-    async createTexture( data, id, label = "", options = {} )
+    createTexture( desc = {} )
+    {
+        const gl = this.gl;
+
+        const width  = desc.size?.[0] ?? 1;
+        const height = desc.size?.[1] ?? 1;
+        const format = desc.format ?? 'rgba8unorm';
+
+        // Map WebGPU format -> GL format
+        const glFormat = gl.RGBA8;
+        const glType   = gl.UNSIGNED_BYTE;
+        const glBase   = gl.RGBA;
+
+        // Create texture
+        const texture = gl.createTexture();
+        gl.bindTexture( gl.TEXTURE_2D, texture );
+
+        gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            glFormat,
+            width,
+            height,
+            0,
+            glBase,
+            glType,
+            null
+        );
+
+        let framebuffer = null;
+
+        if ( desc.usage & GPUTextureUsage.RENDER_ATTACHMENT )
+        {
+            // required defaults in case of render target
+            gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR );
+            gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
+            gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+            gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+
+            framebuffer = gl.createFramebuffer();
+
+            gl.bindFramebuffer( gl.FRAMEBUFFER, framebuffer );
+            gl.framebufferTexture2D(
+                gl.FRAMEBUFFER,
+                gl.COLOR_ATTACHMENT0,
+                gl.TEXTURE_2D,
+                texture,
+                0
+            );
+
+            const status = gl.checkFramebufferStatus( gl.FRAMEBUFFER );
+            if ( status !== gl.FRAMEBUFFER_COMPLETE )
+            {
+                console.error( 'Framebuffer incomplete:', status );
+            }
+
+            gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+        }
+
+        gl.bindTexture( gl.TEXTURE_2D, null );
+
+        return {
+            texture,
+            framebuffer,
+            width,
+            height,
+            format,
+        };
+    }
+
+    async createTextureFromImage( data, id, label = "", options = {} )
     {
         options.flipY = options.flipY ?? true;
         options.useMipmaps = options.useMipmaps ?? true;

@@ -4,7 +4,7 @@ import * as Utils from './utils.js';
 import { FS } from './fs.js';
 import { ui } from './ui.js';
 import { GPURenderer, GLRenderer } from './renderer.js';
-import { Shader, ShaderPass } from './shader.js';
+import { Shader, GLShader, ShaderPass, GLShaderPass } from './shader.js';
 import { FPSCounter } from './fps.js';
 
 const ERROR_CODE_DEFAULT    = 0;
@@ -40,6 +40,19 @@ const ShaderHub =
     {
         this.audioContext = new AudioContext( { sampleRate: 48000 } );
         this.shaderPreviewPath = `${this.imagesRootPath}/shader_preview.png`;
+
+        const params = new URLSearchParams( window.location.search );
+        const forced = params.get( 'r' );
+
+        if ( forced === 'gpu' ) this.backend = 'webgpu';
+        else if ( forced === 'gl' ) this.backend = 'webgl';
+        else this.backend = navigator.gpu ? 'webgpu' : 'webgl';
+
+        if ( forced === 'gpu' && !navigator.gpu )
+        {
+            console.warn( 'WebGPU forced but not available, falling back to WebGL' );
+            this.backend = 'webgl';
+        }
 
         await fs.detectAutoLogin();
         await ui.init( fs );
@@ -231,21 +244,7 @@ const ShaderHub =
     {
         this.shader = shader;
 
-        const params = new URLSearchParams( window.location.search );
-        const forced = params.get( 'r' );
-
-        let backend;
-        if ( forced === 'gpu' ) backend = 'webgpu';
-        else if ( forced === 'gl' ) backend = 'webgl';
-        else backend = navigator.gpu ? 'webgpu' : 'webgl';
-
-        if ( forced === 'gpu' && !navigator.gpu )
-        {
-            console.warn( 'WebGPU forced but not available, falling back to WebGL' );
-            backend = 'webgl';
-        }
-
-        await this.initGraphics( canvas, backend );
+        await this.initGraphics( canvas );
 
         const closeFn = async ( name, e ) => {
             e.preventDefault();
@@ -268,18 +267,21 @@ const ShaderHub =
             }
         };
 
+        const ShaderPassClass = this.backend === 'webgpu' ? ShaderPass : GLShaderPass;
+        const ShaderClass = this.backend === 'webgpu' ? Shader : GLShader;
+
         // Prob. new shader
         if( !this.shader.url )
         {
             const pass = {
                 name: 'MainImage',
                 type: 'image',
-                codeLines: Shader.RENDER_MAIN_TEMPLATE,
+                codeLines: ShaderClass.RENDER_MAIN_TEMPLATE,
                 resolutionX: this.resolutionX,
                 resolutionY: this.resolutionY
             }
 
-            const shaderPass = new ShaderPass( shader, this.renderer.device, pass );
+            const shaderPass = new ShaderPassClass( shader, this.renderer, pass );
             this.shader.passes.push( shaderPass );
 
             // Set code in the editor
@@ -301,7 +303,7 @@ const ShaderHub =
                 pass.uniforms.forEach( u => u.type = u.type ?? 'f32');
 
                 // Push passes to the shader
-                const shaderPass = new ShaderPass( shader, this.renderer.device, pass );
+                const shaderPass = new ShaderPassClass( shader, this.renderer, pass );
                 if( pass.type === 'buffer' || pass.type === 'compute' )
                 {
                     console.assert( shaderPass.textures, 'Buffer does not have render target textures' );
@@ -407,7 +409,8 @@ const ShaderHub =
     {
         let indexOffset = -1;
 
-        const shaderPass = new ShaderPass( this.shader, this.renderer.device, {
+        const ShaderPassClass = this.backend === 'webgpu' ? ShaderPass : GLShaderPass;
+        const shaderPass = new ShaderPassClass( this.shader, this.renderer, {
             name: passName,
             type: passType,
             resolutionX: this.resolutionX,
@@ -603,7 +606,8 @@ const ShaderHub =
             };
         }
 
-        return new Shader( shaderData );
+        const ShaderClass = this.backend === 'webgpu' ? Shader : GLShader;
+        return new ShaderClass( shaderData );
     },
 
     async getChannelMetadata( pass, channelIndex )
@@ -981,10 +985,10 @@ const ShaderHub =
         }
     },
 
-    async initGraphics( canvas, backend )
+    async initGraphics( canvas )
     {
-        const rendererClass = backend === 'webgpu' ? GPURenderer : GLRenderer;
-        this.renderer = new rendererClass( canvas, backend );
+        const rendererClass = this.backend === 'webgpu' ? GPURenderer : GLRenderer;
+        this.renderer = new rendererClass( canvas, this.backend );
 
         await this.renderer.init();
 
@@ -1005,7 +1009,7 @@ const ShaderHub =
 
         if( asset.category === "cubemap" )
         {
-            texture = await this.renderer.createCubemapTexture( data, channelName, asset.name );
+            texture = await this.renderer.createCubemapTextureFromImage( data, channelName, asset.name );
         }
         else if( asset.category === "sound" )
         {
@@ -1013,7 +1017,7 @@ const ShaderHub =
         }
         else
         {
-            texture = await this.renderer.createTexture( data, channelName, asset.name );
+            texture = await this.renderer.createTextureFromImage( data, channelName, asset.name );
         }
 
         return texture;
