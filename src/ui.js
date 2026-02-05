@@ -65,6 +65,13 @@ export const ui = {
         }, { placeholder: "Search...", className: "mx-auto flex-auto-fill max-w-[40%] md:max-w-[25%] 2xl:max-w-[20%]" });
         menubar.root.appendChild( searchShaderInput.root );
 
+        // Add badge to Docs entry
+        {
+            const entry = menubar.root.querySelector( '#Docs span' );
+            LX.addClass( entry, 'flex flex-row gap-2' );
+            entry.appendChild( LX.badge( "new", "xs primary", { asElement: true } ) );
+        }
+
         // Do it always and use it for small screens
         {
             const sidebarOptions = {
@@ -430,19 +437,19 @@ export const ui = {
 
         // Create title/login area
         {
-            const container = LX.makeContainer( ["100%", "100%"], "bg-background-blur flex flex-col gap-4 rounded-xl box-shadow box-border place-content-center items-center overflow-scroll", "", rightSide );
+            const container = LX.makeContainer( ["100%", "100%"], "bg-background-blur flex flex-col gap-4 rounded-xl box-shadow box-border justify-evenly overflow-scroll", "", rightSide );
             
             if( this.fs.user )
             {
                 const users = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_id", this.fs.getUserId() ) ] );
                 const dbUser = users.documents[ 0 ];
-                const welcomeMessage = LX.makeContainer( ["100%", "auto"], "p-8 text-center text-3xl text-card-foreground", `Welcome ${ dbUser.display_name ?? dbUser.user_name }!`, container );
+                const welcomeMessage = LX.makeContainer( ["100%", "15%"], "px-8 text-center text-3xl text-card-foreground content-center", `Welcome ${ dbUser.display_name ?? dbUser.user_name }!`, container );
                 welcomeMessage.id = "welcomeMessage";
             }
             
-            const header = LX.makeContainer( [ null, "auto" ], "flex flex-col mt-8 px-4 md:px-10 gap-4 text-center items-center place-content-center", `
+            const header = LX.makeContainer( [ null, "auto" ], "flex flex-col px-4 md:px-10 gap-12 text-center items-center place-content-center", `
                 <img src="${ShaderHub.imagesRootPath}/favicon.png" class="">
-                <span class="mb-6 text-muted-foreground text-2xl sm:text-3xl font-medium">ShaderHub (Pre alpha ${ ShaderHub.version })</span>
+                <span class="text-muted-foreground text-2xl sm:text-3xl font-medium">ShaderHub (Pre alpha ${ ShaderHub.version })</span>
                 <span class="text-balanced text-4xl sm:text-5xl font-medium">Create and share shaders using latest WebGPU!</span>
                 <a onclick='ui._openShader("new")' class="flex flex-row gap-1 items-center text-sm p-1 px-4 rounded-full text-secondary-foreground decoration-none hover:bg-secondary cursor-pointer"><span class="flex flex-auto-keep bg-orange-500 w-2 h-2 rounded-full"></span>
                 <span class="flex flex-auto-fill">Texture Mipmaps, New Sound Channel, and New Docs</span>${ LX.makeIcon( "ArrowRight", { svgClass: "flex flex-auto-keep sm" } ).innerHTML }</a>
@@ -966,7 +973,7 @@ export const ui = {
 
             const shaderDataContainer = LX.makeContainer( [`100%`, "100%"], "p-6 flex flex-col gap-2 rounded-xl bg-card overflow-scroll overflow-x-hidden", "", shaderDataArea );
             const shaderNameAuthorOptionsContainer = LX.makeContainer( [`100%`, "auto"], "flex flex-row", `
-                <div class="flex flex-col gap-1">
+                <div class="flex flex-col gap-1 justify-center">
                     <div class="flex flex-row items-center">
                         ${ ( ownProfile || isNewShader ) ? LX.makeIcon("Edit", { svgClass: "mr-2 cursor-pointer hover:text-foreground" } ).innerHTML : "" }
                         <div class="text-foreground text-lg font-semibold">${ shader.name }</div>
@@ -987,6 +994,8 @@ export const ui = {
                     textDiv.innerText = shader.name;
                     input.root.replaceWith( textDiv );
                     this._editingName = false;
+
+                    if( isNewShader ) return;
 
                     let r = await ShaderHub.shaderExists();
                     if( r && r.name !== shader.name )
@@ -1132,30 +1141,53 @@ export const ui = {
             }
 
             // Shader tags
+            if( editable || shader.tags.length )
             {
-                if( editable || shader.tags.length )
-                {
-                    const tags = new LX.Tags( null, "", async (v) => {
-                    
-                        shader.tags = v;
+                const tags = new LX.Tags( null, "", async (v) => {
+                
+                    shader.tags = v;
 
-                        let r = await ShaderHub.shaderExists();
-                        if( r )
-                        {
-                            await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r[ "$id" ], {
-                                "tags": shader.tags
-                            } );
-                            Utils.toast( `✅ Shader updated`, `Shader: ${ r.name } by ${ this.fs.user.name }` );
-                        }
-                        
-                    }, { disabled: !editable, tagClass: 'text-xs' } );
-                    tags.set( shader.tags, true );
-                    shaderDataContainer.appendChild( tags.root );
-                }
+                    if( isNewShader ) return;
+
+                    let r = await ShaderHub.shaderExists();
+                    if( r )
+                    {
+                        await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r[ "$id" ], {
+                            "tags": shader.tags
+                        } );
+                        Utils.toast( `✅ Shader updated`, `Shader: ${ r.name } by ${ this.fs.user.name }` );
+                    }
+                    
+                }, { disabled: !ownProfile, tagClass: 'text-xs' } );
+                tags.set( shader.tags, true );
+                shaderDataContainer.appendChild( tags.root );
             }
 
+            const iSaveDescription = async ( text, format = true ) =>
+            {
+                shader.description = format ? Utils.formatMD( text ) : text;
+
+                if( isNewShader ) return;
+
+                let r = await ShaderHub.shaderExists();
+                if( r && r.description !== shader.description )
+                {
+                    await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r[ "$id" ], {
+                        "description": shader.description
+                    } );
+                    Utils.toast( `✅ Shader updated`, `Shader: ${ r.name } by ${ this.fs.user.name }` );
+                }
+            };
+
             // Editable description
-            if( editable || ( shader.description ?? '' ).length )
+            if( ownProfile && isNewShader )
+            {
+                const input = new LX.TextArea( null, shader.description, async (v) => {
+                    iSaveDescription( v, false );
+                }, { resize: false, placeholder: "Enter your shader description here", className: "w-full", inputClass: "bg-accent/50!" , fitHeight: true } );
+                shaderDataContainer.appendChild( input.root );
+            }
+            else if( ownProfile || ( shader.description ?? '' ).length )
             {
                 const descContainer = LX.makeContainer( [`auto`, "auto"], "text-foreground mt-2 flex flex-row items-center", `
                     <div class="w-auto self-start">${ editable ? LX.makeIcon("Edit", { svgClass: "mr-3 cursor-pointer hover:text-foreground" } ).innerHTML : "" }</div>
@@ -1165,29 +1197,16 @@ export const ui = {
                 const editButton = descContainer.querySelector( "svg" );
                 if( editButton )
                 {
-                    const iSaveDescription = async ( text, textDiv, input ) =>
-                    {
-                        shader.description = Utils.formatMD( text );
-                        textDiv.innerHTML = shader.description;
-                        input.root.replaceWith( textDiv );
-                        this._editingDescription = false;
-
-                        let r = await ShaderHub.shaderExists();
-                        if( r && r.description !== shader.description )
-                        {
-                            await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r[ "$id" ], {
-                                "description": shader.description
-                            } );
-                            Utils.toast( `✅ Shader updated`, `Shader: ${ r.name } by ${ this.fs.user.name }` );
-                        }
-                    };
-
                     editButton.addEventListener( "click", (e) => {
                         if( this._editingDescription ) return;
                         e.preventDefault();
                         const textDiv = descContainer.querySelector( ".desc-content" );
                         const input = new LX.TextArea( null, Utils.unformatMD( textDiv.innerHTML ), async (v) => {
-                            iSaveDescription( v, textDiv, input );
+                            // save desc and update DOM
+                            iSaveDescription( v );
+                            textDiv.innerHTML = shader.description;
+                            input.root.replaceWith( textDiv );
+                            this._editingDescription = false;
                         }, { resize: false, placeholder: "Enter your shader description here", className: "w-full h-full", inputClass: "bg-accent/50! h-full" , fitHeight: true } );
                         textDiv.replaceWith( input.root );
                         LX.doAsync( () => input.root.focus() );
@@ -2554,7 +2573,7 @@ export const ui = {
         Utils.toast( `✅ Logged in`, `Welcome ${ user.email }!` );
 
         const path = window.location.pathname;
-        if( path.startsWith( '/view' ) )
+        if( path.startsWith( '/view' ) || path.startsWith( '/create' ) )
         {
             await this._createShaderDataView();
         }
@@ -2594,16 +2613,7 @@ export const ui = {
         document.querySelector( "#signupContainer" )?.classList.remove( "hidden" );
 
         // Update shader description (menu, likes, etc)
-        const path = window.location.pathname;
-        if( path.startsWith( '/view' ) )
-        {
-            await this._createShaderDataView();
-        }
-        else
-        {
-            history.pushState( {}, '', '/' );
-            this.renderHomePage();
-        }
+        await this.router();
     },
 
     onStopCapture()
@@ -3021,7 +3031,7 @@ export const ui = {
                     img.crossOrigin = "anonymous";
                     img.src = url;
                     img.onload = async () => {
-                        const objectUrl = URL.createObjectURL( await ( await fetch( url ) ).blob() );
+                        const objectUrl = localUrl ?? URL.createObjectURL( await ( await fetch( url ) ).blob() );
                         this._dbAssetsCache.set( fileId, objectUrl );
                         channelPreview.src = objectUrl;
                     };

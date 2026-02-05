@@ -580,7 +580,8 @@ const ShaderHub =
                 name: "New Shader",
                 uid: "EMPTY_ID",
                 author: fs.user?.name ?? "Anonymous",
-                anonAuthor: true,
+                authorId: fs.user ? fs.getUserId() : undefined,
+                anonAuthor: !fs.user,
                 creationDate: Utils.getDate(),
                 tags: []
             };
