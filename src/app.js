@@ -3,7 +3,7 @@ import * as Constants from "./constants.js";
 import * as Utils from './utils.js';
 import { FS } from './fs.js';
 import { ui } from './ui.js';
-import { GPURenderer } from './renderer.js';
+import { GPURenderer, GLRenderer } from './renderer.js';
 import { Shader, ShaderPass } from './shader.js';
 import { FPSCounter } from './fps.js';
 
@@ -231,7 +231,21 @@ const ShaderHub =
     {
         this.shader = shader;
 
-        await this.initGraphics( canvas );
+        const params = new URLSearchParams( window.location.search );
+        const forced = params.get( 'r' );
+
+        let backend;
+        if ( forced === 'gpu' ) backend = 'webgpu';
+        else if ( forced === 'gl' ) backend = 'webgl';
+        else backend = navigator.gpu ? 'webgpu' : 'webgl';
+
+        if ( forced === 'gpu' && !navigator.gpu )
+        {
+            console.warn( 'WebGPU forced but not available, falling back to WebGL' );
+            backend = 'webgl';
+        }
+
+        await this.initGraphics( canvas, backend );
 
         const closeFn = async ( name, e ) => {
             e.preventDefault();
@@ -967,9 +981,10 @@ const ShaderHub =
         }
     },
 
-    async initGraphics( canvas )
+    async initGraphics( canvas, backend )
     {
-        this.renderer = new GPURenderer( canvas );
+        const rendererClass = backend === 'webgpu' ? GPURenderer : GLRenderer;
+        this.renderer = new rendererClass( canvas, backend );
 
         await this.renderer.init();
 
