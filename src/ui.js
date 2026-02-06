@@ -67,8 +67,11 @@ export const ui = {
         // Add badge to Docs entry
         {
             const entry = menubar.root.querySelector( '#Docs span' );
-            LX.addClass( entry, 'flex flex-row gap-2' );
-            entry.appendChild( LX.badge( "new", "xs primary", { asElement: true } ) );
+            if( entry )
+            {
+                LX.addClass( entry, 'flex flex-row gap-2' );
+                entry.appendChild( LX.badge( "new", "xs primary", { asElement: true } ) );
+            }
         }
 
         // Do it always and use it for small screens
@@ -228,6 +231,8 @@ export const ui = {
 
     async router()
     {
+        if( window.__currentSheet ) window.__currentSheet.destroy()
+
         const path = window.location.pathname;
 
         const isGraphicsPath = ( path ) =>
@@ -436,7 +441,7 @@ export const ui = {
 
         // Create title/login area
         {
-            const container = LX.makeContainer( ["100%", "100%"], "bg-background-blur flex flex-col gap-4 rounded-xl box-shadow box-border justify-evenly overflow-scroll", "", rightSide );
+            const container = LX.makeContainer( ["100%", "100%"], "bg-background-blur flex flex-col gap-4 rounded-xl py-12 box-shadow box-border justify-evenly overflow-scroll", "", rightSide );
             
             if( this.fs.user )
             {
@@ -979,7 +984,7 @@ export const ui = {
             // Clear
             shaderDataArea.root.innerHTML = "";
 
-            const shaderDataContainer = LX.makeContainer( [`100%`, "100%"], "p-6 flex flex-col gap-2 rounded-xl bg-card overflow-scroll overflow-x-hidden", "", shaderDataArea );
+            const shaderDataContainer = LX.makeContainer( [`100%`, "100%"], "p-3 sm:p-6 flex flex-col gap-2 rounded-xl bg-card overflow-scroll overflow-x-hidden", "", shaderDataArea );
             const shaderNameAuthorOptionsContainer = LX.makeContainer( [`100%`, "auto"], "flex flex-row", `
                 <div class="flex flex-col gap-1 justify-center">
                     <div class="flex flex-row items-center">
@@ -1453,6 +1458,49 @@ export const ui = {
 
                     await refreshComments();
                 }
+            }
+
+            if( mobile )
+            {
+                shaderDataContainer.appendChild( new LX.Button( null, "Open Code", () => {
+
+                    if( window.__currentSheet ) window.__currentSheet.destroy();
+
+                    const sheetArea = new LX.Area({ className: 'overflow-scroll' });
+
+                    const tmpEditor = new LX.CodeEditor( sheetArea, {
+                        disableEdition: true,
+                        allowClosingTabs: false,
+                        allowLoadingFiles: false,
+                        // allowAddScripts: false,
+                        fileExplorer: false,
+                        defaultTab: false,
+                        statusShowEditorIndentation: false,
+                        statusShowEditorLanguage: false,
+                        statusShowEditorFilename: false,
+                        statusShowFontSizeZoom: false,
+                        statusShowEditorSelection: false,
+                        onCreateFile: ( editor ) => null,
+                        // onNewTab: ( e ) => {
+                        //     new LX.DropdownMenu( e.target, [], { side: "bottom", align: "start" });
+                        // },
+                        onSelectTab: async ( name, editor ) => {
+                            ShaderHub.onShaderPassSelected( name );
+                        },
+                        onReady: async ( editor ) => {
+
+                            const pass = ShaderHub.currentPass;
+                            if( pass )
+                            {
+                                editor.loadTab( pass.name );
+                                const code = pass.codeLines.join( '\n' );
+                                editor.setText( code, null, true );
+                            }
+
+                            window.__currentSheet = new LX.Sheet( "80%", [ sheetArea ], { side: "bottom" } );
+                        }
+                    });
+                }, { icon: 'Code', iconPosition: 'end', className: 'absolute bottom-0 mb-6 self-center mx-auto', buttonClass: 'outline' } ).root );
             }
         }
 
