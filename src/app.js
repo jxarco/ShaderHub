@@ -90,11 +90,11 @@ const ShaderHub = {
                 this.lastMousePosition[1], // start position
                 this.lastMousePosition[0] - this.mousePosition[0],
                 this.lastMousePosition[1] - this.mousePosition[1], // delta position
-                this._mouseDown ?? -1,
+                this._mouseDown ?? -1.0,
                 this._mousePressed ?? -1.0 // button clicks
             ];
 
-            this.renderer.updateMouse( data );
+            this.renderer.updateMouse( data, this.shader );
         }
 
         this.lastTime = now;
@@ -540,7 +540,7 @@ const ShaderHub = {
                 this._mousePressed ?? -1.0 // button clicks
             ];
 
-            this.renderer.updateMouse( data );
+            this.renderer.updateMouse( data, this.shader );
         }
 
         if ( this.currentPass )

@@ -361,14 +361,30 @@ class GLRenderer extends Renderer
 
     updateMouse( data, shader )
     {
-        if ( !this.device )
+        const gl = this.gl;
+        if ( !gl )
         {
             return;
         }
 
+        const mouseData = {};
+        let offset = 0;
+        for ( const field of Constants.DEFAULT_UNIFORM_FIELDS['iMouse'] )
+        {
+            if ( field.size === 1 )
+            {
+                mouseData[field.name] = data[offset];
+            }
+            else
+            {
+                mouseData[field.name] = data.slice( offset, offset + field.size );
+            }
+            offset += field.size;
+        }
+
         for ( const pass of shader.passes )
         {
-            // pass.setUniform( gl, "iMouse", data );
+            pass.setUniform( gl, "iMouse", mouseData );
         }
     }
 

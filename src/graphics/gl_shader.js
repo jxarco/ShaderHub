@@ -206,6 +206,17 @@ class GLShaderPass extends ShaderPass
         {
             const loc = gl.getUniformLocation( program, name );
             this.uniformLocations[name] = loc;
+
+            // For struct bindings, also cache field locations (e.g., iMouse.pos)
+            const fields = Constants.DEFAULT_UNIFORM_FIELDS[name];
+            if ( fields?.length )
+            {
+                for ( const field of fields )
+                {
+                    const loc = gl.getUniformLocation( program, `${name}.${field.name}` );
+                    if ( loc ) this.uniformLocations[`${name}.${field.name}`] = loc;
+                }
+            }
         }
 
         return program;
@@ -412,13 +423,23 @@ class GLShaderPass extends ShaderPass
     {
         if ( this.type === 'common' ) return;
 
+        gl = gl ?? this.renderer.gl;
+        gl.useProgram( this.program );
+
+        // Handle struct/object data (e.g., MouseData struct)
+        if ( typeof value === 'object' && !Array.isArray( value ) && value?.length === undefined )
+        {
+            for ( const field in value )
+            {
+                this.setUniform( gl, `${name}.${field}`, value[field] );
+            }
+            return;
+        }
+
         const loc = this.uniformLocations[name];
         if ( !loc ) return;
 
-        gl = gl ?? this.renderer.gl;
-
-        gl.useProgram( this.program );
-
+        // Handle scalar and vector types
         if ( typeof value === 'number' ) gl.uniform1f( loc, value );
         else if ( value.length === 2 ) gl.uniform2fv( loc, value );
         else if ( value.length === 3 ) gl.uniform3fv( loc, value );
@@ -498,7 +519,13 @@ class GLShader extends Shader
 
 GLShader.GLSL_KEYBOARD_UTILS = ``.split( '\n' );
 
-GLShader.COMMON = ``;
+GLShader.COMMON = `struct MouseData {
+    vec2 pos;
+    vec2 start;
+    vec2 delta;
+    float press;
+    float click;
+};`;
 
 GLShader.RENDER_VS_SHADER_TEMPLATE = `#version 300 es
 
@@ -516,12 +543,13 @@ $vs_flip_y
 GLShader.RENDER_FS_SHADER_TEMPLATE = `$fs$#version 300 es
 precision highp float;
 
+${GLShader.COMMON}
+
 $default_bindings
 $custom_bindings
 $texture_bindings
 
 in vec2 v_uv;
-
 out vec4 fragColor;
 
 $glsl_utils

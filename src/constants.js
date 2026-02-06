@@ -34,6 +34,15 @@ export const DEFAULT_UNIFORMS_LIST = [
     { name: 'iChannel0..3', type: { webgpu: 'texture_2d<f32>', webgl: 'sampler2D' }, info: 'Texture input channel', skipBindings: true }
 ];
 export const DEFAULT_UNIFORM_NAMES = DEFAULT_UNIFORMS_LIST.map( ( u ) => u.name );
+export const DEFAULT_UNIFORM_FIELDS = {
+    iMouse: [
+        { name: 'pos', size: 2 }, // Current mouse position (x, y)
+        { name: 'start', size: 2 }, // Initial/last mouse position (x, y)
+        { name: 'delta', size: 2 }, // Delta movement (dx, dy)
+        { name: 'press', size: 1 }, // Mouse down state (-1 or button)
+        { name: 'click', size: 1 } // Mouse pressed/clicked state
+    ]
+};
 
 // WebGL Renderer
 export const WGSL_TO_GLSL = {
