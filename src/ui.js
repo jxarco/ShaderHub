@@ -729,7 +729,7 @@ export const ui = {
         for( let i = 0; i < dbShaders.length; ++i )
         {
             const shaderItem = LX.makeElement( "li", `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, "" );
-            const shaderPreview = LX.makeElement( "img", "opacity-0 rounded-lg border-none cursor-pointer self-center mt-2", "", shaderItem );
+            const shaderPreview = LX.makeElement( "img", "relative opacity-0 rounded-lg border-none cursor-pointer self-center mt-2", "", shaderItem );
             shaderPreview.style.width = "calc(100% - 1rem)";
             shaderPreview.style.height = "calc(100% - 1rem)";
             shaderPreview.src = ShaderHub.shaderPreviewPath;
@@ -771,7 +771,8 @@ export const ui = {
                     likeCount: document[ "like_count" ],
                     features: ( document[ "features" ] ?? "" ).split( "," ),
                     public: document[ "public" ] ?? true,
-                    liked: this.dbUser ? ( this.dbUser.liked_shaders ?? [] ).includes( uid ) : false
+                    liked: this.dbUser ? ( this.dbUser.liked_shaders ?? [] ).includes( uid ) : false,
+                    backend: document[ "backend" ] ?? 'webgpu',
                 };
 
                 const authorId = document[ "author_id" ];
@@ -814,6 +815,7 @@ export const ui = {
                 shaderPreview.src = shader.preview ?? ShaderHub.shaderPreviewPath;
                 shaderPreview.onload = () => shaderPreview.classList.remove( "opacity-0" );
                 shaderItem.querySelector( "div" ).remove();
+                if( shader.backend === 'webgl' ) LX.makeElement( 'span', 'absolute m-4 bg-background-blur border-color text-sm p-1 rounded-lg', 'WebGL', shaderItem );
                 LX.makeContainer( ["100%", "auto"], "flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none", `
                     <div class="flex flex-row w-full items-center gap-2">
                         <span class="text-sm font-medium text-nowrap truncate">${ shader.name }</span>
