@@ -1,6 +1,49 @@
 import * as Constants from "../constants.js";
 import { Shader, ShaderPass } from "./shader.js";
 
+const WGSL_TO_GLSL = {
+    // Scalars
+    f32: "float",
+    i32: "int",
+    u32: "uint",
+
+    // Vectors (float)
+    vec2f: "vec2",
+    vec3f: "vec3",
+    vec4f: "vec4",
+
+    // Vectors (int)
+    vec2i: "ivec2",
+    vec3i: "ivec3",
+    vec4i: "ivec4",
+
+    // Vectors (uint)
+    vec2u: "uvec2",
+    vec3u: "uvec3",
+    vec4u: "uvec4",
+
+    // Matrices (float only in WGSL)
+    mat2x2f: "mat2",
+    mat2x3f: "mat2x3",
+    mat2x4f: "mat2x4",
+
+    mat3x2f: "mat3x2",
+    mat3x3f: "mat3",
+    mat3x4f: "mat3x4",
+
+    mat4x2f: "mat4x2",
+    mat4x3f: "mat4x3",
+    mat4x4f: "mat4",
+
+    // Samplers & textures (handled separately, but listed for completeness)
+    sampler: "sampler",
+    sampler_comparison: "samplerShadow",
+
+    texture_2d: "sampler2D",
+    texture_2d_array: "sampler2DArray",
+    texture_cube: "samplerCube",
+};
+
 class GLShaderPass extends ShaderPass
 {
     constructor( shader, renderer, data )
@@ -47,7 +90,7 @@ class GLShaderPass extends ShaderPass
                 const name = channel.id;
                 const tex = this.channelTextures[i];
                 gl.activeTexture( gl.TEXTURE0 + i );
-                gl.bindTexture( gl.TEXTURE_2D, tex );
+                gl.bindTexture( channel.category === 'texture' ? gl.TEXTURE_2D : gl.TEXTURE_CUBE_MAP, tex );
                 gl.uniform1i( this.uniformLocations[name], i );
             }
 
@@ -178,16 +221,18 @@ class GLShaderPass extends ShaderPass
         }
 
         this.defaultBindings = result.defaultBindings;
+        this.customBindings = result.customBindings;
         this.textureBindings = result.textureBindings;
+        this.codeContent = result.code.replace( '$fs$', '\n' );
         this.uniformLocations = {};
 
-        for ( const name in this.defaultBindings )
-        {
-            const loc = gl.getUniformLocation( program, name );
-            this.uniformLocations[name] = loc;
+        const bindings = {
+            ...this.defaultBindings,
+            ...this.customBindings,
+            ...this.textureBindings
         }
 
-        for ( const name in this.textureBindings )
+        for ( const name in bindings )
         {
             const loc = gl.getUniformLocation( program, name );
             this.uniformLocations[name] = loc;
@@ -329,35 +374,18 @@ class GLShaderPass extends ShaderPass
             }
 
             // Custom Uniform bindings
-            // {
-            //     if( this.uniforms.length !== this.uniformBuffers.length )
-            //     {
-            //         this.uniformBuffers.length = this.uniforms.length; // Set new length
-
-            //         for( let i = 0; i < this.uniformBuffers.length; ++i )
-            //         {
-            //             const u = this.uniforms[ i ];
-            //             const buffer = this.uniformBuffers[ i ];
-            //             if( !buffer )
-            //             {
-            //                 this.uniformBuffers[ i ] = this.device.createBuffer({
-            //                     size: Shader.GetUniformSize( u.type ?? "f32" ),
-            //                     usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-            //                 });
-            //             }
-            //         }
-            //     }
-
-            //     const customBindingsIndex = templateCodeLines.indexOf( "$custom_bindings" );
-            //     console.assert( customBindingsIndex > -1 );
-            //     templateCodeLines.splice( customBindingsIndex, 1, ...this.uniforms.map( ( u, index ) => {
-            //         if( !u ) return;
-            //         if( !this.isBindingUsed( u.name, noBindingsShaderCode ) ) return;
-            //         const binding = bindingIndex++;
-            //         customBindings[ u.name ] = binding;
-            //         return `@group(0) @binding(${ binding }) var<uniform> ${ u.name } : ${ u.type };`;
-            //     } ).filter( u => u !== undefined ) );
-            // }
+            {
+                const customBindingsIndex = templateCodeLines.indexOf( "$custom_bindings" );
+                console.assert( customBindingsIndex > -1 );
+                templateCodeLines.splice( customBindingsIndex, 1, ...this.uniforms.map( ( u, index ) => {
+                    if( !u ) return;
+                    if( !this.isBindingUsed( u.name, noBindingsShaderCode ) ) return;
+                    const binding = bindingIndex++;
+                    customBindings[ u.name ] = binding;
+                    const type = WGSL_TO_GLSL[u.type[ this.renderer.backend ] ?? "f32"];
+                    return `uniform ${ type } ${ u.name };`;
+                } ).filter( u => u !== undefined ) );
+            }
 
             // Process texture bindings
             {
@@ -398,27 +426,14 @@ class GLShaderPass extends ShaderPass
 
     updateUniforms()
     {
-        // if( this.uniforms.length === 0 )
-        //     return;
+        if( this.uniforms.length === 0 )
+            return;
 
-        // this.uniforms.map( ( u, index ) => {
-        //     let buffer = this.uniformBuffers[ index ];
-        //     if( !buffer )
-        //     {
-        //         this.uniformBuffers[ index ] = this.device.createBuffer({
-        //             size: Shader.GetUniformSize( u.type ?? "f32" ),
-        //             usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM,
-        //         });
-        //     }
+        this.uniforms.map( ( u, index ) => {
+            this.setUniform( null, u.name, u.value );
+        } );
 
-        //     this.device.queue.writeBuffer(
-        //         this.uniformBuffers[ index ],
-        //         0,
-        //         new Float32Array( [].concat( u.value ) )
-        //     );
-        // } );
-
-        // this.uniformsDirty = false;
+        this.uniformsDirty = false;
     }
 
     setUniform( gl, name, value )
@@ -427,6 +442,8 @@ class GLShaderPass extends ShaderPass
 
         const loc = this.uniformLocations[ name ];
         if ( !loc ) return;
+
+        gl = gl ?? this.renderer.gl;
 
         gl.useProgram( this.program );
 
@@ -532,10 +549,7 @@ out vec2 v_uv;
 
 void main()
 {
-    // Fullscreen triangle positions are expected in clip space
     gl_Position = vec4(a_position, 0.0, 1.0);
-
-    // Convert clip space [-1,1] to UV [0,1]
     v_uv = a_position * 0.5 + 0.5;
 $vs_flip_y
 }`.split( "\n" );
@@ -543,10 +557,11 @@ $vs_flip_y
 GLShader.RENDER_FS_SHADER_TEMPLATE = `$fs$#version 300 es
 precision highp float;
 
-in vec2 v_uv;
-
 $default_bindings
+$custom_bindings
 $texture_bindings
+
+in vec2 v_uv;
 
 out vec4 fragColor;
 

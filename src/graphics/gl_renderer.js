@@ -183,6 +183,7 @@ class GLRenderer extends Renderer
             framebuffer,
             width,
             height,
+            depthOrArrayLayers: 1,
             format,
         };
     }
@@ -196,7 +197,9 @@ class GLRenderer extends Renderer
         const imageBitmap = await createImageBitmap( await new Blob( [ data ] ), {
             imageOrientation: options.flipY ? 'flipY' : 'none'
         } );
+
         const texture = gl.createTexture();
+        texture.depthOrArrayLayers = 1;
 
         gl.bindTexture( gl.TEXTURE_2D, texture );
 
@@ -206,7 +209,7 @@ class GLRenderer extends Renderer
         gl.texImage2D(
             gl.TEXTURE_2D,
             0,
-            gl.RGBA8,
+            gl.RGBA,
             gl.RGBA,
             gl.UNSIGNED_BYTE,
             imageBitmap
@@ -235,10 +238,12 @@ class GLRenderer extends Renderer
         return texture;
     }
 
-    async createCubemapTexture( arrayBuffer, id, label = "", options = {} )
+    async createCubemapTextureFromImage( arrayBuffer, id, label = "", options = {} )
     {
-        options.flipY = options.flipY ?? true;
+        options.flipY = options.flipY ?? false;
+        options.useMipmaps = options.useMipmaps ?? true;
 
+        const gl = this.gl;
         const zip = await JSZip.loadAsync( arrayBuffer );
         const faceNames = [ "px", "nx", "ny", "py", "pz", "nz" ];
         const faceImages = [];
@@ -248,31 +253,50 @@ class GLRenderer extends Renderer
             const file = zip.file( `${ face }.png` ) || zip.file( `${ face }.jpg` );
             if( !file ) throw new Error( `Missing cubemap face: ${ face }` );
             const blob = await file.async( "blob" );
-            const imageBitmap = await createImageBitmap( blob );
+            const imageBitmap = await createImageBitmap( blob, {
+                imageOrientation: options.flipY ? 'flipY' : 'none'
+            } );
             faceImages.push( imageBitmap );
         }
 
-        const { width, height } = faceImages[ 0 ];
+        const texture = gl.createTexture();
+        texture.depthOrArrayLayers = 6;
 
-        const texture = this.device.createTexture({
-            label,
-            size: [ width, height, 6 ],
-            format: "rgba8unorm",
-            usage:
-                GPUTextureUsage.TEXTURE_BINDING |
-                GPUTextureUsage.COPY_DST |
-                GPUTextureUsage.RENDER_ATTACHMENT,
-            dimension: "2d",
-        });
+        gl.bindTexture( gl.TEXTURE_CUBE_MAP, texture );
 
-        for( let i = 0; i < 6; i++ )
+        for( let i = 0; i < faceImages.length; ++i )
         {
-            this.device.queue.copyExternalImageToTexture(
-                { source: faceImages[ i ], ...options },
-                { texture, origin: [ 0, 0, i ] },
-                [ width, height ]
+            const bitmap = faceImages[i];
+
+            gl.texImage2D(
+                gl.TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                0,
+                gl.RGBA,
+                gl.RGBA,
+                gl.UNSIGNED_BYTE,
+                bitmap
             );
         }
+
+        if ( options.useMipmaps )
+        {
+            gl.generateMipmap( gl.TEXTURE_CUBE_MAP );
+        }
+        else
+        {
+            // WebGL requires this if no mipmaps
+            gl.texParameteri( gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR );
+        }
+
+        // Sensible defaults, samplers will override
+        gl.texParameteri( gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+        gl.texParameteri( gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+        gl.texParameteri( gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE );
+        gl.texParameteri( gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR );
+        gl.texParameteri( gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR );
+
+        // unbind once done
+        gl.bindTexture( gl.TEXTURE_CUBE_MAP, null );
 
         this.gpuTextures[ id ] = texture;
 

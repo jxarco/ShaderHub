@@ -753,6 +753,10 @@
     -webkit-user-select: none;
     user-select: none;
   }
+  .select-text {
+    -webkit-user-select: text;
+    user-select: text;
+  }
   .hover\:scale-105 {
     &:hover {
       @media (hover: hover) {

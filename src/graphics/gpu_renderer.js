@@ -128,7 +128,7 @@ class GPURenderer extends Renderer
         return texture;
     }
 
-    async createCubemapTexture( arrayBuffer, id, label = "", options = {} )
+    async createCubemapTextureFromImage( arrayBuffer, id, label = "", options = {} )
     {
         options.flipY = options.flipY ?? true;
 

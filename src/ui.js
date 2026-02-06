@@ -2192,19 +2192,16 @@ export const ui = {
 
     async makeStatusBarButtons( p, editor )
     {
+        const usingWebGPU = ( ShaderHub.backend === 'webgpu' );
         const customTabInfoButtonsPanel = new LX.Panel( { className: "flex flex-row items-center", height: "auto" } );
 
         customTabInfoButtonsPanel.sameLine();
-
-        /*
-            Quick help
-        */
 
         const makeParagraph = ( text, p, extraClass ) => {
             LX.makeContainer( ["auto", "auto"], "p-2 text-card-foreground text-xs " + ( extraClass ?? "" ), text, p, { wordBreak: "break-word" } );
         }
 
-        customTabInfoButtonsPanel.addButton( null, "OpenQuickHelp", ( name, event ) => {
+        const openQuickHelp = () => {
 
             const dialog = new LX.Dialog( "Quick Help", ( p ) => {
 
@@ -2244,18 +2241,25 @@ export const ui = {
     <li><span class="text-destructive font-semibold">SCREEN_WIDTH</span> and <span class="text-destructive font-semibold">SCREEN_HEIGHT</span> are predefined variables for accessing canvas dimensions</li>
 </ul>`, p );
 
-                makeParagraph( `For <span class="text-destructive font-semibold">compute</span> shaders:`, p );
-                makeParagraph( `<ul style="margin-block:0">
-    <li><span class="text-destructive font-semibold">#workgroup_count ENTRYPOINT X Y Z</span> for specifying how many workgroups should be dispatched for an entrypoint</li>
-    <li><span class="text-destructive font-semibold">#dispatch_once ENTRYPOINT</span> for initialization purposes, ensuring the entrypoint is dispatched only once</li>
-    <li><span class="text-destructive font-semibold">#storage NAME TYPE</span> for declaring a storage buffer</li>
-</ul>`, p );
+                if( usingWebGPU )
+                {
+                    makeParagraph( `For <span class="text-destructive font-semibold">compute</span> shaders:`, p );
+                    makeParagraph( `<ul style="margin-block:0">
+        <li><span class="text-destructive font-semibold">#workgroup_count ENTRYPOINT X Y Z</span> for specifying how many workgroups should be dispatched for an entrypoint</li>
+        <li><span class="text-destructive font-semibold">#dispatch_once ENTRYPOINT</span> for initialization purposes, ensuring the entrypoint is dispatched only once</li>
+        <li><span class="text-destructive font-semibold">#storage NAME TYPE</span> for declaring a storage buffer</li>
+    </ul>`, p );
+                }
 
                 p.addTitle( "Examples" );
                 makeParagraph( `<a href="/?shader=68b8931090e336e8a1ad" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Custom Uniforms</a>`, p);
                 makeParagraph( `<a href="/?shader=68c449875d3a5535bba0" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Texture Buffer pass</a>`, p);
-                makeParagraph( `<a href="/?shader=68dac43a64cff0f5fa9d" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Simple Compute Pass</a>`, p);
-                makeParagraph( `<a href="/?shader=68da7c00ef76c57eb056" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Compute Storage usage</a>`, p);
+
+                if( usingWebGPU )
+                {
+                    makeParagraph( `<a href="/?shader=68dac43a64cff0f5fa9d" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Simple Compute Pass</a>`, p);
+                    makeParagraph( `<a href="/?shader=68da7c00ef76c57eb056" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Compute Storage usage</a>`, p);
+                }
 
                 const pass = ShaderHub.currentPass;
                 if( pass )
@@ -2265,12 +2269,45 @@ export const ui = {
 
                     const code = pass.codeContent ?? "";
                     const lines = code.replaceAll( "    ", "&emsp;" ).split( "\n" ).map( l => `<span>${ l }</span>` )
-                    makeParagraph( lines.join( "" ), p, "flex flex-col p-4 text-muted-foreground" );
+                    makeParagraph( lines.join( "" ), p, "flex flex-col p-4 text-muted-foreground select-text" );
                 }
 
             }, { modal: false, size: [ "700px", "min(calc(100% - 32px), 900px)" ] } );
 
-        }, { icon: "CircleQuestionMark", title: "Quick Help", tooltip: true, buttonClass: "ghost" } );
+        };
+
+        /*
+            More options
+        */
+
+        const moreButton = customTabInfoButtonsPanel.addButton( null, "MoreButton", async () => {
+            
+            LX.addDropdownMenu( moreButton.root, [
+                {
+                    name: "Graphics",
+                    icon: 'Sparkle',
+                    submenu: [
+                        { name: "WebGPU", callback: () => {} },
+                        { name: "WebGL", callback: () => {} }
+                    ]
+                },
+                null,
+                {
+                    name: "Templates",
+                    icon: 'FolderCode',
+                    submenu: [
+                        { name: "Default", callback: () => {} },
+                        { name: "Texture", callback: () => {} }
+                    ]
+                },
+                {
+                    name: "Quick Help",
+                    icon: 'CircleQuestionMark',
+                    callback: () => openQuickHelp()
+                }
+            ], { side: "top", align: "start" });
+
+        }, { icon: "EllipsisVertical", title: "More", tooltip: true, buttonClass: "ghost" } );
 
         /*
             Custom Uniforms info
