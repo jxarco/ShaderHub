@@ -1,5 +1,5 @@
-import * as Constants from "../constants.js";
-import { Shader, ShaderPass } from "./shader.js";
+import * as Constants from '../constants.js';
+import { Shader, ShaderPass } from './shader.js';
 
 class GLShaderPass extends ShaderPass
 {
@@ -12,15 +12,15 @@ class GLShaderPass extends ShaderPass
 
     async execute( renderer )
     {
-        if( this.type === "common" )
+        if ( this.type === 'common' )
         {
             return;
         }
 
-        if( this.mustCompile || !this.program )
+        if ( this.mustCompile || !this.program )
         {
             const r = await this.compile( renderer );
-            if( r !== Constants.WEBGPU_OK )
+            if ( r !== Constants.WEBGPU_OK )
             {
                 return;
             }
@@ -28,7 +28,7 @@ class GLShaderPass extends ShaderPass
 
         const gl = renderer.gl;
 
-        if( this.type === "image" )
+        if ( this.type === 'image' )
         {
             // default swapchain
             gl.bindFramebuffer( gl.FRAMEBUFFER, null );
@@ -43,10 +43,10 @@ class GLShaderPass extends ShaderPass
             for ( let i = 0; i < this.channelTextures.length; i++ )
             {
                 const channel = this.channels[i];
-                if( !channel ) continue;
+                if ( !channel ) continue;
                 const name = channel.id;
                 let texture = this.channelTextures[i];
-                if( texture.constructor === Array )
+                if ( texture.constructor === Array )
                 {
                     texture = texture[this.frameCount % 2].texture;
                 }
@@ -58,8 +58,8 @@ class GLShaderPass extends ShaderPass
             gl.bindBuffer( gl.ARRAY_BUFFER, renderer.fullscreenVBO );
             gl.enableVertexAttribArray( 0 );
             gl.vertexAttribPointer(
-                0,          // location
-                2,          // vec2
+                0, // location
+                2, // vec2
                 gl.FLOAT,
                 false,
                 0,
@@ -70,9 +70,9 @@ class GLShaderPass extends ShaderPass
 
             this.frameCount++;
         }
-        else if( this.type === "buffer" )
+        else if ( this.type === 'buffer' )
         {
-            if( !this.textures[ 0 ] || !this.textures[ 1 ] )
+            if ( !this.textures[0] || !this.textures[1] )
             {
                 return;
             }
@@ -90,10 +90,10 @@ class GLShaderPass extends ShaderPass
             for ( let i = 0; i < this.channelTextures.length; i++ )
             {
                 const channel = this.channels[i];
-                if( !channel ) continue;
+                if ( !channel ) continue;
                 const name = channel.id;
                 let texture = this.channelTextures[i];
-                if( texture.constructor === Array )
+                if ( texture.constructor === Array )
                 {
                     texture = texture[this.frameCount % 2].texture;
                 }
@@ -105,8 +105,8 @@ class GLShaderPass extends ShaderPass
             gl.bindBuffer( gl.ARRAY_BUFFER, renderer.fullscreenVBO );
             gl.enableVertexAttribArray( 0 );
             gl.vertexAttribPointer(
-                0,          // location
-                2,          // vec2
+                0, // location
+                2, // vec2
                 gl.FLOAT,
                 false,
                 0,
@@ -136,11 +136,11 @@ class GLShaderPass extends ShaderPass
             const log = err
                 .replace( '\x00', '' )
                 .split( '\n' )
-                .map( line => line.trim() )
+                .map( ( line ) => line.trim() )
                 .filter( Boolean )
-                .map( line => {
+                .map( ( line ) => {
                     // Attempt to parse line number
-                    const match = line.match(/0:(\d+):\s*(.*)/);
+                    const match = line.match( /0:(\d+):\s*(.*)/ );
                     if ( match )
                     {
                         const lineNum = parseInt( match[1], 10 );
@@ -160,7 +160,7 @@ class GLShaderPass extends ShaderPass
     async createProgram( gl )
     {
         const result = await this.validate();
-        if( !result.valid )
+        if ( !result.valid )
         {
             return result;
         }
@@ -200,7 +200,7 @@ class GLShaderPass extends ShaderPass
             ...this.defaultBindings,
             ...this.customBindings,
             ...this.textureBindings
-        }
+        };
 
         for ( const name in bindings )
         {
@@ -216,8 +216,8 @@ class GLShaderPass extends ShaderPass
         const gl = renderer.gl;
 
         this.defines = {
-            "SCREEN_WIDTH": this.resolution[ 0 ],
-            "SCREEN_HEIGHT": this.resolution[ 1 ],
+            'SCREEN_WIDTH': this.resolution[0],
+            'SCREEN_HEIGHT': this.resolution[1]
         };
 
         const program = await this.createProgram( gl );
@@ -229,12 +229,12 @@ class GLShaderPass extends ShaderPass
 
         // Cache locations (minimal for now)
         this.attribs = {
-            position: gl.getAttribLocation( program, 'a_position' ),
+            position: gl.getAttribLocation( program, 'a_position' )
         };
 
-        this.program        = program;
-        this.frameCount     = 0;
-        this.mustCompile    = false;
+        this.program = program;
+        this.frameCount = 0;
+        this.mustCompile = false;
 
         return Constants.WEBGL_OK;
     }
@@ -244,16 +244,16 @@ class GLShaderPass extends ShaderPass
         const r = this.getShaderCode( true, entryName, entryCode );
 
         // Close all toasts
-        document.querySelectorAll( ".lextoast" ).forEach( t => t.close() );
+        document.querySelectorAll( '.lextoast' ).forEach( ( t ) => t.close() );
 
         const gl = this.renderer.gl;
         const vs = this.compileShaderCode( gl, gl.VERTEX_SHADER, r.vs_code );
         const fs = this.compileShaderCode( gl, gl.FRAGMENT_SHADER, r.fs_code );
         const errorLog = [ ...vs.log, ...fs.log ];
 
-        if( errorLog.length > 0 )
+        if ( errorLog.length > 0 )
         {
-            console.log( entryCode ?? "" );
+            console.log( entryCode ?? '' );
             return { valid: false, code: r.fs_code, messages: errorLog }; // only fs is important log-wise
         }
 
@@ -263,20 +263,20 @@ class GLShaderPass extends ShaderPass
     getShaderCode( includeBindings = true, entryName, entryCode )
     {
         const templateCodeLines = [ ...GLShader.RENDER_SHADER_TEMPLATE ];
-        const shaderLines       = [ ...( entryCode ? entryCode.split( "\n" ) : this.codeLines ) ];
-        const defaultBindings   = {};
-        const customBindings    = {};
-        const textureBindings   = {};
-        const samplerBindings   = {};
+        const shaderLines = [ ...( entryCode ? entryCode.split( '\n' ) : this.codeLines ) ];
+        const defaultBindings = {};
+        const customBindings = {};
+        const textureBindings = {};
+        const samplerBindings = {};
 
         // Flip Y or not the shader if it's a render target
         {
-            const flipYIndex = templateCodeLines.indexOf( "$vs_flip_y" );
-            if( flipYIndex > -1 )
+            const flipYIndex = templateCodeLines.indexOf( '$vs_flip_y' );
+            if ( flipYIndex > -1 )
             {
                 const utils = [
                     this.type === 'buffer' ? `  v_uv.y = 1.0 - v_uv.y;` : ``
-                ]
+                ];
                 templateCodeLines.splice( flipYIndex, 1, ...utils );
             }
         }
@@ -284,28 +284,28 @@ class GLShaderPass extends ShaderPass
         // Add shader utils depending on bind group
         {
             const features = this.shader.getFeatures();
-            const glslUtilsIndex = templateCodeLines.indexOf( "$glsl_utils" );
-            if( glslUtilsIndex > -1 )
+            const glslUtilsIndex = templateCodeLines.indexOf( '$glsl_utils' );
+            if ( glslUtilsIndex > -1 )
             {
                 const utils = [
-                    ...( features.includes( "keyboard" ) ? GLShader.GLSL_KEYBOARD_UTILS : [] ),
-                ]
+                    ...( features.includes( 'keyboard' ) ? GLShader.GLSL_KEYBOARD_UTILS : [] )
+                ];
                 templateCodeLines.splice( glslUtilsIndex, 1, ...utils );
             }
         }
 
         // Add common block
         {
-            const commonPass = this.shader.passes.find( p => p.type === "common" );
+            const commonPass = this.shader.passes.find( ( p ) => p.type === 'common' );
             const allCommon = commonPass?.codeLines ?? [];
-            const commonIndex = templateCodeLines.indexOf( "$common" );
+            const commonIndex = templateCodeLines.indexOf( '$common' );
             console.assert( commonIndex > -1 );
             templateCodeLines.splice( commonIndex, 1, ...allCommon );
         }
 
         // Add main lines
         {
-            const mainImageIndex = templateCodeLines.indexOf( "$main_entry" );
+            const mainImageIndex = templateCodeLines.indexOf( '$main_entry' );
             console.assert( mainImageIndex > -1 );
             templateCodeLines.splice( mainImageIndex, 1, ...shaderLines );
         }
@@ -315,7 +315,7 @@ class GLShaderPass extends ShaderPass
         {
             this._pLine = 0;
 
-            while( this._pLine < templateCodeLines.length )
+            while ( this._pLine < templateCodeLines.length )
             {
                 this._parseShaderLine( templateCodeLines );
             }
@@ -323,69 +323,69 @@ class GLShaderPass extends ShaderPass
             delete this._pLine;
         }
 
-        const noBindingsShaderCode = templateCodeLines.join( "\n" );
+        const noBindingsShaderCode = templateCodeLines.join( '\n' );
 
-        if( includeBindings )
+        if ( includeBindings )
         {
             let bindingIndex = 0;
 
             // Default Uniform bindings
             {
-                const defaultBindingsIndex = templateCodeLines.indexOf( "$default_bindings" );
+                const defaultBindingsIndex = templateCodeLines.indexOf( '$default_bindings' );
                 console.assert( defaultBindingsIndex > -1 );
                 templateCodeLines.splice( defaultBindingsIndex, 1, ...Constants.DEFAULT_UNIFORMS_LIST.map( ( u, index ) => {
-                    if( u.skipBindings ?? false ) return;
-                    if( !this.isBindingUsed( u.name, noBindingsShaderCode ) ) return;
+                    if ( u.skipBindings ?? false ) return;
+                    if ( !this.isBindingUsed( u.name, noBindingsShaderCode ) ) return;
                     const binding = bindingIndex++;
-                    defaultBindings[ u.name ] = binding;
-                    const type = u.type[ this.renderer.backend ] ?? "float";
-                    return `uniform ${ type } ${ u.name };`;
-                } ).filter( u => u !== undefined ) );
+                    defaultBindings[u.name] = binding;
+                    const type = u.type[this.renderer.backend] ?? 'float';
+                    return `uniform ${type} ${u.name};`;
+                } ).filter( ( u ) => u !== undefined ) );
             }
 
             // Custom Uniform bindings
             {
-                const customBindingsIndex = templateCodeLines.indexOf( "$custom_bindings" );
+                const customBindingsIndex = templateCodeLines.indexOf( '$custom_bindings' );
                 console.assert( customBindingsIndex > -1 );
                 templateCodeLines.splice( customBindingsIndex, 1, ...this.uniforms.map( ( u, index ) => {
-                    if( !u ) return;
-                    if( !this.isBindingUsed( u.name, noBindingsShaderCode ) ) return;
+                    if ( !u ) return;
+                    if ( !this.isBindingUsed( u.name, noBindingsShaderCode ) ) return;
                     const binding = bindingIndex++;
-                    customBindings[ u.name ] = binding;
-                    const type = Constants.WGSL_TO_GLSL[u.type[ this.renderer.backend ] ?? "f32"];
-                    return `uniform ${ type } ${ u.name };`;
-                } ).filter( u => u !== undefined ) );
+                    customBindings[u.name] = binding;
+                    const type = Constants.WGSL_TO_GLSL[u.type[this.renderer.backend] ?? 'f32'];
+                    return `uniform ${type} ${u.name};`;
+                } ).filter( ( u ) => u !== undefined ) );
             }
 
             // Process texture bindings
             {
-                const textureBindingsIndex = templateCodeLines.indexOf( "$texture_bindings" );
+                const textureBindingsIndex = templateCodeLines.indexOf( '$texture_bindings' );
                 console.assert( textureBindingsIndex > -1 );
                 const bindings = this.channels.map( ( channel, index ) => {
-                    if( !channel ) return;
-                    const channelIndexName = `iChannel${ index }`;
-                    if( !this.isBindingUsed( channelIndexName, noBindingsShaderCode ) ) return;
+                    if ( !channel ) return;
+                    const channelIndexName = `iChannel${index}`;
+                    if ( !this.isBindingUsed( channelIndexName, noBindingsShaderCode ) ) return;
                     const binding = bindingIndex++;
-                    textureBindings[ channel.id ] = binding;
-                    const texture = this.channelTextures[ index ];
-                    return `uniform ${ texture.depthOrArrayLayers > 1 ? "samplerCube" : "sampler2D" } ${ channelIndexName };`;
-                } ).filter( u => u !== undefined );
+                    textureBindings[channel.id] = binding;
+                    const texture = this.channelTextures[index];
+                    return `uniform ${texture.depthOrArrayLayers > 1 ? 'samplerCube' : 'sampler2D'} ${channelIndexName};`;
+                } ).filter( ( u ) => u !== undefined );
                 templateCodeLines.splice( textureBindingsIndex, 1, ...bindings );
             }
         }
 
-        const code = templateCodeLines.join( "\n" );
+        const code = templateCodeLines.join( '\n' );
         const codes = code.split( '$fs$' );
 
         const shaderResult = {
             code,
-            vs_code: codes[ 0 ].trim(),
-            fs_code: codes[ 1 ].trim(),
+            vs_code: codes[0].trim(),
+            fs_code: codes[1].trim(),
             defaultBindings,
             customBindings,
             textureBindings,
             samplerBindings,
-            executeOnce: this.executeOnce,
+            executeOnce: this.executeOnce
         };
 
         // delete tmp context
@@ -396,8 +396,10 @@ class GLShaderPass extends ShaderPass
 
     updateUniforms()
     {
-        if( this.uniforms.length === 0 )
+        if ( this.uniforms.length === 0 )
+        {
             return;
+        }
 
         this.uniforms.map( ( u, index ) => {
             this.setUniform( null, u.name, u.value );
@@ -408,16 +410,16 @@ class GLShaderPass extends ShaderPass
 
     setUniform( gl, name, value )
     {
-        if( this.type === "common" ) return;
+        if ( this.type === 'common' ) return;
 
-        const loc = this.uniformLocations[ name ];
+        const loc = this.uniformLocations[name];
         if ( !loc ) return;
 
         gl = gl ?? this.renderer.gl;
 
         gl.useProgram( this.program );
 
-        if ( typeof value === "number" ) gl.uniform1f( loc, value );
+        if ( typeof value === 'number' ) gl.uniform1f( loc, value );
         else if ( value.length === 2 ) gl.uniform2fv( loc, value );
         else if ( value.length === 3 ) gl.uniform3fv( loc, value );
         else if ( value.length === 4 ) gl.uniform4fv( loc, value );
@@ -433,18 +435,20 @@ class GLShader extends Shader
 
     static GetUniformSize = function( type )
     {
-        if (type === "float" || type === "int" || type === "uint" || type === "bool" || type.startsWith("sampler")) return 4;
+        if ( type === 'float' || type === 'int' || type === 'uint' || type === 'bool' || type.startsWith( 'sampler' ) ) return 4;
 
-        if (type.includes("vec2")) return 8;
-        if (type.includes("vec3")) return 12;
-        if (type.includes("vec4")) return 16;
+        if ( type.includes( 'vec2' ) ) return 8;
+        if ( type.includes( 'vec3' ) ) return 12;
+        if ( type.includes( 'vec4' ) ) return 16;
 
         // matCxR
-        if (type.startsWith("mat")) {
-            const match = type.match(/mat(\d)(?:x(\d))?/);
-            if (match) {
-                const cols = parseInt(match[1]);
-                const rows = match[2] ? parseInt(match[2]) : cols; // mat3 = mat3x3
+        if ( type.startsWith( 'mat' ) )
+        {
+            const match = type.match( /mat(\d)(?:x(\d))?/ );
+            if ( match )
+            {
+                const cols = parseInt( match[1] );
+                const rows = match[2] ? parseInt( match[2] ) : cols; // mat3 = mat3x3
                 // In std140: vec2 columns = 8 bytes, vec3/vec4 columns = 16 bytes (padded)
                 const colSize = rows === 2 ? 8 : 16;
                 return cols * colSize;
@@ -452,47 +456,47 @@ class GLShader extends Shader
         }
 
         return 0;
-    }
+    };
 
     static GetUniformAlign = function( type )
     {
-        if (type === "float" || type === "int" || type === "uint" || type === "bool") return 4;
-        if (type.startsWith("sampler")) return 4;
-        if (type.includes("vec2")) return 8;
-        if (type.includes("vec3") || type.includes("vec4") || type.startsWith("mat")) return 16;
+        if ( type === 'float' || type === 'int' || type === 'uint' || type === 'bool' ) return 4;
+        if ( type.startsWith( 'sampler' ) ) return 4;
+        if ( type.includes( 'vec2' ) ) return 8;
+        if ( type.includes( 'vec3' ) || type.includes( 'vec4' ) || type.startsWith( 'mat' ) ) return 16;
         return 0;
-    }
+    };
 
     getDefaultCode( pass )
     {
-        return ( pass.type === "buffer" ? GLShader.RENDER_BUFFER_TEMPLATE : GLShader.RENDER_COMMON_TEMPLATE );
+        return ( pass.type === 'buffer' ? GLShader.RENDER_BUFFER_TEMPLATE : GLShader.RENDER_COMMON_TEMPLATE );
     }
 
     getFeatures()
     {
         const features = [];
 
-        const buffers = this.passes.filter( p => p.type === "buffer" );
-        if( buffers.length ) features.push( "multipass" );
+        const buffers = this.passes.filter( ( p ) => p.type === 'buffer' );
+        if ( buffers.length ) features.push( 'multipass' );
 
-        this.passes.some( p => {
-            if( p.channels.filter( u => u?.id === "Keyboard" ).length )
+        this.passes.some( ( p ) => {
+            if ( p.channels.filter( ( u ) => u?.id === 'Keyboard' ).length )
             {
-                features.push( "keyboard" );
+                features.push( 'keyboard' );
                 return true;
             }
-            if( p.channels.filter( u => u?.category === "sound" ).length )
+            if ( p.channels.filter( ( u ) => u?.category === 'sound' ).length )
             {
-                features.push( "sound" );
+                features.push( 'sound' );
                 return true;
             }
-        } )
+        } );
 
-        return features.join( "," );
+        return features.join( ',' );
     }
 }
 
-GLShader.GLSL_KEYBOARD_UTILS = ``.split( "\n" );
+GLShader.GLSL_KEYBOARD_UTILS = ``.split( '\n' );
 
 GLShader.COMMON = ``;
 
@@ -507,7 +511,7 @@ void main()
     gl_Position = vec4(a_position, 0.0, 1.0);
     v_uv = a_position * 0.5 + 0.5;
 $vs_flip_y
-}`.split( "\n" );
+}`.split( '\n' );
 
 GLShader.RENDER_FS_SHADER_TEMPLATE = `$fs$#version 300 es
 precision highp float;
@@ -528,7 +532,7 @@ void main()
 {
     vec2 fragCoord = v_uv * iResolution + vec2(0.5);
     fragColor = mainImage(v_uv, fragCoord);
-}`.split( "\n" );
+}`.split( '\n' );
 
 GLShader.RENDER_SHADER_TEMPLATE = [ ...GLShader.RENDER_VS_SHADER_TEMPLATE, ...GLShader.RENDER_FS_SHADER_TEMPLATE ];
 
@@ -541,16 +545,16 @@ GLShader.RENDER_MAIN_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
 
     // Output to screen
     return vec4(color, 1.0);
-}`.split( "\n" );
+}`.split( '\n' );
 
 GLShader.RENDER_COMMON_TEMPLATE = `float someFunc(float a, float b) {
     return a + b;
-}`.split( "\n" );
+}`.split( '\n' );
 
 GLShader.RENDER_BUFFER_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
     // Output to screen
     return vec4(0.0, 0.0, 1.0, 1.0);
-}`.split( "\n" );
+}`.split( '\n' );
 
 /*
     End of Shader code

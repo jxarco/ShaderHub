@@ -23,7 +23,7 @@ class FPSCounter
     {
         this.frame++;
 
-        if( ( time - this.to ) > 500.0 )
+        if ( ( time - this.to ) > 500.0 )
         {
             this.fps = 1000.0 * this.frame / ( time - this.to );
             this.frame = 0;

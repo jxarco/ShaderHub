@@ -1,12 +1,12 @@
 export function isMobile()
 {
-    return ( navigator.userAgent.match( /Android/i ) ||
-        navigator.userAgent.match( /webOS/i ) ||
-        navigator.userAgent.match( /iPhone/i ) ||
-        navigator.userAgent.match( /iPad/i ) ||
-        navigator.userAgent.match( /iPod/i ) ||
-        navigator.userAgent.match( /BlackBerry/i ) ||
-        navigator.userAgent.match( /Windows Phone/i ) );
+    return ( navigator.userAgent.match( /Android/i )
+        || navigator.userAgent.match( /webOS/i )
+        || navigator.userAgent.match( /iPhone/i )
+        || navigator.userAgent.match( /iPad/i )
+        || navigator.userAgent.match( /iPod/i )
+        || navigator.userAgent.match( /BlackBerry/i )
+        || navigator.userAgent.match( /Windows Phone/i ) );
 }
 
 export function capitalizeFirstLetter( val )
@@ -16,74 +16,73 @@ export function capitalizeFirstLetter( val )
 
 export function toESDate( date )
 {
-    const ts = date.substring( 0, 10 ).split("-");
-    return [ ts[ 2 ], ts[ 1 ], ts[ 0 ] ].join("-");
+    const ts = date.substring( 0, 10 ).split( '-' );
+    return [ ts[2], ts[1], ts[0] ].join( '-' );
 }
 
 export async function imageToDataURL( fs, url )
 {
     const r = await fs.requestFile( url );
-    const blob = new Blob( [ r ], { type: "image/png" } );
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result)
-        reader.onerror = reject
-        reader.readAsDataURL( blob )
-    });
+    const blob = new Blob( [ r ], { type: 'image/png' } );
+    return new Promise( ( resolve, reject ) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve( reader.result );
+        reader.onerror = reject;
+        reader.readAsDataURL( blob );
+    } );
 }
 
 export function getDate()
 {
     const date = new Date();
-    const day = `${ date.getDate() }`;
-    const month = `${ date.getMonth() + 1 }`;
-    const year = `${ date.getFullYear() }`;
-    return `${ "0".repeat( 2 - day.length ) }${ day }-${ "0".repeat( 2 - month.length ) }${ month }-${ year }`;
+    const day = `${date.getDate()}`;
+    const month = `${date.getMonth() + 1}`;
+    const year = `${date.getFullYear()}`;
+    return `${'0'.repeat( 2 - day.length )}${day}-${'0'.repeat( 2 - month.length )}${month}-${year}`;
 }
 
-export const formatMD = ( text ) =>
-{
+export const formatMD = ( text ) => {
     return text.substring( 0, 512 ) // CAP TO 512 chars
-        .replace( /&/g, "&amp;" ).replace( /</g, "&lt;" ).replace( />/g, "&gt;" )
+        .replace( /&/g, '&amp;' ).replace( /</g, '&lt;' ).replace( />/g, '&gt;' )
         .replace( /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" class="hub-link" rel="noopener noreferrer">$1</a>' ) // Links: [text](url)
-        .replace( /\*\*(.*?)\*\*/g, "<b>$1</b>" ) // Bold: **text**
+        .replace( /\*\*(.*?)\*\*/g, '<b>$1</b>' ) // Bold: **text**
         .replace( /(^|[^*])\*(?!\*)([^*]+)\*(?!\*)/g, '$1<i>$2</i>' ) // Italic: *text*
-        .replace( /~~(.*?)~~/g, "<u>$1</u>" ) // Underline: ~~text~~
-        .replace( /\n/g, "<br>" ) // Line breaks: \n
+        .replace( /~~(.*?)~~/g, '<u>$1</u>' ) // Underline: ~~text~~
+        .replace( /\n/g, '<br>' ) // Line breaks: \n
         .trim();
 };
 
-export const unformatMD = ( html ) =>
-{
-    return html.replace( /&lt;/g, "<" ).replace( /&gt;/g, ">" ).replace( /&amp;/g, "&" ) // Decode HTML chars
-        .replace( /<br\s*\/?>/gi, "\n" )  // Line breaks
-        .replace( /<a\s+[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, "[$2]($1)" ) // Links
-        .replace( /<b>(.*?)<\/b>/gi, "**$1**" ) // Bold
-        .replace( /<i>(.*?)<\/i>/gi, "*$1*" ) // Italic
-        .replace( /<u>(.*?)<\/u>/gi, "~~$1~~" ) // Underline
+export const unformatMD = ( html ) => {
+    return html.replace( /&lt;/g, '<' ).replace( /&gt;/g, '>' ).replace( /&amp;/g, '&' ) // Decode HTML chars
+        .replace( /<br\s*\/?>/gi, '\n' ) // Line breaks
+        .replace( /<a\s+[^>]*href=["']([^"']+)["'][^>]*>(.*?)<\/a>/gi, '[$2]($1)' ) // Links
+        .replace( /<b>(.*?)<\/b>/gi, '**$1**' ) // Bold
+        .replace( /<i>(.*?)<\/i>/gi, '*$1*' ) // Italic
+        .replace( /<u>(.*?)<\/u>/gi, '~~$1~~' ) // Underline
         .trim();
 };
 
 const CODE2ASCII = {};
 
-for( let i = 0; i < 26;  i++ )   CODE2ASCII["Key" + String.fromCharCode(65 + i)] = 65 + i;  // Letters A–Z → ASCII uppercase
-for( let i = 0; i < 10;  i++ )   CODE2ASCII["Digit" + i] = 48 + i;                          // Digits 0–9 → ASCII '0'–'9'
-for( let i = 0; i < 10;  i++ )   CODE2ASCII["Numpad" + i] = 48 + i;                         // Numpad digits. same as ASCII '0'–'9'
-for( let i = 1; i <= 12; i++ )   CODE2ASCII["F" + i] = 111 + i;                            // Function keys → assign numbers starting from 112 (legacy F1..F12 codes)
+for ( let i = 0; i < 26; i++ ) CODE2ASCII['Key' + String.fromCharCode( 65 + i )] = 65 + i; // Letters A–Z → ASCII uppercase
+for ( let i = 0; i < 10; i++ ) CODE2ASCII['Digit' + i] = 48 + i; // Digits 0–9 → ASCII '0'–'9'
+for ( let i = 0; i < 10; i++ ) CODE2ASCII['Numpad' + i] = 48 + i; // Numpad digits. same as ASCII '0'–'9'
+for ( let i = 1; i <= 12; i++ ) CODE2ASCII['F' + i] = 111 + i; // Function keys → assign numbers starting from 112 (legacy F1..F12 codes)
 
 // Common symbols (matching US layout ASCII)
-Object.assign(CODE2ASCII, { "Space": 32, "Enter": 13, "Tab": 9, "Backspace": 8, "Escape": 27, "Minus": 45, "Equal": 61, "BracketLeft": 91, "BracketRight": 93, "Backslash": 92, "Semicolon": 59, "Quote": 39, "Backquote": 96, "Comma": 44, "Period": 46, "Slash": 47 });
+Object.assign( CODE2ASCII, { 'Space': 32, 'Enter': 13, 'Tab': 9, 'Backspace': 8, 'Escape': 27, 'Minus': 45, 'Equal': 61, 'BracketLeft': 91, 'BracketRight': 93, 'Backslash': 92, 'Semicolon': 59,
+    'Quote': 39, 'Backquote': 96, 'Comma': 44, 'Period': 46, 'Slash': 47 } );
 // Arrows and controls (matching old keyCodes)
-Object.assign(CODE2ASCII, { "ArrowLeft": 37, "ArrowUp": 38, "ArrowRight": 39, "ArrowDown": 40, "Insert": 45, "Delete": 46, "Home": 36, "End": 35, "PageUp": 33, "PageDown": 34 });
+Object.assign( CODE2ASCII, { 'ArrowLeft': 37, 'ArrowUp': 38, 'ArrowRight': 39, 'ArrowDown': 40, 'Insert': 45, 'Delete': 46, 'Home': 36, 'End': 35, 'PageUp': 33, 'PageDown': 34 } );
 
 export function code2ascii( c )
 {
-    return CODE2ASCII[ c ];
+    return CODE2ASCII[c];
 }
 
 export function toast( title, text, timeout )
 {
-    LX.toast( title, text, { position: "top-right", timeout } );
+    LX.toast( title, text, { position: 'top-right', timeout } );
 }
 
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -91,7 +90,7 @@ const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 // Convert hex string to base62
 export function encodeUID( hex )
 {
-    let num = BigInt('0x' + hex); // convert hex to bigint
+    let num = BigInt( '0x' + hex ); // convert hex to bigint
     let str = '';
     while ( num > 0 )
     {
@@ -115,7 +114,7 @@ export function decodeUID( base62 )
 
 export function parsePathUid( param = '' )
 {
-    let encodedUid = window.location.pathname.split( `/${ param }/` )[1];
+    let encodedUid = window.location.pathname.split( `/${param}/` )[1];
 
     // Fallback: if no UID in path, check query parameter
     if ( !encodedUid || encodedUid === '' )

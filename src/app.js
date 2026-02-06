@@ -1,42 +1,41 @@
 import { LX } from 'lexgui';
-import * as Constants from "./constants.js";
-import * as Utils from './utils.js';
-import { FS } from './fs.js';
-import { ui } from './ui.js';
-import { GPURenderer } from './graphics/gpu_renderer.js';
-import { GLRenderer } from './graphics/gl_renderer.js';
-import { Shader, ShaderPass } from './graphics/shader.js';
-import { GLShader, GLShaderPass } from './graphics/gl_shader.js';
+import * as Constants from './constants.js';
 import { FPSCounter } from './fps.js';
+import { FS } from './fs.js';
+import { GLRenderer } from './graphics/gl_renderer.js';
+import { GLShader, GLShaderPass } from './graphics/gl_shader.js';
+import { GPURenderer } from './graphics/gpu_renderer.js';
+import { Shader, ShaderPass } from './graphics/shader.js';
+import { ui } from './ui.js';
+import * as Utils from './utils.js';
 
-const ERROR_CODE_DEFAULT    = 0;
-const ERROR_CODE_SUCCESS    = 1;
-const ERROR_CODE_ERROR      = 2;
+const ERROR_CODE_DEFAULT = 0;
+const ERROR_CODE_SUCCESS = 1;
+const ERROR_CODE_ERROR = 2;
 
-const fs =      new FS();
-const fps =     new FPSCounter();
-const Query =   Appwrite.Query;
+const fs = new FS();
+const fps = new FPSCounter();
+const Query = Appwrite.Query;
 
-const ShaderHub =
-{
-    version:            "1.4",
+const ShaderHub = {
+    version: '1.4',
 
-    keyState:           new Map(),
-    keyToggleState:     new Map(),
-    keyPressed:         new Map(),
-    audioPlaying:       {},
-    mousePosition:      [ 0, 0 ],
-    lastMousePosition:  [ 0, 0 ],
+    keyState: new Map(),
+    keyToggleState: new Map(),
+    keyPressed: new Map(),
+    audioPlaying: {},
+    mousePosition: [ 0, 0 ],
+    lastMousePosition: [ 0, 0 ],
 
-    frameCount:         0,
-    lastTime:           0,
-    elapsedTime:        0,
-    capturer:           null,
-    generateKbTexture:  true,
-    timePaused:         false,
-    manualCompile:      false,
-    previewNamePrefix:  '_preview_',
-    imagesRootPath:     '/images/',
+    frameCount: 0,
+    lastTime: 0,
+    elapsedTime: 0,
+    capturer: null,
+    generateKbTexture: true,
+    timePaused: false,
+    manualCompile: false,
+    previewNamePrefix: '_preview_',
+    imagesRootPath: '/images/',
 
     async init()
     {
@@ -68,7 +67,7 @@ const ShaderHub =
 
         fps.count( now );
 
-        if( !this.timePaused )
+        if ( !this.timePaused )
         {
             this.renderer.updateFrame( this.timeDelta, this.elapsedTime, this.frameCount, this.shader );
 
@@ -76,21 +75,23 @@ const ShaderHub =
 
             this.frameCount++;
 
-            LX.emitSignal( "@elapsed-time", `${ this.elapsedTime.toFixed( 2 ) }s` );
-            LX.emitSignal( "@fps", `${ fps.get() } FPS` );
+            LX.emitSignal( '@elapsed-time', `${this.elapsedTime.toFixed( 2 )}s` );
+            LX.emitSignal( '@fps', `${fps.get()} FPS` );
         }
 
         this.renderer.updateResolution( this.resolutionX, this.resolutionY, this.shader );
 
         // Write mouse data
         {
-            const data =
-            [
-                this.mousePosition[ 0 ], this.mousePosition[ 1 ],           // current position when pressed
-                this.lastMousePosition[ 0 ], this.lastMousePosition[ 1 ],   // start position
-                this.lastMousePosition[ 0 ] - this.mousePosition[ 0 ], 
-                this.lastMousePosition[ 1 ] - this.mousePosition[ 1 ],      // delta position
-                this._mouseDown ?? -1, this._mousePressed ?? -1.0      // button clicks
+            const data = [
+                this.mousePosition[0],
+                this.mousePosition[1], // current position when pressed
+                this.lastMousePosition[0],
+                this.lastMousePosition[1], // start position
+                this.lastMousePosition[0] - this.mousePosition[0],
+                this.lastMousePosition[1] - this.mousePosition[1], // delta position
+                this._mouseDown ?? -1,
+                this._mousePressed ?? -1.0 // button clicks
             ];
 
             this.renderer.updateMouse( data );
@@ -98,53 +99,54 @@ const ShaderHub =
 
         this.lastTime = now;
 
-        for( let i = 0; i < this.shader.passes.length; ++i )
+        for ( let i = 0; i < this.shader.passes.length; ++i )
         {
             // Buffers and images draw
-            const pass = this.shader.passes[ i ];
-            if( pass.type === "common" ) continue;
+            const pass = this.shader.passes[i];
+            if ( pass.type === 'common' ) continue;
 
             // Fill buffers and textures for each pass channel
-            for( let c = 0; c < pass.channels?.length ?? 0; ++c )
+            for ( let c = 0; c < pass.channels?.length ?? 0; ++c )
             {
-                const channel = pass.channels[ c ];
-                if( !channel ) continue;
+                const channel = pass.channels[c];
+                if ( !channel ) continue;
                 const channelId = channel.id;
 
-                if( !this.renderer.gpuTextures[ channelId ] )
+                if ( !this.renderer.gpuTextures[channelId] )
                 {
-                    if( channelId === "Keyboard" )
+                    if ( channelId === 'Keyboard' )
                     {
                         await this.createKeyboardTexture( c );
                     }
-                    else if( channelId.startsWith( "Buffer" ) )
+                    else if ( channelId.startsWith( 'Buffer' ) )
                     {
-                        await this.loadBufferChannel( pass, channelId, c )
+                        await this.loadBufferChannel( pass, channelId, c );
                     }
-                    else // Texture, cubemap or sound
+                    // Texture, cubemap or sound
+                    else
                     {
                         await this.createTextureFromFile( channelId );
                     }
                 }
 
-                pass.setChannelTexture( c, this.renderer.gpuTextures[ channelId ] );
+                pass.setChannelTexture( c, this.renderer.gpuTextures[channelId] );
             }
 
-            if( pass.uniformsDirty )
+            if ( pass.uniformsDirty )
             {
                 pass.updateUniforms();
             }
 
-            if( !this._lastShaderCompilationWithErrors && !this._compilingShader )
+            if ( !this._lastShaderCompilationWithErrors && !this._compilingShader )
             {
                 await pass.execute( this.renderer );
             }
         }
 
-        if( this._anyKeyPressed )
+        if ( this._anyKeyPressed )
         {
             // event consumed, Clean input
-            for( const [ name, value ] of this.keyPressed )
+            for ( const [ name, value ] of this.keyPressed )
             {
                 this.keyPressed.set( name, false );
             }
@@ -154,21 +156,21 @@ const ShaderHub =
             this._anyKeyPressed = false;
         }
 
-        for( const idx in this.audioPlaying )
+        for ( const idx in this.audioPlaying )
         {
-            const audioData = this.audioPlaying[ idx ];
+            const audioData = this.audioPlaying[idx];
             const audio = audioData.audio;
             const id = audio.id ?? '';
-            if( audio.paused ) continue;
+            if ( audio.paused ) continue;
 
-            for( let i = 0; i < this.shader.passes.length; ++i )
+            for ( let i = 0; i < this.shader.passes.length; ++i )
             {
                 // Buffers and images draw
-                const pass = this.shader.passes[ i ];
-                if( pass.type === "common" ) continue;
+                const pass = this.shader.passes[i];
+                if ( pass.type === 'common' ) continue;
 
-                const usedChannel = pass.channels.findIndex( c => c?.id === id );
-                if( usedChannel > -1 )
+                const usedChannel = pass.channels.findIndex( ( c ) => c?.id === id );
+                if ( usedChannel > -1 )
                 {
                     await this.createAudioTexture( null, id, audio.name );
                 }
@@ -177,13 +179,13 @@ const ShaderHub =
 
         this._mousePressed = undefined;
 
-        if( this.capturer )
+        if ( this.capturer )
         {
             this.capturer.capture( this.renderer.canvas );
 
             this.captureFrameCount++;
 
-            if( this.captureFrameCount == this.exportFramesCount )
+            if ( this.captureFrameCount == this.exportFramesCount )
             {
                 this.saveCapture();
             }
@@ -195,7 +197,7 @@ const ShaderHub =
     async onKeyDown( e )
     {
         this.keyState.set( Utils.code2ascii( e.code ), true );
-        if( this.generateKbTexture ) await this.createKeyboardTexture();
+        if ( this.generateKbTexture ) await this.createKeyboardTexture();
         this.generateKbTexture = false;
     },
 
@@ -224,7 +226,7 @@ const ShaderHub =
 
     async onMouseMove( x, y )
     {
-        if( this._mouseDown !== undefined )
+        if ( this._mouseDown !== undefined )
         {
             this.mousePosition = [ x, this.resolutionY - y ];
         }
@@ -236,7 +238,7 @@ const ShaderHub =
 
         this.renderer.updateResolution( xResolution, yResolution, this.shader );
 
-        LX.emitSignal( '@resolution', `${ xResolution }x${ yResolution }` );
+        LX.emitSignal( '@resolution', `${xResolution}x${yResolution}` );
 
         this.resolutionX = xResolution;
         this.resolutionY = yResolution;
@@ -252,15 +254,15 @@ const ShaderHub =
             e.preventDefault();
             e.stopPropagation();
             ui.editor.tabs.delete( name );
-            document.body.querySelectorAll( '.lextooltip' ).forEach( e => e.remove() );
+            document.body.querySelectorAll( '.lextooltip' ).forEach( ( e ) => e.remove() );
 
             // Destroy pass
             {
-                const passIndex = this.shader.passes.findIndex( p => p.name === name );
-                const pass = this.shader.passes[ passIndex ];
-                if( pass.type === 'buffer' )
+                const passIndex = this.shader.passes.findIndex( ( p ) => p.name === name );
+                const pass = this.shader.passes[passIndex];
+                if ( pass.type === 'buffer' )
                 {
-                    delete this.renderer.gpuTextures[ pass.name ];
+                    delete this.renderer.gpuTextures[pass.name];
                 }
 
                 this.shader.passes.splice( passIndex, 1 );
@@ -273,7 +275,7 @@ const ShaderHub =
         const ShaderClass = this.backend === 'webgpu' ? Shader : GLShader;
 
         // Prob. new shader
-        if( !this.shader.url )
+        if ( !this.shader.url )
         {
             const pass = {
                 name: 'MainImage',
@@ -281,48 +283,48 @@ const ShaderHub =
                 codeLines: ShaderClass.RENDER_MAIN_TEMPLATE,
                 resolutionX: this.resolutionX,
                 resolutionY: this.resolutionY
-            }
+            };
 
             const shaderPass = new ShaderPassClass( shader, this.renderer, pass );
             this.shader.passes.push( shaderPass );
 
             // Set code in the editor
-            ui.editor.addTab( pass.name, false, pass.name, { codeLines: pass.codeLines, language: "WGSL" } );
+            ui.editor.addTab( pass.name, false, pass.name, { codeLines: pass.codeLines, language: 'WGSL' } );
         }
         else
         {
-            const json = JSON.parse( await fs.requestFile( this.shader.url, "text" ) );
-            console.assert( json, "DB: No JSON Shader data available!" );
+            const json = JSON.parse( await fs.requestFile( this.shader.url, 'text' ) );
+            console.assert( json, 'DB: No JSON Shader data available!' );
 
             this.shader._json = LX.deepCopy( json );
 
-            for( const pass of json.passes ?? [] )
+            for ( const pass of json.passes ?? [] )
             {
                 pass.resolutionX = this.resolutionX;
                 pass.resolutionY = this.resolutionY;
 
                 pass.uniforms = pass.uniforms ?? [];
-                pass.uniforms.forEach( u => u.type = u.type ?? 'f32');
+                pass.uniforms.forEach( ( u ) => u.type = u.type ?? 'f32' );
 
                 // Push passes to the shader
                 const shaderPass = new ShaderPassClass( shader, this.renderer, pass );
-                if( pass.type === 'buffer' || pass.type === 'compute' )
+                if ( pass.type === 'buffer' || pass.type === 'compute' )
                 {
                     console.assert( shaderPass.textures, 'Buffer does not have render target textures' );
-                    this.renderer.gpuTextures[ pass.name ] = shaderPass.textures;
+                    this.renderer.gpuTextures[pass.name] = shaderPass.textures;
                 }
 
                 this.shader.passes.push( shaderPass );
 
                 // Set code in the editor
-                ui.editor.addTab( pass.name, false, pass.name, { codeLines: pass.codeLines, language: "WGSL" } );
+                ui.editor.addTab( pass.name, false, pass.name, { codeLines: pass.codeLines, language: 'WGSL' } );
 
-                if( pass.name !== "MainImage" )
+                if ( pass.name !== 'MainImage' )
                 {
-                    const closeIcon = LX.makeIcon( "X", { iconClass: "ml-2" } );
-                    LX.asTooltip( closeIcon, "Delete file" );
-                    closeIcon.addEventListener( "click", closeFn.bind( this, pass.name ) );
-                    ui.editor.tabs.tabDOMs[ pass.name ].appendChild( closeIcon );
+                    const closeIcon = LX.makeIcon( 'X', { iconClass: 'ml-2' } );
+                    LX.asTooltip( closeIcon, 'Delete file' );
+                    closeIcon.addEventListener( 'click', closeFn.bind( this, pass.name ) );
+                    ui.editor.tabs.tabDOMs[pass.name].appendChild( closeIcon );
                 }
             }
         }
@@ -331,12 +333,12 @@ const ShaderHub =
 
         // Get the total like count for the shader
         const shaderLikes = await fs.listDocuments( FS.INTERACTIONS_COLLECTION_ID, [
-            Query.equal( "type", "like" ),
-            Query.equal( "shader_id", this.shader.uid ?? "" )
+            Query.equal( 'type', 'like' ),
+            Query.equal( 'shader_id', this.shader.uid ?? '' )
         ] );
 
         // Check if the user already liked this shader
-        const shaderLikesByUser = shaderLikes.documents.filter( d => d['author_id'] === ( fs.user ? fs.getUserId() : '' ) );
+        const shaderLikesByUser = shaderLikes.documents.filter( ( d ) => d['author_id'] === ( fs.user ? fs.getUserId() : '' ) );
         const alreadyLiked = ( fs?.user && shaderLikesByUser.length > 0 ) ?? false;
         LX.emitSignal( '@on_like_changed', [ shaderLikes.total, alreadyLiked ] );
 
@@ -349,32 +351,32 @@ const ShaderHub =
         const userId = fs.getUserId();
 
         // Update user likes and interactions table
-        const users = await fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_id", userId ) ] );
-        const user = users?.documents[ 0 ];
+        const users = await fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_id', userId ) ] );
+        const user = users?.documents[0];
         console.assert( user );
-        const userLikes = user[ "liked_shaders" ];
+        const userLikes = user['liked_shaders'];
         const userLikeIndex = userLikes.indexOf( this.shader.uid );
-        const wasLiked = ( userLikeIndex !== -1 );
+        const wasLiked = userLikeIndex !== -1;
 
-        if( wasLiked )
+        if ( wasLiked )
         {
             userLikes.splice( userLikeIndex, 1 );
 
             // Search current interaction and remove it
             const doc = await fs.listDocuments( FS.INTERACTIONS_COLLECTION_ID, [
-                Query.equal( "type", "like" ),
-                Query.equal( "author_id", fs.getUserId() ),
-                Query.equal( "shader_id", this.shader.uid )
+                Query.equal( 'type', 'like' ),
+                Query.equal( 'author_id', fs.getUserId() ),
+                Query.equal( 'shader_id', this.shader.uid )
             ] );
 
-            if( doc.total === 0 )
+            if ( doc.total === 0 )
             {
-                console.warn( "Weird, no like interaction found to delete!" );
+                console.warn( 'Weird, no like interaction found to delete!' );
             }
             else
             {
-                const interaction = doc?.documents[ 0 ];
-                await fs.deleteDocument( FS.INTERACTIONS_COLLECTION_ID, interaction[ "$id" ] );
+                const interaction = doc?.documents[0];
+                await fs.deleteDocument( FS.INTERACTIONS_COLLECTION_ID, interaction['$id'] );
             }
         }
         else
@@ -383,29 +385,29 @@ const ShaderHub =
 
             // Add interaction
             await fs.createDocument( FS.INTERACTIONS_COLLECTION_ID, {
-                "type": "like",
-                "author_id": fs.getUserId(),
-                "shader_id": this.shader.uid,
+                'type': 'like',
+                'author_id': fs.getUserId(),
+                'shader_id': this.shader.uid
             } );
         }
 
         // Get the total like count for the shader
         const shaderLikes = await fs.listDocuments( FS.INTERACTIONS_COLLECTION_ID, [
-            Query.equal( "type", "like" ),
-            Query.equal( "shader_id", this.shader.uid )
+            Query.equal( 'type', 'like' ),
+            Query.equal( 'shader_id', this.shader.uid )
         ] );
 
         // save shader like-count
         await fs.updateDocument( FS.SHADERS_COLLECTION_ID, this.shader.uid, {
-            "like_count": shaderLikes.total
+            'like_count': shaderLikes.total
         } );
 
         // this is not the user id, it's the id of the user row in the users DB
-        await fs.updateDocument( FS.USERS_COLLECTION_ID, user[ "$id" ], {
-            "liked_shaders": userLikes
+        await fs.updateDocument( FS.USERS_COLLECTION_ID, user['$id'], {
+            'liked_shaders': userLikes
         } );
 
-        LX.emitSignal( "@on_like_changed", [ shaderLikes.total, !wasLiked ] );
+        LX.emitSignal( '@on_like_changed', [ shaderLikes.total, !wasLiked ] );
     },
 
     onShaderPassCreated( passType, passName )
@@ -421,29 +423,29 @@ const ShaderHub =
         } );
 
         const getNextBufferName = () => {
-            const usedNames = this.shader.passes.filter( p => ( p.type === "buffer" ) || ( p.type === "compute" ) ).map( p => p.name );
-            const possibleNames = ["BufferA", "BufferB", "BufferC", "BufferD"];
+            const usedNames = this.shader.passes.filter( ( p ) => ( p.type === 'buffer' ) || ( p.type === 'compute' ) ).map( ( p ) => p.name );
+            const possibleNames = [ 'BufferA', 'BufferB', 'BufferC', 'BufferD' ];
 
             // Find the first unused name
-            for( const name of possibleNames )
+            for ( const name of possibleNames )
             {
-                if( !usedNames.includes( name )) return name;
+                if ( !usedNames.includes( name ) ) return name;
             }
 
             // All used, should not happen due to prev checks
             return null;
-        }
+        };
 
-        if( passType === "buffer" || passType === "compute" )
+        if ( passType === 'buffer' || passType === 'compute' )
         {
             indexOffset = -2;
             passName = shaderPass.name = getNextBufferName();
             this.shader.passes.splice( this.shader.passes.length - 1, 0, shaderPass ); // Add before MainImage
 
-            console.assert( shaderPass.textures, "Buffer/Compute pass does not have render target textures" );
-            this.renderer.gpuTextures[ passName ] = shaderPass.textures;
+            console.assert( shaderPass.textures, 'Buffer/Compute pass does not have render target textures' );
+            this.renderer.gpuTextures[passName] = shaderPass.textures;
         }
-        else if( passType === "common" )
+        else if ( passType === 'common' )
         {
             indexOffset = -( this.shader.passes.length + 1 );
             this.shader.passes.splice( 0, 0, shaderPass ); // Add at the start
@@ -451,39 +453,37 @@ const ShaderHub =
 
         ui.editor.addTab( passName, true, passName, {
             indexOffset,
-            language: "WGSL",
+            language: 'WGSL',
             codeLines: shaderPass.codeLines
         } );
 
         // Wait for the tab to be created
         LX.doAsync( async () => {
-
-            const closeIcon = LX.makeIcon( "X", { iconClass: "ml-2" } );
-            LX.asTooltip( closeIcon, "Delete file" );
-            closeIcon.addEventListener( "click", (e) => {
+            const closeIcon = LX.makeIcon( 'X', { iconClass: 'ml-2' } );
+            LX.asTooltip( closeIcon, 'Delete file' );
+            closeIcon.addEventListener( 'click', ( e ) => {
                 e.preventDefault();
                 e.stopPropagation();
                 editor.tabs.delete( passName );
-                document.body.querySelectorAll( ".lextooltip" ).forEach( e => e.remove() );
+                document.body.querySelectorAll( '.lextooltip' ).forEach( ( e ) => e.remove() );
             } );
 
-            ui.editor.tabs.tabDOMs[ passName ].appendChild( closeIcon );
+            ui.editor.tabs.tabDOMs[passName].appendChild( closeIcon );
 
             this.onShaderPassSelected( passName );
 
             await this.compileShader( false, shaderPass );
-
         }, 10 );
     },
 
     async onShaderPassSelected( passName )
     {
-        this.currentPass = this.shader.passes.find( p => p.name === passName );
-        console.assert( this.currentPass, `Cannot find pass ${ passName }` );
+        this.currentPass = this.shader.passes.find( ( p ) => p.name === passName );
+        console.assert( this.currentPass, `Cannot find pass ${passName}` );
 
         await ui.updateShaderChannelsView();
 
-        ui.toggleCustomUniformsButton( this.currentPass.type === "common" );
+        ui.toggleCustomUniformsButton( this.currentPass.type === 'common' );
 
         ui.editor.setCustomSuggestions( this.getCurrentSuggestions() );
     },
@@ -492,12 +492,12 @@ const ShaderHub =
     {
         this.timePaused = !this.timePaused;
 
-        for( const idx in this.audioPlaying )
+        for ( const idx in this.audioPlaying )
         {
-            const audioData = this.audioPlaying[ idx ];
+            const audioData = this.audioPlaying[idx];
             const audio = audioData.audio;
 
-            if( this.timePaused )
+            if ( this.timePaused )
             {
                 audio.pause();
             }
@@ -512,9 +512,9 @@ const ShaderHub =
     {
         fps.reset();
 
-        this.frameCount     = 0;
-        this.elapsedTime    = 0;
-        this.timeDelta      = 0;
+        this.frameCount = 0;
+        this.elapsedTime = 0;
+        this.timeDelta = 0;
 
         this.renderer.updateFrame( 0, 0, 0, this.shader );
 
@@ -523,30 +523,32 @@ const ShaderHub =
             const X = this.resolutionX ?? this.renderer.canvas.offsetWidth;
             const Y = this.resolutionY ?? this.renderer.canvas.offsetHeight;
 
-            this.mousePosition      = [ X * 0.5, Y * 0.5 ];
-            this.lastMousePosition  = this.mousePosition;
+            this.mousePosition = [ X * 0.5, Y * 0.5 ];
+            this.lastMousePosition = this.mousePosition;
 
-            this._mouseDown     = undefined;
-            this._mousePressed  = undefined;
+            this._mouseDown = undefined;
+            this._mousePressed = undefined;
 
-            const data =
-            [
-                this.mousePosition[ 0 ], this.mousePosition[ 1 ],           // current position when pressed
-                this.lastMousePosition[ 0 ], this.lastMousePosition[ 1 ],   // start position
-                this.lastMousePosition[ 0 ] - this.mousePosition[ 0 ], 
-                this.lastMousePosition[ 1 ] - this.mousePosition[ 1 ],      // delta position
-                this._mouseDown ?? -1, this._mousePressed ?? -1.0      // button clicks
+            const data = [
+                this.mousePosition[0],
+                this.mousePosition[1], // current position when pressed
+                this.lastMousePosition[0],
+                this.lastMousePosition[1], // start position
+                this.lastMousePosition[0] - this.mousePosition[0],
+                this.lastMousePosition[1] - this.mousePosition[1], // delta position
+                this._mouseDown ?? -1,
+                this._mousePressed ?? -1.0 // button clicks
             ];
 
             this.renderer.updateMouse( data );
         }
 
-        if( this.currentPass )
+        if ( this.currentPass )
         {
             this.currentPass.resetExecution();
         }
 
-        LX.emitSignal( "@elapsed-time", `${ this.elapsedTime.toFixed( 2 ) }s` );
+        LX.emitSignal( '@elapsed-time', `${this.elapsedTime.toFixed( 2 )}s` );
     },
 
     async getShaderById( id )
@@ -555,54 +557,57 @@ const ShaderHub =
 
         // Create shader instance based on shader uid
         // Get all stored shader files (not the code, only the data)
-        if( id !== "new" )
+        if ( id !== 'new' )
         {
             let result;
 
-            try {
+            try
+            {
                 result = await fs.getDocument( FS.SHADERS_COLLECTION_ID, id );
-            } catch (error) {
-                LX.makeContainer( ["100%", "auto"], "mt-8 text-2xl font-medium justify-center text-center", "No shader found.", this.area );
+            }
+            catch ( error )
+            {
+                LX.makeContainer( [ '100%', 'auto' ], 'mt-8 text-2xl font-medium justify-center text-center', 'No shader found.', this.area );
                 return;
             }
 
             shaderData = {
                 name: result.name,
                 uid: id,
-                url: await fs.getFileUrl( result[ "file_id" ] ),
-                description: result.description ?? "",
-                creationDate: Utils.toESDate( result[ "$createdAt" ] ),
-                originalId: result[ "original_id" ],
-                tags: result[ "tags" ],
-                backend: result[ "backend" ]
+                url: await fs.getFileUrl( result['file_id'] ),
+                description: result.description ?? '',
+                creationDate: Utils.toESDate( result['$createdAt'] ),
+                originalId: result['original_id'],
+                tags: result['tags'],
+                backend: result['backend']
             };
 
-            const authorId = result[ "author_id" ];
+            const authorId = result['author_id'];
             const ownShader = fs.user && ( authorId === fs.getUserId() );
-            if( ownShader )
+            if ( ownShader )
             {
                 shaderData.author = ui.dbUser.user_name;
                 shaderData.authorId = ui.dbUser.user_id;
             }
-            else if( authorId )
+            else if ( authorId )
             {
-                const users = await fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_id", authorId ) ] );
-                const authorName = users.documents[ 0 ][ "user_name" ];
+                const users = await fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_id', authorId ) ] );
+                const authorName = users.documents[0]['user_name'];
                 shaderData.author = authorName;
                 shaderData.authorId = authorId;
             }
             else
             {
-                shaderData.author = result[ "author_name" ];
+                shaderData.author = result['author_name'];
                 shaderData.anonAuthor = true;
             }
         }
         else
         {
             shaderData = {
-                name: "New Shader",
-                uid: "EMPTY_ID",
-                author: fs.user?.name ?? "Anonymous",
+                name: 'New Shader',
+                uid: 'EMPTY_ID',
+                author: fs.user?.name ?? 'Anonymous',
                 authorId: fs.user ? fs.getUserId() : undefined,
                 anonAuthor: !fs.user,
                 creationDate: Utils.getDate(),
@@ -616,49 +621,51 @@ const ShaderHub =
 
     async getChannelMetadata( pass, channelIndex )
     {
-        const channel = pass.channels[ channelIndex ];
+        const channel = pass.channels[channelIndex];
         let name = channel?.id, url = null, category = channel?.category;
 
-        if( !pass ) url = Constants.IMAGE_EMPTY_SRC;
+        if ( !pass ) url = Constants.IMAGE_EMPTY_SRC;
         else
         {
             const assetFileId = channel?.id;
-            if( !assetFileId ) url = Constants.IMAGE_EMPTY_SRC;
-            else if( assetFileId === "Keyboard" ) url = `${ShaderHub.imagesRootPath}/keyboard.png`;
-            else if( assetFileId.startsWith( "Buffer" ) ) url = `${ShaderHub.imagesRootPath}/buffer.png`;
-            else if( assetFileId.startsWith( "Compute" ) ) url = `${ShaderHub.imagesRootPath}/buffer.png`; // TODO: Change preview image for computes
+            if ( !assetFileId ) url = Constants.IMAGE_EMPTY_SRC;
+            else if ( assetFileId === 'Keyboard' ) url = `${ShaderHub.imagesRootPath}/keyboard.png`;
+            else if ( assetFileId.startsWith( 'Buffer' ) ) url = `${ShaderHub.imagesRootPath}/buffer.png`;
+            else if ( assetFileId.startsWith( 'Compute' ) ) url = `${ShaderHub.imagesRootPath}/buffer.png`; // TODO: Change preview image for computes
             else
             {
-                const result = await fs.listDocuments( FS.ASSETS_COLLECTION_ID, [ Query.equal( "file_id", assetFileId ) ] );
+                const result = await fs.listDocuments( FS.ASSETS_COLLECTION_ID, [ Query.equal( 'file_id', assetFileId ) ] );
                 // console.assert( result.total == 1, `Inconsistent asset list for file id ${ assetFileId }` );
-                if( result.total == 0 ) return;
+                if ( result.total == 0 ) return;
 
-                const d = result.documents[ 0 ];
+                const d = result.documents[0];
 
                 name = d.name;
                 category = d.category;
 
-                const preview = category === "sound" ? `${ShaderHub.imagesRootPath}/sound.png` : d[ "preview" ];
-                if( preview )
+                const preview = category === 'sound' ? `${ShaderHub.imagesRootPath}/sound.png` : d['preview'];
+                if ( preview )
                 {
                     url = preview.includes( '/' ) ? preview : await fs.getFileUrl( preview );
                 }
                 else
                 {
-                    url = ( category === "cubemap" || category === "sound" ) ? Constants.IMAGE_EMPTY_SRC : await fs.getFileUrl( assetFileId );
+                    url = ( category === 'cubemap' || category === 'sound' ) ? Constants.IMAGE_EMPTY_SRC : await fs.getFileUrl( assetFileId );
                 }
             }
         }
 
-        return { url, name, category }
+        return { url, name, category };
     },
 
     resizeBuffers( resolutionX, resolutionY )
     {
-        for( const pass of this.shader.passes )
+        for ( const pass of this.shader.passes )
         {
-            if( pass.type !== "buffer" && pass.type !== "compute" )
+            if ( pass.type !== 'buffer' && pass.type !== 'compute' )
+            {
                 continue;
+            }
 
             pass.resizeBuffer( resolutionX, resolutionY );
         }
@@ -668,13 +675,13 @@ const ShaderHub =
     {
         element = element ?? this.renderer.canvas;
 
-        if( element == null ) element = document.documentElement;
-        if( element.requestFullscreen ) element.requestFullscreen();
-        else if( element.msRequestFullscreen ) element.msRequestFullscreen();
-        else if( element.mozRequestFullScreen ) element.mozRequestFullScreen();
-        else if( element.webkitRequestFullscreen ) element.webkitRequestFullscreen( Element.ALLOW_KEYBOARD_INPUT );
+        if ( element == null ) element = document.documentElement;
+        if ( element.requestFullscreen ) element.requestFullscreen();
+        else if ( element.msRequestFullscreen ) element.msRequestFullscreen();
+        else if ( element.mozRequestFullScreen ) element.mozRequestFullScreen();
+        else if ( element.webkitRequestFullscreen ) element.webkitRequestFullscreen( Element.ALLOW_KEYBOARD_INPUT );
 
-        if( element.focus ) element.focus();
+        if ( element.focus ) element.focus();
     },
 
     isFullScreen()
@@ -684,25 +691,25 @@ const ShaderHub =
 
     exitFullscreen()
     {
-        if( document.exitFullscreen ) document.exitFullscreen();
-        else if( document.msExitFullscreen ) document.msExitFullscreen();
-        else if( document.mozCancelFullScreen ) document.mozCancelFullScreen();
-        else if( document.webkitExitFullscreen ) document.webkitExitFullscreen();
+        if ( document.exitFullscreen ) document.exitFullscreen();
+        else if ( document.msExitFullscreen ) document.msExitFullscreen();
+        else if ( document.mozCancelFullScreen ) document.mozCancelFullScreen();
+        else if ( document.webkitExitFullscreen ) document.webkitExitFullscreen();
     },
 
     getFullPath( addPath = true )
     {
-        return window.location.origin + ( addPath ? window.location.pathname : "" );
+        return window.location.origin + ( addPath ? window.location.pathname : '' );
     },
 
     getCurrentSuggestions()
     {
         const customSuggestions = [];
 
-        Constants.DEFAULT_UNIFORM_NAMES.forEach( u => {
-            if( u.startsWith( "iChannel" ) )
+        Constants.DEFAULT_UNIFORM_NAMES.forEach( ( u ) => {
+            if ( u.startsWith( 'iChannel' ) )
             {
-                customSuggestions.push( "iChannel" );
+                customSuggestions.push( 'iChannel' );
             }
             else
             {
@@ -711,14 +718,14 @@ const ShaderHub =
         } );
 
         // Samplers
-        customSuggestions.push( "nearestSampler", "bilinearSampler", "trilinearSampler", "nearestRepeatSampler", "bilinearRepeatSampler", "trilinearRepeatSampler" );
+        customSuggestions.push( 'nearestSampler', 'bilinearSampler', 'trilinearSampler', 'nearestRepeatSampler', 'bilinearRepeatSampler', 'trilinearRepeatSampler' );
 
         // Keyboard utils
-        customSuggestions.push( "keyDown", "keyPressed", "keyState" );
+        customSuggestions.push( 'keyDown', 'keyPressed', 'keyState' );
 
-        if( this.currentPass )
+        if ( this.currentPass )
         {
-            customSuggestions.push( ...this.currentPass.uniforms.map( u => u.name ) );
+            customSuggestions.push( ...this.currentPass.uniforms.map( ( u ) => u.name ) );
         }
 
         return customSuggestions;
@@ -726,7 +733,7 @@ const ShaderHub =
 
     getShaderPreviewName( uid )
     {
-        return `${ this.previewNamePrefix }${ uid }.png`;
+        return `${this.previewNamePrefix}${uid}.png`;
     },
 
     async saveShaderFiles( ownShader, isRemix )
@@ -736,113 +743,111 @@ const ShaderHub =
         // Upload file and get id
         const json = {
             // use json data or updated data depending on who's saving
-            passes: passes.map( p => {
+            passes: passes.map( ( p ) => {
                 return {
-                    "name": p.name,
-                    "type": p.type,
-                    "codeLines": p.codeLines,
-                    "channels": p.channels,
-                    "uniforms": p.uniforms
-                }
+                    'name': p.name,
+                    'type': p.type,
+                    'codeLines': p.codeLines,
+                    'channels': p.channels,
+                    'uniforms': p.uniforms
+                };
             } )
         };
 
         const text = JSON.stringify( json );
         const arraybuffer = new TextEncoder().encode( text );
-        const filename = `${ LX.toCamelCase( this.shader.name ) }.json`;
-        const file = new File( [ arraybuffer ], filename, { type: "text/plain" });
+        const filename = `${LX.toCamelCase( this.shader.name )}.json`;
+        const file = new File( [ arraybuffer ], filename, { type: 'text/plain' } );
         const result = await fs.createFile( file );
-        return result[ "$id" ];
+        return result['$id'];
     },
 
     async saveShader( existingShader, updateThumbnail = true, showFeedback = true )
     {
-        if( !fs.user )
+        if ( !fs.user )
         {
-            console.warn( "Login to save your shader!" );
+            console.warn( 'Login to save your shader!' );
             return;
         }
 
-        if( existingShader )
+        if ( existingShader )
         {
             this.overrideShader( existingShader, updateThumbnail, showFeedback );
             return;
         }
 
-        const dialog = new LX.Dialog( "Confirm Shader Data", ( p ) => {
+        const dialog = new LX.Dialog( 'Confirm Shader Data', ( p ) => {
             let shaderName = this.shader.name, isShaderPublic = false, isShaderRemixable = true;
-            const textInput = p.addText( "Name", shaderName, ( v ) => {
+            const textInput = p.addText( 'Name', shaderName, ( v ) => {
                 shaderName = v;
             }, { pattern: LX.buildTextPattern( { minLength: 3 } ) } );
             p.addSeparator();
-            p.addCheckbox( "Public", isShaderPublic, ( v ) => {
+            p.addCheckbox( 'Public', isShaderPublic, ( v ) => {
                 isShaderPublic = v;
-            }, { nameWidth: "50%", className: "primary" } );
-            p.addCheckbox( "Allow Remix", isShaderRemixable, ( v ) => {
+            }, { nameWidth: '50%', className: 'primary' } );
+            p.addCheckbox( 'Allow Remix', isShaderRemixable, ( v ) => {
                 isShaderRemixable = v;
-            }, { nameWidth: "50%", className: "primary" } );
+            }, { nameWidth: '50%', className: 'primary' } );
             p.sameLine( 2 );
-            p.addButton( null, "Cancel", () => dialog.close(), { width: "50%", buttonClass: "destructive" } );
-            p.addButton( null, "Confirm", async () => {
-                if( !shaderName.length || !textInput.valid( shaderName ) )
+            p.addButton( null, 'Cancel', () => dialog.close(), { width: '50%', buttonClass: 'destructive' } );
+            p.addButton( null, 'Confirm', async () => {
+                if ( !shaderName.length || !textInput.valid( shaderName ) )
                 {
                     return;
                 }
 
                 this.shader.name = shaderName;
 
-                const ownShader = ( this.shader.authorId === fs.getUserId() );
+                const ownShader = this.shader.authorId === fs.getUserId();
                 const newFileId = await this.saveShaderFiles( ownShader );
 
                 // Create a new shader in the DB
                 const result = await fs.createDocument( FS.SHADERS_COLLECTION_ID, {
-                    "name": shaderName,
-                    "description": this.shader.description,
-                    "author_id": fs.getUserId(),
-                    "author_name": this.shader.author ?? "",
-                    "file_id": newFileId,
-                    "like_count": 0,
-                    "features": this.shader.getFeatures(),
-                    "remixable": isShaderRemixable,
-                    "public": isShaderPublic,
-                    "tags": this.shader.tags,
-                    "backend": this.backend
+                    'name': shaderName,
+                    'description': this.shader.description,
+                    'author_id': fs.getUserId(),
+                    'author_name': this.shader.author ?? '',
+                    'file_id': newFileId,
+                    'like_count': 0,
+                    'features': this.shader.getFeatures(),
+                    'remixable': isShaderRemixable,
+                    'public': isShaderPublic,
+                    'tags': this.shader.tags,
+                    'backend': this.backend
                 } );
 
-                this.shader.uid = result[ "$id" ];
+                this.shader.uid = result['$id'];
 
                 // Upload canvas snapshot
                 await this.updateShaderPreview( this.shader.uid, false );
 
                 // Close dialog on succeed and show toast
                 dialog.close();
-                Utils.toast( `✅ Shader saved`, `Shader: ${ shaderName } by ${ fs.user.name }` );
-            }, { width: "50%", buttonClass: "primary" } );
+                Utils.toast( `✅ Shader saved`, `Shader: ${shaderName} by ${fs.user.name}` );
+            }, { width: '50%', buttonClass: 'primary' } );
         } );
     },
 
     async overrideShader( shaderMetadata, updateThumbnail = true, showFeedback = true )
     {
         // Delete old file first
-        const fileId = shaderMetadata[ "file_id" ];
+        const fileId = shaderMetadata['file_id'];
         await fs.deleteFile( fileId );
 
-        const ownShader = ( this.shader.authorId === fs.getUserId() );
+        const ownShader = this.shader.authorId === fs.getUserId();
         const newFileId = await this.saveShaderFiles( ownShader );
 
         // Update files reference in the DB
         const row = {
-            "file_id": newFileId
+            'file_id': newFileId
         };
 
         // Update specific stuff only if shader owner
-        if( ownShader )
+        if ( ownShader )
         {
-            row[ "name" ] = this.shader.name,
-            row[ "description" ] = this.shader.description,
-            row[ "features" ] = this.shader.getFeatures();
+            row['name'] = this.shader.name, row['description'] = this.shader.description, row['features'] = this.shader.getFeatures();
 
-            if( updateThumbnail )
+            if ( updateThumbnail )
             {
                 await this.updateShaderPreview( this.shader.uid, false );
             }
@@ -850,9 +855,9 @@ const ShaderHub =
 
         await fs.updateDocument( FS.SHADERS_COLLECTION_ID, this.shader.uid, row );
 
-        if( ownShader && showFeedback )
+        if ( ownShader && showFeedback )
         {
-            Utils.toast( `✅ Shader updated`, `Shader: ${ this.shader.name } by ${ fs.user.name }` );
+            Utils.toast( `✅ Shader updated`, `Shader: ${this.shader.name} by ${fs.user.name}` );
         }
     },
 
@@ -861,46 +866,45 @@ const ShaderHub =
         const uid = this.shader?.uid ?? shaderInfo?.uid;
         const name = this.shader?.name ?? shaderInfo?.name;
 
-        if( !uid || !name )
+        if ( !uid || !name )
         {
             console.error( "Can't delete shader, uid or name missing." );
             return;
         }
 
         let result = await this.shaderExists( uid );
-        if( !result )
+        if ( !result )
         {
             console.error( "Can't delete shader, uid does not exist in DB." );
             return;
         }
 
         const innerDelete = async () => {
-
             // DB entry
             await fs.deleteDocument( FS.SHADERS_COLLECTION_ID, uid );
 
             // Shader files
-            await fs.deleteFile( result[ "file_id" ] );
+            await fs.deleteFile( result['file_id'] );
 
             // Preview
-            result = await fs.listFiles( [ Query.equal( "name", this.getShaderPreviewName( uid ) ) ] );
-            if( result.total > 0 )
+            result = await fs.listFiles( [ Query.equal( 'name', this.getShaderPreviewName( uid ) ) ] );
+            if ( result.total > 0 )
             {
-                await fs.deleteFile( result.files[ 0 ][ "$id" ] );
+                await fs.deleteFile( result.files[0]['$id'] );
             }
 
             dialog.destroy();
 
-            Utils.toast( `✅ Shader deleted`, `Shader: ${ name } by ${ fs.user.name }` );
+            Utils.toast( `✅ Shader deleted`, `Shader: ${name} by ${fs.user.name}` );
         };
 
-        const dialog = new LX.Dialog( `Delete shader: ${ name }`, (p) => {
-            p.root.classList.add( "p-2" );
-            p.addTextArea( null, "Are you sure? This action cannot be undone.", null, { disabled: true } );
+        const dialog = new LX.Dialog( `Delete shader: ${name}`, ( p ) => {
+            p.root.classList.add( 'p-2' );
+            p.addTextArea( null, 'Are you sure? This action cannot be undone.', null, { disabled: true } );
             p.addSeparator();
             p.sameLine( 2 );
-            p.addButton( null, "Cancel", () => dialog.close(), { width: "50%", buttonClass: "destructive" } );
-            p.addButton( null, "Continue", innerDelete.bind( this ), { width: "50%", buttonClass: "primary" } );
+            p.addButton( null, 'Cancel', () => dialog.close(), { width: '50%', buttonClass: 'destructive' } );
+            p.addButton( null, 'Continue', innerDelete.bind( this ), { width: '50%', buttonClass: 'primary' } );
         }, { modal: true } );
     },
 
@@ -916,53 +920,53 @@ const ShaderHub =
 
         // Create a new shader in the DB
         const result = await fs.createDocument( FS.SHADERS_COLLECTION_ID, {
-            "name": shaderName,
-            "author_name": fs.user.name,
-            "author_id": fs.getUserId(),
-            "original_id": shaderUid,
-            "file_id": newFileId,
-            "description": this.shader.description,
-            "like_count": 0,
-            "remixable": true,
-            "public": true
+            'name': shaderName,
+            'author_name': fs.user.name,
+            'author_id': fs.getUserId(),
+            'original_id': shaderUid,
+            'file_id': newFileId,
+            'description': this.shader.description,
+            'like_count': 0,
+            'remixable': true,
+            'public': true
         } );
 
         // Upload canvas snapshot
         await this.updateShaderPreview( shaderUid, false );
 
         // Go to shader edit view with the new shader
-        ui._openShader( result[ "$id" ] );
+        ui._openShader( result['$id'] );
     },
 
     filterShaders( shaderList, querySearch )
     {
-        const isTagSearch = querySearch && querySearch[ 0 ] === '#';
-        const scoringShaders = shaderList.map( d => {
+        const isTagSearch = querySearch && querySearch[0] === '#';
+        const scoringShaders = shaderList.map( ( d ) => {
             let score = 0;
 
-            if( isTagSearch )
+            if ( isTagSearch )
             {
                 const tag = querySearch.substring( 1 );
                 score = ( d.tags ?? [] ).includes( tag ) ? 1 : 0;
             }
-            else if( querySearch )
+            else if ( querySearch )
             {
                 const name = d.name.toLowerCase();
-                const desc = ( d.description || "" ).toLowerCase();
-                const author = ( d.author_name || "" ).toLowerCase();
+                const desc = ( d.description || '' ).toLowerCase();
+                const author = ( d.author_name || '' ).toLowerCase();
                 const terms = querySearch.toLowerCase().split( /\s+/ );
 
-                for( const term of terms )
+                for ( const term of terms )
                 {
-                    if( name.includes( term ) ) score += 6;
-                    if( desc.includes( term ) ) score += 3;
-                    if( author.includes( term ) ) score += 1;
+                    if ( name.includes( term ) ) score += 6;
+                    if ( desc.includes( term ) ) score += 3;
+                    if ( author.includes( term ) ) score += 1;
                 }
             }
 
             return { ...d, score };
-        });
-        
+        } );
+
         return scoringShaders.sort( ( a, b ) => b.score - a.score );
     },
 
@@ -972,21 +976,21 @@ const ShaderHub =
 
         // Delete old preview first if necessary
         const previewName = this.getShaderPreviewName( shaderUid );
-        const result = await fs.listFiles( [ Query.equal( "name", previewName ) ] );
-        if( result.total > 0 )
+        const result = await fs.listFiles( [ Query.equal( 'name', previewName ) ] );
+        if ( result.total > 0 )
         {
-            const fileId = result.files[ 0 ][ "$id" ];
+            const fileId = result.files[0]['$id'];
             await fs.deleteFile( fileId );
         }
 
         // Create new one
         const blob = await this.snapshotCanvas();
-        const file = new File( [ blob ], previewName, { type: "image/png" });
+        const file = new File( [ blob ], previewName, { type: 'image/png' } );
         await fs.createFile( file );
 
-        if( showFeedback )
+        if ( showFeedback )
         {
-            Utils.toast( `✅ Shader preview updated`, `Shader: ${ this.shader.name } by ${ fs.user.name }` );
+            Utils.toast( `✅ Shader preview updated`, `Shader: ${this.shader.name} by ${fs.user.name}` );
         }
     },
 
@@ -997,26 +1001,26 @@ const ShaderHub =
 
         await this.renderer.init();
 
-        requestAnimationFrame( this.onFrame.bind( this) );
+        requestAnimationFrame( this.onFrame.bind( this ) );
     },
 
     async createTextureFromFile( channelName )
     {
-        const result = await fs.listDocuments( FS.ASSETS_COLLECTION_ID, [ Query.equal( "file_id", channelName ) ] );
+        const result = await fs.listDocuments( FS.ASSETS_COLLECTION_ID, [ Query.equal( 'file_id', channelName ) ] );
         // console.assert( result.total == 1, `Inconsistent asset list for file id ${ channelName }` );
-        if( result.total == 0 ) return;
+        if ( result.total == 0 ) return;
 
         const url = await fs.getFileUrl( channelName );
         const data = await fs.requestFile( url );
-        const asset = result.documents[ 0 ];
+        const asset = result.documents[0];
 
         let texture = null;
 
-        if( asset.category === "cubemap" )
+        if ( asset.category === 'cubemap' )
         {
             texture = await this.renderer.createCubemapTextureFromImage( data, channelName, asset.name );
         }
-        else if( asset.category === "sound" )
+        else if ( asset.category === 'sound' )
         {
             texture = await this.createAudioTexture( data, channelName, asset.name );
         }
@@ -1034,72 +1038,73 @@ const ShaderHub =
         const data = [];
 
         // Key state
-        for( let w = 0; w < dimensions[ 0 ]; w++ )
+        for ( let w = 0; w < dimensions[0]; w++ )
         {
             data.push( 255 * ( this.keyState.get( w ) === true ? 1 : 0 ), 0, 0, 255 );
         }
 
         // Key toggle state
-        for( let w = 0; w < dimensions[ 0 ]; w++ )
+        for ( let w = 0; w < dimensions[0]; w++ )
         {
             data.push( 255 * ( this.keyToggleState.get( w ) === true ? 1 : 0 ), 0, 0, 255 );
         }
 
         // Key pressed
-        for( let w = 0; w < dimensions[ 0 ]; w++ )
+        for ( let w = 0; w < dimensions[0]; w++ )
         {
             data.push( 255 * ( this.keyPressed.get( w ) === true ? 1 : 0 ), 0, 0, 255 );
         }
 
-        const imageName = "Keyboard";
-        const imageData = new ImageData( new Uint8ClampedArray( data ), dimensions[ 0 ], dimensions[ 1 ] );
+        const imageName = 'Keyboard';
+        const imageData = new ImageData( new Uint8ClampedArray( data ), dimensions[0], dimensions[1] );
         const imageBitmap = await createImageBitmap( imageData );
-        const imageTexture = this.renderer.gpuTextures[ imageName ] ?? this.renderer.createTexture({
-            label: "KeyboardTexture",
+        const imageTexture = this.renderer.gpuTextures[imageName] ?? this.renderer.createTexture( {
+            label: 'KeyboardTexture',
             size: [ imageBitmap.width, imageBitmap.height, 1 ],
             format: 'rgba8unorm',
-            usage:
-                GPUTextureUsage.TEXTURE_BINDING |
-                GPUTextureUsage.COPY_DST |
-                GPUTextureUsage.RENDER_ATTACHMENT
+            usage: GPUTextureUsage.TEXTURE_BINDING
+                | GPUTextureUsage.COPY_DST
+                | GPUTextureUsage.RENDER_ATTACHMENT
         } );
 
         // Recreate stuff if we update the texture and
         // a shader pass is using it
-        this.renderer.gpuTextures[ imageName ] = this.renderer.updateTexture(
-            imageTexture.texture ?? imageTexture, imageBitmap );
+        this.renderer.gpuTextures[imageName] = this.renderer.updateTexture(
+            imageTexture.texture ?? imageTexture,
+            imageBitmap
+        );
 
         const pass = this.currentPass;
-        const usedChannel = pass.channels.findIndex( c => c?.id === imageName );
-        if( ( channel === undefined ) && usedChannel > -1 )
+        const usedChannel = pass.channels.findIndex( ( c ) => c?.id === imageName );
+        if ( ( channel === undefined ) && usedChannel > -1 )
         {
             channel = usedChannel;
         }
 
-        if( channel !== undefined )
+        if ( channel !== undefined )
         {
-            pass.channels[ channel ] = { id: imageName, category: 'misc' };
+            pass.channels[channel] = { id: imageName, category: 'misc' };
 
-            if( updatePreview )
+            if ( updatePreview )
             {
                 await ui.updateShaderChannelsView( pass );
             }
         }
     },
 
-    async createAudioTexture( arrayBuffer, id, label = "" )
+    async createAudioTexture( arrayBuffer, id, label = '' )
     {
         const FFT_SIZE = 1024; // gives 512 frequency bins
         const dimensions = [ 512, 2 ];
 
-        if ( !this.audioPlaying[ id ] )
+        if ( !this.audioPlaying[id] )
         {
-            const blob = new Blob( [ arrayBuffer ], { type: "audio/mpeg" } );
+            const blob = new Blob( [ arrayBuffer ], { type: 'audio/mpeg' } );
             const url = URL.createObjectURL( blob );
             const audio = new Audio();
             audio.src = url;
-            audio.crossOrigin = "anonymous";
-            audio.preload = "auto";
+            audio.crossOrigin = 'anonymous';
+            audio.preload = 'auto';
             audio.id = id;
             audio.name = label;
 
@@ -1118,7 +1123,7 @@ const ShaderHub =
             const freqData = new Uint8Array( frequencyBinCount );
             const timeData = new Uint8Array( frequencyBinCount );
 
-            this.audioPlaying[ id ] = {
+            this.audioPlaying[id] = {
                 audio,
                 analyser,
                 source,
@@ -1130,56 +1135,56 @@ const ShaderHub =
             audio.play();
         }
 
-        const audioData = this.audioPlaying[ id ];
+        const audioData = this.audioPlaying[id];
         audioData.analyser.getByteFrequencyData( audioData.freqData );
         audioData.analyser.getByteTimeDomainData( audioData.timeData );
 
         const data = [];
 
         // Row 0: Frequency spectrum
-        for ( let i = 0; i < dimensions[ 0 ]; i++ )
+        for ( let i = 0; i < dimensions[0]; i++ )
         {
             const v = audioData.freqData[i];
             data.push( v, v, v, 255 );
         }
 
         // Row 1: Waveform
-        for ( let i = 0; i < dimensions[ 0 ]; i++ )
+        for ( let i = 0; i < dimensions[0]; i++ )
         {
             const v = audioData.timeData[i];
             data.push( v, v, v, 255 );
         }
 
         const imageName = id;
-        const imageData = new ImageData( new Uint8ClampedArray( data ), dimensions[ 0 ], dimensions[ 1 ] );
+        const imageData = new ImageData( new Uint8ClampedArray( data ), dimensions[0], dimensions[1] );
         const imageBitmap = await createImageBitmap( imageData );
 
         // TODO: make this r8unorm
-        const imageTexture =
-            this.renderer.gpuTextures[ imageName ] ??
-            this.renderer.createTexture({
+        const imageTexture = this.renderer.gpuTextures[imageName]
+            ?? this.renderer.createTexture( {
                 label,
                 size: [ imageBitmap.width, imageBitmap.height, 1 ],
-                format: "rgba8unorm",
-                usage:
-                    GPUTextureUsage.TEXTURE_BINDING |
-                    GPUTextureUsage.COPY_DST |
-                    GPUTextureUsage.RENDER_ATTACHMENT,
-            });
+                format: 'rgba8unorm',
+                usage: GPUTextureUsage.TEXTURE_BINDING
+                    | GPUTextureUsage.COPY_DST
+                    | GPUTextureUsage.RENDER_ATTACHMENT
+            } );
 
-        this.renderer.gpuTextures[ imageName ] = this.renderer.updateTexture(
-            imageTexture.texture ?? imageTexture, imageBitmap );
+        this.renderer.gpuTextures[imageName] = this.renderer.updateTexture(
+            imageTexture.texture ?? imageTexture,
+            imageBitmap
+        );
 
         return imageTexture;
     },
 
     setEditorErrorBorder( errorCode = ERROR_CODE_DEFAULT )
     {
-        ui.editor.area.root.parentElement.classList.toggle( "code-border-default", errorCode === ERROR_CODE_DEFAULT );
-        ui.editor.area.root.parentElement.classList.toggle( "code-border-success", errorCode === ERROR_CODE_SUCCESS );
-        ui.editor.area.root.parentElement.classList.toggle( "code-border-error", errorCode === ERROR_CODE_ERROR );
+        ui.editor.area.root.parentElement.classList.toggle( 'code-border-default', errorCode === ERROR_CODE_DEFAULT );
+        ui.editor.area.root.parentElement.classList.toggle( 'code-border-success', errorCode === ERROR_CODE_SUCCESS );
+        ui.editor.area.root.parentElement.classList.toggle( 'code-border-error', errorCode === ERROR_CODE_ERROR );
 
-        if( !this._mustResetBorder )
+        if ( !this._mustResetBorder )
         {
             LX.doAsync( () => {
                 this.setEditorErrorBorder();
@@ -1200,34 +1205,33 @@ const ShaderHub =
         const tabs = ui.editor.tabs.tabs;
         const compilePasses = pass ? [ pass ] : this.shader.passes;
 
-        for( let i = 0; i < compilePasses.length; ++i )
+        for ( let i = 0; i < compilePasses.length; ++i )
         {
             // Buffers and images draw
-            const pass = compilePasses[ i ];
-            pass.codeLines = tabs[ pass.name ].lines;
-            console.assert( pass.codeLines, `No tab with name ${ pass.name }` );
-            if( pass.type === "common" ) continue;
+            const pass = compilePasses[i];
+            pass.codeLines = tabs[pass.name].lines;
+            console.assert( pass.codeLines, `No tab with name ${pass.name}` );
+            if ( pass.type === 'common' ) continue;
 
             const result = await pass.compile( this.renderer );
-            if( result !== Constants.WEBGPU_OK ) // error object
-            {
+            if ( result !== Constants.WEBGPU_OK )
+            { // error object
                 ui.editor.loadTab( pass.name ); // Open the tab with the error
 
                 // Make async so the tab is opened before adding the error feedback
                 LX.doAsync( () => {
-
-                    const mainImageLineOffset = result.code.split( "\n" ).indexOf( pass.codeLines[ 0 ] );
+                    const mainImageLineOffset = result.code.split( '\n' ).indexOf( pass.codeLines[0] );
                     console.assert( mainImageLineOffset > 0 );
 
-                    for( const msg of result.messages )
+                    for ( const msg of result.messages )
                     {
-                        const fragLineNumber = msg.lineNum - ( mainImageLineOffset );
+                        const fragLineNumber = msg.lineNum - mainImageLineOffset;
 
-                        if( showFeedback )
+                        if ( showFeedback )
                         {
                             this.setEditorErrorBorder( ERROR_CODE_ERROR );
-                            Utils.toast( `❌ ${ LX.toTitleCase( msg.type ) }: ${ fragLineNumber }:${ msg.linePos }`, msg.message, -1 );
-                            ui.editor.code.childNodes[ fragLineNumber - 1 ]?.classList.add( msg.type === "error" ? "removed" : "debug");
+                            Utils.toast( `❌ ${LX.toTitleCase( msg.type )}: ${fragLineNumber}:${msg.linePos}`, msg.message, -1 );
+                            ui.editor.code.childNodes[fragLineNumber - 1]?.classList.add( msg.type === 'error' ? 'removed' : 'debug' );
                         }
                     }
                 }, 10 );
@@ -1238,17 +1242,17 @@ const ShaderHub =
             }
         }
 
-        if( showFeedback )
+        if ( showFeedback )
         {
             this.setEditorErrorBorder( ERROR_CODE_SUCCESS );
         }
 
-        if( focusCanvas )
+        if ( focusCanvas )
         {
             this.renderer.canvas.focus();
         }
 
-        this.manualCompile |= ( manualCompile ?? false );
+        this.manualCompile |= manualCompile ?? false;
         this._compilingShader = false;
 
         return Constants.WEBGPU_OK;
@@ -1256,23 +1260,26 @@ const ShaderHub =
 
     async shaderExists( uid )
     {
-        try {
+        try
+        {
             return await fs.getDocument( FS.SHADERS_COLLECTION_ID, uid ?? this.shader.uid );
-        } catch (error) {
+        }
+        catch ( error )
+        {
             // Doesn't exist...
         }
     },
 
     async loadBufferChannel( pass, bufferName, channel, updatePreview = false, forceCompile = false )
     {
-        pass.channels[ channel ] = { id: bufferName, category: 'misc' };
+        pass.channels[channel] = { id: bufferName, category: 'misc' };
 
-        if( forceCompile )
+        if ( forceCompile )
         {
             await this.compileShader( true, pass );
         }
 
-        if( updatePreview )
+        if ( updatePreview )
         {
             await ui.updateShaderChannelsView( pass );
         }
@@ -1280,8 +1287,8 @@ const ShaderHub =
 
     updateUniformChannelFilter( pass, channelIndex, filterType )
     {
-        const channel = pass.channels[ channelIndex ];
-        if( !channel ) return;
+        const channel = pass.channels[channelIndex];
+        if ( !channel ) return;
 
         channel.filter = filterType;
         pass.mustCompile = true;
@@ -1289,8 +1296,8 @@ const ShaderHub =
 
     updateUniformChannelWrap( pass, channelIndex, wrapType )
     {
-        const channel = pass.channels[ channelIndex ];
-        if( !channel ) return;
+        const channel = pass.channels[channelIndex];
+        if ( !channel ) return;
 
         channel.wrap = wrapType;
         pass.mustCompile = true;
@@ -1298,32 +1305,32 @@ const ShaderHub =
 
     closeUniformChannel( channel )
     {
-        if( channel?.id && this.renderer.gpuTextures[ channel.id ] )
+        if ( channel?.id && this.renderer.gpuTextures[channel.id] )
         {
-            delete this.renderer.gpuTextures[ channel.id ];
+            delete this.renderer.gpuTextures[channel.id];
         }
 
-        if( channel.category === "sound" && this.audioPlaying[ channel.id ] )
+        if ( channel.category === 'sound' && this.audioPlaying[channel.id] )
         {
-            const audioData = this.audioPlaying[ channel.id ];
+            const audioData = this.audioPlaying[channel.id];
             audioData.audio.pause();
             audioData.source.disconnect();
             audioData.analyser.disconnect();
             audioData.gain.disconnect();
-            delete this.audioPlaying[ channel.id ];
+            delete this.audioPlaying[channel.id];
         }
     },
 
     addUniformChannel( pass, channelIndex, channel )
     {
-        const oldChannel = pass.channels[ channelIndex ];
-        if( oldChannel )
+        const oldChannel = pass.channels[channelIndex];
+        if ( oldChannel )
         {
             // Remove texture from GPU and audio if necessary
             this.closeUniformChannel( oldChannel );
         }
 
-        pass.channels[ channelIndex ] = channel;
+        pass.channels[channelIndex] = channel;
 
         pass.mustCompile = true;
     },
@@ -1331,15 +1338,17 @@ const ShaderHub =
     async removeUniformChannel( channelIndex )
     {
         const pass = this.currentPass;
-        if( pass.name === "Common" )
+        if ( pass.name === 'Common' )
+        {
             return;
+        }
 
-        const channel = pass.channels[ channelIndex ];
+        const channel = pass.channels[channelIndex];
 
         // Remove texture from GPU and audio if necessary
         this.closeUniformChannel( channel );
 
-        pass.channels[ channelIndex ] = undefined;
+        pass.channels[channelIndex] = undefined;
 
         // Reset image
         await ui.updateShaderChannelsView( pass );
@@ -1351,13 +1360,15 @@ const ShaderHub =
     async addUniform( name, value, min, max )
     {
         const pass = this.currentPass;
-        if( pass.name === "Common" )
+        if ( pass.name === 'Common' )
+        {
             return;
+        }
 
-        const uName = name ?? `iUniform${ pass.uniforms.length + 1 }`;
-        pass.uniforms.push( { name: uName, type: "f32", value: value ?? 0, min: min ?? 0, max: max ?? 1 } );
+        const uName = name ?? `iUniform${pass.uniforms.length + 1}`;
+        pass.uniforms.push( { name: uName, type: 'f32', value: value ?? 0, min: min ?? 0, max: max ?? 1 } );
         const allCode = pass.getShaderCode( false ).code;
-        if( allCode.match( new RegExp( `\\b${ uName }\\b` ) ) )
+        if ( allCode.match( new RegExp( `\\b${uName}\\b` ) ) )
         {
             await this.compileShader( true, pass );
         }
@@ -1367,11 +1378,11 @@ const ShaderHub =
 
     async removeUniform( pass, uniformIdx )
     {
-        const uName = pass.uniforms[ uniformIdx ].name;
+        const uName = pass.uniforms[uniformIdx].name;
         // Check if the uniforms is used to recompile shaders or not
         const allCode = pass.getShaderCode( false ).code;
         pass.uniforms.splice( uniformIdx, 1 );
-        if( allCode.match( new RegExp( `\\b${ uName }\\b` ) ) )
+        if ( allCode.match( new RegExp( `\\b${uName}\\b` ) ) )
         {
             this.compileShader( true, pass );
         }
@@ -1381,25 +1392,26 @@ const ShaderHub =
 
     async updateUniformType( pass, uniformIdx, typeName )
     {
-        const isColor = typeName.startsWith( "color" );
-        typeName = isColor ? `vec${ typeName[ 5 ] }f` : typeName;
-        console.log(typeName);
-        const u = pass.uniforms[ uniformIdx ];
+        const isColor = typeName.startsWith( 'color' );
+        typeName = isColor ? `vec${typeName[5]}f` : typeName;
+        console.log( typeName );
+        const u = pass.uniforms[uniformIdx];
         u.type = typeName;
         u.isColor = isColor;
 
-        if( typeName.startsWith( "vec" ) )
+        if ( typeName.startsWith( 'vec' ) )
         {
             const size = Shader.GetUniformSize( typeName ) / 4;
             u.value = [].concat( u.value );
-            for( let i = 0; i < size; ++i )
+            for ( let i = 0; i < size; ++i )
             {
-                u.value[ i ] = u.value[ i ] ?? ( isColor && i == 3 ? 1 : 0 ); // add 1 as color alpha channel
+                u.value[i] = u.value[i] ?? ( isColor && i == 3 ? 1 : 0 ); // add 1 as color alpha channel
             }
         }
-        else // number
+        // number
+        else
         {
-            u.value = [].concat( u.value )[ 0 ];
+            u.value = [].concat( u.value )[0];
         }
 
         // Remove this buffer to recreate it
@@ -1407,7 +1419,7 @@ const ShaderHub =
 
         // Check if the uniforms is used to recompile shaders or not
         const allCode = pass.getShaderCode( false ).code;
-        if( allCode.match( new RegExp( `\\b${ u.name }\\b` ) ) )
+        if ( allCode.match( new RegExp( `\\b${u.name}\\b` ) ) )
         {
             this.compileShader( true, pass );
         }
@@ -1416,13 +1428,15 @@ const ShaderHub =
     playSoundUniformChannel( channelIndex )
     {
         const pass = this.currentPass;
-        const channel = pass.channels[ channelIndex ];
-        if( !channel || channel.category !== "sound" )
+        const channel = pass.channels[channelIndex];
+        if ( !channel || channel.category !== 'sound' )
+        {
             return;
+        }
 
-        const audioData = this.audioPlaying[ channel.id ];
+        const audioData = this.audioPlaying[channel.id];
         const audio = audioData.audio;
-        if( audio.paused )
+        if ( audio.paused )
         {
             audio.play();
         }
@@ -1435,11 +1449,13 @@ const ShaderHub =
     rewindSoundUniformChannel( channelIndex )
     {
         const pass = this.currentPass;
-        const channel = pass.channels[ channelIndex ];
-        if( !channel || channel.category !== "sound" )
+        const channel = pass.channels[channelIndex];
+        if ( !channel || channel.category !== 'sound' )
+        {
             return;
+        }
 
-        const audioData = this.audioPlaying[ channel.id ];
+        const audioData = this.audioPlaying[channel.id];
         const audio = audioData.audio;
         audio.currentTime = 0;
     },
@@ -1447,11 +1463,13 @@ const ShaderHub =
     muteSoundUniformChannel( channelIndex )
     {
         const pass = this.currentPass;
-        const channel = pass.channels[ channelIndex ];
-        if( !channel || channel.category !== "sound" )
+        const channel = pass.channels[channelIndex];
+        if ( !channel || channel.category !== 'sound' )
+        {
             return;
+        }
 
-        const audioData = this.audioPlaying[ channel.id ];
+        const audioData = this.audioPlaying[channel.id];
         const audio = audioData.audio;
         audioData.muted = !audioData.muted;
         audioData.gain.gain.value = audioData.muted ? 0.0 : 1.0; // mute output
@@ -1463,26 +1481,26 @@ const ShaderHub =
         this.captureFrameCount = 1;
         this.format = options.format ?? 'gif';
 
-        switch( this.format )
+        switch ( this.format )
         {
-            case "gif":
+            case 'gif':
                 this.mimeType = 'image/gif';
                 break;
-            case "png":
+            case 'png':
                 this.mimeType = 'image/png';
                 break;
-            case "webm":
+            case 'webm':
                 this.mimeType = 'video/webm';
                 break;
         }
 
-        this.capturer = new CCapture( { format: this.format, framerate: parseInt ( options.framerate ?? 30 ), workersPath: './src/extra/' } );
+        this.capturer = new CCapture( { format: this.format, framerate: parseInt( options.framerate ?? 30 ), workersPath: './src/extra/' } );
         this.capturer.start();
     },
 
     saveCapture()
     {
-        if( !this.capturer )
+        if ( !this.capturer )
         {
             return;
         }
@@ -1490,7 +1508,7 @@ const ShaderHub =
         this.capturer.stop();
 
         const callback = ( blob ) => {
-            download( blob, `${ this.shader.name }.${ this.format }`, this.mimeType );
+            download( blob, `${this.shader.name}.${this.format}`, this.mimeType );
             delete this.capturer;
             delete this.frameCount;
             ui.onStopCapture();
@@ -1506,20 +1524,20 @@ const ShaderHub =
     async saveComment( shaderUid, text )
     {
         await fs.createDocument( FS.INTERACTIONS_COLLECTION_ID, {
-            type: "comment",
+            type: 'comment',
             shader_id: shaderUid,
             author_id: fs.getUserId(),
             text
         } );
 
-        if( !text.includes( '@' ) )
+        if ( !text.includes( '@' ) )
         {
             return;
         }
 
         const regex = /(^|\s)@([a-zA-Z0-9._]+)/g;
-        const users = [ ...text.matchAll(regex)].map(m => m[2] );
-        if( !users.length )
+        const users = [ ...text.matchAll( regex ) ].map( ( m ) => m[2] );
+        if ( !users.length )
         {
             return;
         }
@@ -1534,22 +1552,21 @@ const ShaderHub =
     {
         const width = outWidth ?? 640;
         const height = outHeight ?? 360;
-        const blob = await (() => {return new Promise( resolve => {
-            this.onFrame();
-            return this.renderer.canvas.toBlob( blob => resolve( blob ), "image/png" );
-        }
-        )})();
+        const blob = await ( () => {
+            return new Promise( ( resolve ) => {
+                this.onFrame();
+                return this.renderer.canvas.toBlob( ( blob ) => resolve( blob ), 'image/png' );
+            } );
+        } )();
         const bitmap = await createImageBitmap( blob );
 
-        const snapCanvas = document.createElement("canvas");
+        const snapCanvas = document.createElement( 'canvas' );
         snapCanvas.width = width;
         snapCanvas.height = height;
         const ctx = snapCanvas.getContext( '2d' );
         ctx.drawImage( bitmap, 0, 0, width, height );
 
-        return new Promise( resolve =>
-            snapCanvas.toBlob( blob => resolve( blob ), 'image/png' )
-        );
+        return new Promise( ( resolve ) => snapCanvas.toBlob( ( blob ) => resolve( blob ), 'image/png' ) );
     },
 
     async getCanvasSnapshot()
@@ -1558,7 +1575,7 @@ const ShaderHub =
         const url = URL.createObjectURL( blob );
         window.open( url );
     }
-}
+};
 
 await ShaderHub.init();
 

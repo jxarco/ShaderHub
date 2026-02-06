@@ -8,8 +8,8 @@ class Renderer
         this.canvas = canvas;
         this.lang = 'WGSL';
 
-        this.gpuTextures    = {};
-        this.gpuBuffers     = {};
+        this.gpuTextures = {};
+        this.gpuBuffers = {};
     }
 
     async init()
@@ -18,33 +18,48 @@ class Renderer
         {
             // clamp-to-edge samplers
             Renderer.nearestSampler = this.createSampler();
-            Renderer.bilinearSampler = this.createSampler({ magFilter: 'linear', minFilter: 'linear' });
-            Renderer.trilinearSampler = this.createSampler({ magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear' });
+            Renderer.bilinearSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear' } );
+            Renderer.trilinearSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear' } );
 
             // repeat samplers
-            Renderer.nearestRepeatSampler = this.createSampler({ addressModeU: "repeat", addressModeV: "repeat", addressModeW: "repeat" });
-            Renderer.bilinearRepeatSampler = this.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: "repeat", addressModeV: "repeat", addressModeW: "repeat" });
-            Renderer.trilinearRepeatSampler = this.createSampler({ magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', addressModeU: "repeat", addressModeV: "repeat", addressModeW: "repeat" });
+            Renderer.nearestRepeatSampler = this.createSampler( { addressModeU: 'repeat', addressModeV: 'repeat', addressModeW: 'repeat' } );
+            Renderer.bilinearRepeatSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear', addressModeU: 'repeat', addressModeV: 'repeat', addressModeW: 'repeat' } );
+            Renderer.trilinearRepeatSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', addressModeU: 'repeat', addressModeV: 'repeat',
+                addressModeW: 'repeat' } );
         }
     }
 
-    createBuffer( desc = {} ) {}
-    createSampler( desc = {} ) {}
-    createTexture( desc = {} ) {}
-    async createTextureFromImage( data, id, label = "", options = {} ) { return null; }
-    async createCubemapTextureFromImage( arrayBuffer, id, label = "", options = {} ) { return null; }
+    createBuffer( desc = {} )
+    {}
+    createSampler( desc = {} )
+    {}
+    createTexture( desc = {} )
+    {}
+    async createTextureFromImage( data, id, label = '', options = {} )
+    {
+        return null;
+    }
+    async createCubemapTextureFromImage( arrayBuffer, id, label = '', options = {} )
+    {
+        return null;
+    }
 
-    updateTexture( texture, bitmap ) {}
-    updateFrame( timeDelta, elapsedTime, frameCount, shader ) {}
-    updateResolution( resolutionX, resolutionY, shader ) {}
-    updateMouse( data, shader ) {}
+    updateTexture( texture, bitmap )
+    {}
+    updateFrame( timeDelta, elapsedTime, frameCount, shader )
+    {}
+    updateResolution( resolutionX, resolutionY, shader )
+    {}
+    updateMouse( data, shader )
+    {}
 
-    generateMipmaps( texture, mipLevelCount ) {}
+    generateMipmaps( texture, mipLevelCount )
+    {}
 
     fail( msg, msgTitle )
     {
-        new LX.Dialog( msgTitle ?? `❌ ${this.backend} Error`, p => {
-            p.root.classList.add( "p-4" );
+        new LX.Dialog( msgTitle ?? `❌ ${this.backend} Error`, ( p ) => {
+            p.root.classList.add( 'p-4' );
             p.root.innerHTML = msg;
         }, { modal: true } );
     }

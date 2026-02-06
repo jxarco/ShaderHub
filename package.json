@@ -2,11 +2,13 @@
     "dependencies": {
         "@tailwindcss/cli": "^4.1.18",
         "serve": "^14.2.5",
-        "tailwindcss": "^4.1.18"
+        "tailwindcss": "^4.1.18",
+        "dprint": "^0.50.2"
     },
     "scripts": {
         "serve": "npx serve -s .",
         "serve:docs": "npx serve .",
+        "format": "dprint fmt",
         "build:css": "npx @tailwindcss/cli -i ./css/style.css -o ./css/output.css",
         "build:cssw": "npx @tailwindcss/cli -i ./css/style.css -o ./css/output.css --watch"
     }

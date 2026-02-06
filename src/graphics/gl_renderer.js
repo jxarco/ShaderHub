@@ -1,10 +1,10 @@
-import * as Constants from "../constants.js";
+import * as Constants from '../constants.js';
 import { Renderer } from './renderer.js';
 
 const GL_SAMPLER_MAP = {
     magFilter: {
         'nearest': WebGL2RenderingContext.NEAREST,
-        'linear': WebGL2RenderingContext.LINEAR,
+        'linear': WebGL2RenderingContext.LINEAR
     },
     minFilter: {
         'nearest': WebGL2RenderingContext.NEAREST,
@@ -12,13 +12,13 @@ const GL_SAMPLER_MAP = {
         'nearest-mipmap-nearest': WebGL2RenderingContext.NEAREST_MIPMAP_NEAREST,
         'linear-mipmap-nearest': WebGL2RenderingContext.LINEAR_MIPMAP_NEAREST,
         'nearest-mipmap-linear': WebGL2RenderingContext.NEAREST_MIPMAP_LINEAR,
-        'linear-mipmap-linear': WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR,
+        'linear-mipmap-linear': WebGL2RenderingContext.LINEAR_MIPMAP_LINEAR
     },
     addressMode: {
         'clamp-to-edge': WebGL2RenderingContext.CLAMP_TO_EDGE,
         'repeat': WebGL2RenderingContext.REPEAT,
-        'mirror-repeat': WebGL2RenderingContext.MIRRORED_REPEAT,
-    },
+        'mirror-repeat': WebGL2RenderingContext.MIRRORED_REPEAT
+    }
 };
 
 class GLRenderer extends Renderer
@@ -37,10 +37,10 @@ class GLRenderer extends Renderer
             antialias: true,
             depth: true,
             stencil: false,
-            preserveDrawingBuffer: false,
+            preserveDrawingBuffer: false
         } );
 
-        if( this.quitIfWebGLNotAvailable() === Constants.WEBGL_ERROR )
+        if ( this.quitIfWebGLNotAvailable() === Constants.WEBGL_ERROR )
         {
             return;
         }
@@ -63,12 +63,15 @@ class GLRenderer extends Renderer
         gl.disable( gl.BLEND );
 
         // Create vertex data
-        const FULLSCREEN_VERTICES = new Float32Array([
+        const FULLSCREEN_VERTICES = new Float32Array( [
             // x,  y,
-            -1, -1,
-            3, -1,
-            -1,  3,
-        ]);
+            -1,
+            -1,
+            3,
+            -1,
+            -1,
+            3
+        ] );
 
         this.fullscreenVBO = gl.createBuffer();
         gl.bindBuffer( gl.ARRAY_BUFFER, this.fullscreenVBO );
@@ -110,7 +113,7 @@ class GLRenderer extends Renderer
         // WebGL has no W wrap unless using 3D textures
         if ( desc.addressModeW && gl.TEXTURE_WRAP_R !== undefined )
         {
-            const wrapW = GL_SAMPLER_MAP.addressMode[ desc.addressModeW ];
+            const wrapW = GL_SAMPLER_MAP.addressMode[desc.addressModeW];
             gl.samplerParameteri( sampler, gl.TEXTURE_WRAP_R, wrapW );
         }
 
@@ -121,14 +124,14 @@ class GLRenderer extends Renderer
     {
         const gl = this.gl;
 
-        const width  = desc.size?.[0] ?? 1;
+        const width = desc.size?.[0] ?? 1;
         const height = desc.size?.[1] ?? 1;
         const format = desc.format ?? 'rgba8unorm';
 
         // Map WebGPU format -> GL format
         const glFormat = gl.RGBA8;
-        const glType   = gl.UNSIGNED_BYTE;
-        const glBase   = gl.RGBA;
+        const glType = gl.UNSIGNED_BYTE;
+        const glBase = gl.RGBA;
 
         // Create texture
         const texture = gl.createTexture();
@@ -184,7 +187,7 @@ class GLRenderer extends Renderer
             width,
             height,
             depthOrArrayLayers: 1,
-            format,
+            format
         };
     }
 
@@ -208,7 +211,7 @@ class GLRenderer extends Renderer
         return texture;
     }
 
-    async createTextureFromImage( data, id, label = "", options = {} )
+    async createTextureFromImage( data, id, label = '', options = {} )
     {
         options.flipY = options.flipY ?? true;
         options.useMipmaps = options.useMipmaps ?? true;
@@ -253,26 +256,26 @@ class GLRenderer extends Renderer
         // unbind once done
         gl.bindTexture( gl.TEXTURE_2D, null );
 
-        this.gpuTextures[ id ] = texture;
+        this.gpuTextures[id] = texture;
 
         return texture;
     }
 
-    async createCubemapTextureFromImage( arrayBuffer, id, label = "", options = {} )
+    async createCubemapTextureFromImage( arrayBuffer, id, label = '', options = {} )
     {
         options.flipY = options.flipY ?? false;
         options.useMipmaps = options.useMipmaps ?? true;
 
         const gl = this.gl;
         const zip = await JSZip.loadAsync( arrayBuffer );
-        const faceNames = [ "px", "nx", "ny", "py", "pz", "nz" ];
+        const faceNames = [ 'px', 'nx', 'ny', 'py', 'pz', 'nz' ];
         const faceImages = [];
 
-        for( const face of faceNames )
+        for ( const face of faceNames )
         {
-            const file = zip.file( `${ face }.png` ) || zip.file( `${ face }.jpg` );
-            if( !file ) throw new Error( `Missing cubemap face: ${ face }` );
-            const blob = await file.async( "blob" );
+            const file = zip.file( `${face}.png` ) || zip.file( `${face}.jpg` );
+            if ( !file ) throw new Error( `Missing cubemap face: ${face}` );
+            const blob = await file.async( 'blob' );
             const imageBitmap = await createImageBitmap( blob, {
                 imageOrientation: options.flipY ? 'flipY' : 'none'
             } );
@@ -284,7 +287,7 @@ class GLRenderer extends Renderer
 
         gl.bindTexture( gl.TEXTURE_CUBE_MAP, texture );
 
-        for( let i = 0; i < faceImages.length; ++i )
+        for ( let i = 0; i < faceImages.length; ++i )
         {
             const bitmap = faceImages[i];
 
@@ -318,7 +321,7 @@ class GLRenderer extends Renderer
         // unbind once done
         gl.bindTexture( gl.TEXTURE_CUBE_MAP, null );
 
-        this.gpuTextures[ id ] = texture;
+        this.gpuTextures[id] = texture;
 
         return texture;
     }
@@ -326,30 +329,30 @@ class GLRenderer extends Renderer
     updateFrame( timeDelta, elapsedTime, frameCount, shader )
     {
         const gl = this.gl;
-        if( !gl )
+        if ( !gl )
         {
             return;
         }
 
-        for( const pass of shader.passes )
+        for ( const pass of shader.passes )
         {
-            pass.setUniform( gl, "iTime", elapsedTime );
-            pass.setUniform( gl, "iTimeDelta", timeDelta );
-            pass.setUniform( gl, "iFrame", frameCount );
+            pass.setUniform( gl, 'iTime', elapsedTime );
+            pass.setUniform( gl, 'iTimeDelta', timeDelta );
+            pass.setUniform( gl, 'iFrame', frameCount );
         }
     }
 
     updateResolution( resolutionX, resolutionY, shader )
     {
         const gl = this.gl;
-        if( !gl )
+        if ( !gl )
         {
             return;
         }
 
-        for( const pass of shader.passes )
+        for ( const pass of shader.passes )
         {
-            pass.setUniform( gl, "iResolution", [
+            pass.setUniform( gl, 'iResolution', [
                 resolutionX ?? this.canvas.offsetWidth,
                 resolutionY ?? this.canvas.offsetHeight
             ] );
@@ -358,12 +361,12 @@ class GLRenderer extends Renderer
 
     updateMouse( data, shader )
     {
-        if( !this.device )
+        if ( !this.device )
         {
             return;
         }
 
-        for( const pass of shader.passes )
+        for ( const pass of shader.passes )
         {
             // pass.setUniform( gl, "iMouse", data );
         }
@@ -373,24 +376,24 @@ class GLRenderer extends Renderer
     {
         const encoder = this.device.createCommandEncoder();
 
-        for( let i = 0; i < mipLevelCount - 1; i++ )
+        for ( let i = 0; i < mipLevelCount - 1; i++ )
         {
-            const srcView = texture.createView({ baseMipLevel: i, mipLevelCount: 1 });
-            const dstView = texture.createView({ baseMipLevel: i + 1, mipLevelCount: 1 });
+            const srcView = texture.createView( { baseMipLevel: i, mipLevelCount: 1 } );
+            const dstView = texture.createView( { baseMipLevel: i + 1, mipLevelCount: 1 } );
 
-            const bindGroup = this.device.createBindGroup({
+            const bindGroup = this.device.createBindGroup( {
                 layout: this.mipmapPipeline.getBindGroupLayout( 0 ),
                 entries: [
                     { binding: 0, resource: srcView },
                     { binding: 1, resource: dstView }
                 ]
-            });
+            } );
 
             const pass = encoder.beginComputePass();
             pass.setPipeline( this.mipmapPipeline );
             pass.setBindGroup( 0, bindGroup );
 
-            const w = Math.max( 1, texture.width  >> ( i + 1 ) );
+            const w = Math.max( 1, texture.width >> ( i + 1 ) );
             const h = Math.max( 1, texture.height >> ( i + 1 ) );
 
             pass.dispatchWorkgroups( Math.ceil( w / 8 ), Math.ceil( h / 8 ) );
@@ -402,7 +405,7 @@ class GLRenderer extends Renderer
 
     quitIfWebGLNotAvailable()
     {
-        if( !this.gl )
+        if ( !this.gl )
         {
             this.fail( 'WebGL2 not available' );
             return Constants.WEBGL_ERROR;

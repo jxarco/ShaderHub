@@ -1,15 +1,14 @@
 import { LX } from 'lexgui';
 import 'lexgui/extensions/CodeEditor.js';
-import * as Constants from "./constants.js";
-import * as Utils from './utils.js';
-import { FS } from './fs.js';
 import { ShaderHub } from './app.js';
+import * as Constants from './constants.js';
+import { FS } from './fs.js';
+import * as Utils from './utils.js';
 
 const Query = Appwrite.Query;
 const mobile = Utils.isMobile();
 
 export const ui = {
-
     captureInProgress: false,
     pageExploreLimit: 12,
 
@@ -21,13 +20,13 @@ export const ui = {
         this.area = await LX.init();
         this.currentView = null; // 'home' | 'explore' | 'view' | 'create' | 'user'
 
-        if( fs.user )
+        if ( fs.user )
         {
-            const users = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_id", fs.getUserId() ) ] );
-            this.dbUser = users.documents[ 0 ];
+            const users = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_id', fs.getUserId() ) ] );
+            this.dbUser = users.documents[0];
 
             const userMode = this.dbUser.app_mode;
-            if( userMode && userMode !== 'Auto' )
+            if ( userMode && userMode !== 'Auto' )
             {
                 LX.setMode( userMode.toLowerCase() );
             }
@@ -40,44 +39,47 @@ export const ui = {
 
         const menubarOptions = [];
 
-        if( !mobile )
+        if ( !mobile )
         {
             menubarOptions.push(
                 {
-                    name: "New", callback: ( k, entry, event ) => this._openShader( "new", event )
+                    name: 'New',
+                    callback: ( k, entry, event ) => this._openShader( 'new', event )
                 },
                 {
-                    name: "Explore", callback: ( k, entry, event ) => this._openPage( `${k.toLowerCase()}/`, event )
+                    name: 'Explore',
+                    callback: ( k, entry, event ) => this._openPage( `${k.toLowerCase()}/`, event )
                 },
                 {
-                    name: "Docs", callback: ( k, entry, event ) => this._openPage( `${k.toLowerCase()}/`, event )
+                    name: 'Docs',
+                    callback: ( k, entry, event ) => this._openPage( `${k.toLowerCase()}/`, event )
                 }
             );
         }
 
-        const menubar = this.area.addMenubar( menubarOptions, { parentClass: "bg-none" } );
+        const menubar = this.area.addMenubar( menubarOptions, { parentClass: 'bg-none' } );
         LX.addClass( menubar.root, '[&_.lexmenuentry]:hidden! [&_.lexmenuentry]:md:flex!' );
 
-        const querySearch = params.get( "search" );
-        const searchShaderInput = new LX.TextInput(null, querySearch ?? '', v => {
-            if( v.length ) this._searchShader( v )
-        }, { placeholder: "Search...", className: "mx-auto flex-auto-fill max-w-[40%] md:max-w-[25%] 2xl:max-w-[20%]" });
+        const querySearch = params.get( 'search' );
+        const searchShaderInput = new LX.TextInput( null, querySearch ?? '', ( v ) => {
+            if ( v.length ) this._searchShader( v );
+        }, { placeholder: 'Search...', className: 'mx-auto flex-auto-fill max-w-[40%] md:max-w-[25%] 2xl:max-w-[20%]' } );
         menubar.root.appendChild( searchShaderInput.root );
 
         // Add badge to Docs entry
         {
             const entry = menubar.root.querySelector( '#Docs span' );
-            if( entry )
+            if ( entry )
             {
                 LX.addClass( entry, 'flex flex-row gap-2' );
-                entry.appendChild( LX.badge( "new", "xs primary", { asElement: true } ) );
+                entry.appendChild( LX.badge( 'new', 'xs primary', { asElement: true } ) );
             }
         }
 
         // Do it always and use it for small screens
         {
             const sidebarOptions = {
-                headerTitle: fs.user ? fs.user.name : "Guest",
+                headerTitle: fs.user ? fs.user.name : 'Guest',
                 headerSubtitle: fs.user ? fs.user.email : undefined,
                 headerImage: this.dbUser?.avatar ?? `${ShaderHub.imagesRootPath}/favicon.png`,
                 skipFooter: true,
@@ -86,116 +88,116 @@ export const ui = {
                 displaySelected: true
             };
 
-            const sidebarCallback = m => {
-                if( fs.user )
+            const sidebarCallback = ( m ) => {
+                if ( fs.user )
                 {
-                    m.add( "Profile", { icon: "User", callback: () => this._openUserProfile( fs.getUserId() ) } );
+                    m.add( 'Profile', { icon: 'User', callback: () => this._openUserProfile( fs.getUserId() ) } );
                 }
                 else
                 {
-                    m.add( "Login", { icon: "LogIn", callback: () => this.openLoginDialog() } );
-                    m.add( "Create account", { icon: "UserPlus", callback: () => this.openSignUpDialog() } );
+                    m.add( 'Login', { icon: 'LogIn', callback: () => this.openLoginDialog() } );
+                    m.add( 'Create account', { icon: 'UserPlus', callback: () => this.openSignUpDialog() } );
                 }
 
-                m.add( "Explore", { icon: "Search", callback: () => this._openPage( "explore" ) } );
-                m.add( "Docs", { icon: "BookOpen", callback: () => this._openPage( "docs" ) } );
+                m.add( 'Explore', { icon: 'Search', callback: () => this._openPage( 'explore' ) } );
+                m.add( 'Docs', { icon: 'BookOpen', callback: () => this._openPage( 'docs' ) } );
 
-                if( fs.user )
+                if ( fs.user )
                 {
-                    m.add( "Logout", { icon: "LogOut", callback: async () => {
+                    m.add( 'Logout', { icon: 'LogOut', callback: async () => {
                         await this.onLogout();
                     } } );
                 }
-            }
+            };
 
-            const sheetArea = new LX.Area({ skipAppend: true });
+            const sheetArea = new LX.Area( { skipAppend: true } );
             sheetArea.addSidebar( sidebarCallback, sidebarOptions );
 
-            menubar.setButtonIcon( 'Menu', 'Menu', () => window.__currentSheet = new LX.Sheet("256px", [ sheetArea ],
-                { side: "right" } ) );
-            const menuButton = menubar.buttons[ 'Menu' ].root;
+            menubar.setButtonIcon( 'Menu', 'Menu', () => window.__currentSheet = new LX.Sheet( '256px', [ sheetArea ], { side: 'right' } ) );
+            const menuButton = menubar.buttons['Menu'].root;
             LX.addClass( menuButton, 'md:hidden ml-auto' );
         }
-        
-        if( !mobile )
+
+        if ( !mobile )
         {
-            const accountContainer = LX.makeContainer( [`auto`, "auto"], "hidden md:flex flex-row p-1 gap-1 self-center items-center ml-auto", "", menubar.root );
+            const accountContainer = LX.makeContainer( [ `auto`, 'auto' ], 'hidden md:flex flex-row p-1 gap-1 self-center items-center ml-auto', '', menubar.root );
 
-            const signupContainer = LX.makeContainer( [`auto`, "auto"], "flex flex-row p-1 gap-1 self-center items-center", "", accountContainer );
-            signupContainer.id = "signupContainer";
-            signupContainer.classList.toggle( "hidden", !!fs.user );
+            const signupContainer = LX.makeContainer( [ `auto`, 'auto' ], 'flex flex-row p-1 gap-1 self-center items-center', '', accountContainer );
+            signupContainer.id = 'signupContainer';
+            signupContainer.classList.toggle( 'hidden', !!fs.user );
 
-            const signupOptionsButton = new LX.Button( null, "Create account", () => this.openSignUpDialog(), { buttonClass: 'ghost h-8 px-4' } );
+            const signupOptionsButton = new LX.Button( null, 'Create account', () => this.openSignUpDialog(), { buttonClass: 'ghost h-8 px-4' } );
             signupContainer.appendChild( signupOptionsButton.root );
 
             // Separator
-            LX.makeContainer( [`auto`, "0.85rem"], "border-right border-color text-foreground self-center items-center", "", signupContainer );
+            LX.makeContainer( [ `auto`, '0.85rem' ], 'border-right border-color text-foreground self-center items-center', '', signupContainer );
 
             this.getLoginHtml = async ( user ) => {
-
                 if ( !user )
                 {
                     this._setLoginButtonClass( 'primary' );
-                    return "Login";
+                    return 'Login';
                 }
 
-                if( !this.dbUser )
+                if ( !this.dbUser )
                 {
                     this._setLoginButtonClass( 'primary' );
-                    return "Login";
+                    return 'Login';
                 }
 
-                const avatar = new LX.Avatar({
+                const avatar = new LX.Avatar( {
                     imgSource: this.dbUser.avatar,
-                    fallback: this.dbUser.user_name[ 0 ].toUpperCase(),
-                    className: 'mx-2 size-5',
-                });
+                    fallback: this.dbUser.user_name[0].toUpperCase(),
+                    className: 'mx-2 size-5'
+                } );
 
                 this._setLoginButtonClass( 'ghost' );
 
-                return  `<span class="hidden md:block decoration-none">${ user.email }</span>
-                    ${ avatar.root.outerHTML }
-                    ${ LX.makeIcon("ChevronsUpDown", { iconClass: "pl-2" } ).innerHTML }`;
+                return `<span class="hidden md:block decoration-none">${user.email}</span>
+                    ${avatar.root.outerHTML}
+                    ${LX.makeIcon( 'ChevronsUpDown', { iconClass: 'pl-2' } ).innerHTML}`;
             };
 
             const loginOptionsButton = new LX.Button( null, '', async () => {
-                if( fs.user )
+                if ( fs.user )
                 {
                     new LX.DropdownMenu( loginOptionsButton.root, [
                         fs.user.name,
                         null,
-                        { name: "Profile", icon: "User", callback: () => this._openUserProfile( fs.getUserId() ) },
+                        { name: 'Profile', icon: 'User', callback: () => this._openUserProfile( fs.getUserId() ) },
                         null,
-                        { name: "Logout", icon: "LogOut", className: "destructive", callback: async () => {
+                        { name: 'Logout', icon: 'LogOut', className: 'destructive', callback: async () => {
                             await this.onLogout();
-                        } },
-                    ], { side: "bottom", align: "end", alignOffset: -12 });
+                        } }
+                    ], { side: 'bottom', align: 'end', alignOffset: -12 } );
                 }
                 else
                 {
                     this.openLoginDialog();
                 }
-            }, { className: "mx-2 flex-auto-keep", buttonClass: 'ghost h-8 px-4' } );
-            loginOptionsButton.root.id = "loginOptionsButton";
+            }, { className: 'mx-2 flex-auto-keep', buttonClass: 'ghost h-8 px-4' } );
+            loginOptionsButton.root.id = 'loginOptionsButton';
 
-            const loginOptionsButtonDOM = loginOptionsButton.root.querySelector( "button" );
-            LX.doAsync( async () => { loginOptionsButtonDOM.innerHTML = await this.getLoginHtml( fs.user ) }, 10 );
+            const loginOptionsButtonDOM = loginOptionsButton.root.querySelector( 'button' );
+            LX.doAsync( async () => {
+                loginOptionsButtonDOM.innerHTML = await this.getLoginHtml( fs.user );
+            }, 10 );
 
             accountContainer.appendChild( loginOptionsButton.root );
         }
 
-        menubar.setButtonImage("ShaderHub", mobile ? `${ShaderHub.imagesRootPath}/favicon.png` : `${ShaderHub.imagesRootPath}/icon_${ starterMode }.png`, ( element, event ) => {
+        menubar.setButtonImage( 'ShaderHub', mobile ? `${ShaderHub.imagesRootPath}/favicon.png` : `${ShaderHub.imagesRootPath}/icon_${starterMode}.png`, ( element, event ) => {
             this._openPage( '', event );
-        }, { float: "left" } );
+        }, { float: 'left' } );
 
-        LX.addSignal( "@on_new_color_scheme", ( el, value ) => {
-            if( !mobile )
+        LX.addSignal( '@on_new_color_scheme', ( el, value ) => {
+            if ( !mobile )
             {
-                menubar.setButtonImage("ShaderHub", `${ShaderHub.imagesRootPath}/icon_${ value }.png`, null, { float: "left" } );
+                menubar.setButtonImage( 'ShaderHub', `${ShaderHub.imagesRootPath}/icon_${value}.png`, null, { float: 'left' } );
             }
         } );
 
-        menubar.root.classList.add( "hub-background-blur-md" );
+        menubar.root.classList.add( 'hub-background-blur-md' );
 
         // Update main area after creating menubar
         {
@@ -207,23 +209,22 @@ export const ui = {
 
         this.router();
 
-        const isEmailVerification = params.get( "verifyEmail" ) === "true";
-        const queryPasswordRecoverySecret = params.get( "secret" );
-        const queryPasswordRecoveryUserId = params.get( "userId" );
-        if( isEmailVerification )
+        const isEmailVerification = params.get( 'verifyEmail' ) === 'true';
+        const queryPasswordRecoverySecret = params.get( 'secret' );
+        const queryPasswordRecoveryUserId = params.get( 'userId' );
+        if ( isEmailVerification )
         {
             // use data for email verification
-            const result = await fs.account.updateEmailVerification({
+            const result = await fs.account.updateEmailVerification( {
                 userId: queryPasswordRecoveryUserId,
                 secret: queryPasswordRecoverySecret
-            });
-            if( result )
+            } );
+            if ( result )
             {
-                Utils.toast( `✅ Email verified successfully!`, `User: ${ fs.user.name }` );
+                Utils.toast( `✅ Email verified successfully!`, `User: ${fs.user.name}` );
             }
-            
         }
-        else if( queryPasswordRecoverySecret && queryPasswordRecoveryUserId )
+        else if ( queryPasswordRecoverySecret && queryPasswordRecoveryUserId )
         {
             this.openUpdatePasswordRecoverDialog( queryPasswordRecoveryUserId, queryPasswordRecoverySecret );
         }
@@ -231,12 +232,11 @@ export const ui = {
 
     async router()
     {
-        if( window.__currentSheet ) window.__currentSheet.destroy()
+        if ( window.__currentSheet ) window.__currentSheet.destroy();
 
         const path = window.location.pathname;
 
-        const isGraphicsPath = ( path ) =>
-            path.startsWith( '/view' ) || path.startsWith( '/create' );
+        const isGraphicsPath = ( path ) => path.startsWith( '/view' ) || path.startsWith( '/create' );
 
         const goingToGraphics = isGraphicsPath( path );
         const currentlyInGraphics = isGraphicsPath( '/' + this.currentView );
@@ -282,8 +282,8 @@ export const ui = {
 
     _setLoginButtonClass( className )
     {
-        const loginButton = document.querySelector( "#loginOptionsButton button" );
-        if( !loginButton ) return;
+        const loginButton = document.querySelector( '#loginOptionsButton button' );
+        if ( !loginButton ) return;
 
         LX.removeClass( loginButton, 'primary ghost' );
         LX.addClass( loginButton, className );
@@ -292,7 +292,7 @@ export const ui = {
     _searchShader( v )
     {
         const url = new URL( `${ShaderHub.getFullPath( false )}/explore/` );
-        if( v && v.trim() )
+        if ( v && v.trim() )
         {
             url.searchParams.set( 'search', v.trim() );
         }
@@ -303,15 +303,15 @@ export const ui = {
         window.location.href = url.toString();
     },
 
-    _openPage( path = "", e )
+    _openPage( path = '', e )
     {
         const isDocs = path.startsWith( 'docs' );
-        const url = `${ ShaderHub.getFullPath( false ) }/${ path }`;
+        const url = `${ShaderHub.getFullPath( false )}/${path}`;
 
         if ( e?.button === 1 || e?.ctrlKey || e?.metaKey )
         {
             e.preventDefault();
-            window.open( url, "_blank" );
+            window.open( url, '_blank' );
             return;
         }
 
@@ -328,12 +328,12 @@ export const ui = {
 
     _openShader( shaderID, e )
     {
-        const path = ( shaderID === 'new' ) ? '/create/' : `/view/${Utils.encodeUID(shaderID )}`;
+        const path = ( shaderID === 'new' ) ? '/create/' : `/view/${Utils.encodeUID( shaderID )}`;
         const url = `${ShaderHub.getFullPath( false )}${path}`;
 
         if ( e?.button === 1 || e?.ctrlKey || e?.metaKey )
         {
-            window.open( url, "_blank" );
+            window.open( url, '_blank' );
             return;
         }
 
@@ -359,7 +359,7 @@ export const ui = {
     _explorePage( v )
     {
         const url = new URL( `${ShaderHub.getFullPath( false )}/explore/` );
-        if( v && v.trim() )
+        if ( v && v.trim() )
         {
             url.searchParams.set( 'page', v.trim() );
         }
@@ -376,8 +376,8 @@ export const ui = {
         const currUrl = new URL( window.location.href );
         const url = new URL( `${ShaderHub.getFullPath( false )}/explore/` );
         url.search = currUrl.search;
-        const alreadyThere = ( url.searchParams.get( "feature" ) === v );
-        if( v && v.trim() && !alreadyThere )
+        const alreadyThere = url.searchParams.get( 'feature' ) === v;
+        if ( v && v.trim() && !alreadyThere )
         {
             url.searchParams.set( 'feature', v.trim() );
         }
@@ -395,8 +395,8 @@ export const ui = {
         const currUrl = new URL( window.location.href );
         const url = new URL( `${ShaderHub.getFullPath( false )}/${page ?? 'explore'}/` );
         url.search = currUrl.search;
-        const alreadyThere = ( url.searchParams.get( "order_by" ) === v );
-        if( v && v.trim() && !alreadyThere )
+        const alreadyThere = url.searchParams.get( 'order_by' ) === v;
+        if ( v && v.trim() && !alreadyThere )
         {
             url.searchParams.set( 'order_by', v.trim() );
         }
@@ -411,8 +411,9 @@ export const ui = {
 
     _makeFooter( area )
     {
-        LX.makeContainer( [`auto`, "auto"], "text-foreground text-sm flex flex-row gap-2 self-center items-center text-center place-content-center", `
-            ${ LX.makeIcon("Github@solid", { svgClass:"lg" } ).innerHTML }<a class="decoration-none hover:underline underline-offset-4" href="https://github.com/upf-gti/ShaderHub">Code on Github</a>`, area );
+        LX.makeContainer( [ `auto`, 'auto' ], 'text-foreground text-sm flex flex-row gap-2 self-center items-center text-center place-content-center', `
+            ${LX.makeIcon( 'Github@solid', { svgClass: 'lg' } ).innerHTML}<a class="decoration-none hover:underline underline-offset-4" href="https://github.com/upf-gti/ShaderHub">Code on Github</a>`,
+            area );
     },
 
     _clearContent()
@@ -428,73 +429,74 @@ export const ui = {
 
         this.currentView = 'home';
 
-        var [ topArea, bottomArea ] = this.area.split({ type: "vertical", sizes: ["calc(100% - 48px)", "48px"], resize: false });
-        this.area.root.className += " hub-background";
-        bottomArea.root.className += " items-center content-center";
-        topArea.root.className += " flex flex-row hub-background-blur content-area";
+        var [ topArea, bottomArea ] = this.area.split( { type: 'vertical', sizes: [ 'calc(100% - 48px)', '48px' ], resize: false } );
+        this.area.root.className += ' hub-background';
+        bottomArea.root.className += ' items-center content-center';
+        topArea.root.className += ' flex flex-row hub-background-blur content-area';
 
         this._makeFooter( bottomArea );
 
-        let leftSide = LX.makeContainer( ["auto", "100%"], "bg-none flex flex-col p-8 gap-2 overflow-scroll", "", topArea );
-        leftSide.style.minWidth = "50%";
-        let rightSide = LX.makeContainer( ["100%", "100%"], "bg-none flex flex-col p-8 place-content-center items-center", "", topArea );
+        let leftSide = LX.makeContainer( [ 'auto', '100%' ], 'bg-none flex flex-col p-8 gap-2 overflow-scroll', '', topArea );
+        leftSide.style.minWidth = '50%';
+        let rightSide = LX.makeContainer( [ '100%', '100%' ], 'bg-none flex flex-col p-8 place-content-center items-center', '', topArea );
 
         // Create title/login area
         {
-            const container = LX.makeContainer( ["100%", "100%"], "bg-background-blur flex flex-col gap-4 rounded-xl py-12 box-shadow box-border justify-evenly overflow-scroll", "", rightSide );
-            
-            if( this.fs.user )
+            const container = LX.makeContainer( [ '100%', '100%' ], 'bg-background-blur flex flex-col gap-4 rounded-xl py-12 box-shadow box-border justify-evenly overflow-scroll', '', rightSide );
+
+            if ( this.fs.user )
             {
-                const users = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_id", this.fs.getUserId() ) ] );
-                const dbUser = users.documents[ 0 ];
-                const welcomeMessage = LX.makeContainer( ["100%", "15%"], "px-8 text-center text-3xl text-card-foreground content-center", `Welcome ${ dbUser.display_name ?? dbUser.user_name }!`, container );
-                welcomeMessage.id = "welcomeMessage";
+                const users = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_id', this.fs.getUserId() ) ] );
+                const dbUser = users.documents[0];
+                const welcomeMessage = LX.makeContainer( [ '100%', '15%' ], 'px-8 text-center text-3xl text-card-foreground content-center', `Welcome ${dbUser.display_name ?? dbUser.user_name}!`,
+                    container );
+                welcomeMessage.id = 'welcomeMessage';
             }
-            
-            const header = LX.makeContainer( [ null, "auto" ], "flex flex-col px-4 md:px-10 gap-12 text-center items-center place-content-center", `
+
+            const header = LX.makeContainer( [ null, 'auto' ], 'flex flex-col px-4 md:px-10 gap-12 text-center items-center place-content-center', `
                 <img src="${ShaderHub.imagesRootPath}/favicon.png" class="">
-                <span class="text-muted-foreground text-2xl sm:text-3xl font-medium">ShaderHub (Pre alpha ${ ShaderHub.version })</span>
+                <span class="text-muted-foreground text-2xl sm:text-3xl font-medium">ShaderHub (Pre alpha ${ShaderHub.version})</span>
                 <span class="text-balanced text-4xl sm:text-5xl font-medium">Create and share shaders using latest WebGPU!</span>
                 <a onclick='ui._openShader("new")' class="flex flex-row gap-1 items-center text-sm p-1 px-4 rounded-full text-secondary-foreground decoration-none hover:bg-secondary cursor-pointer"><span class="flex flex-auto-keep bg-orange-500 w-2 h-2 rounded-full"></span>
-                <span class="flex flex-auto-fill">New WebGL Renderer, New Sound Channel, and New Docs</span>${ LX.makeIcon( "ArrowRight", { svgClass: "flex flex-auto-keep sm" } ).innerHTML }</a>
+                <span class="flex flex-auto-fill">New WebGL Renderer, New Sound Channel, and New Docs</span>${LX.makeIcon( 'ArrowRight', { svgClass: 'flex flex-auto-keep sm' } ).innerHTML}</a>
             `, container );
 
-            if( !mobile )
+            if ( !mobile )
             {
-                const headerButtons = LX.makeContainer( [ "auto", "auto" ], "flex flex-row p-2", ``, header );
-                const getStartedButton = new LX.Button( null, "Create a Shader", () => this._openShader( "new" ), { icon: "ChevronRight", iconPosition: "end", buttonClass: "lg primary" } );
+                const headerButtons = LX.makeContainer( [ 'auto', 'auto' ], 'flex flex-row p-2', ``, header );
+                const getStartedButton = new LX.Button( null, 'Create a Shader', () => this._openShader( 'new' ), { icon: 'ChevronRight', iconPosition: 'end', buttonClass: 'lg primary' } );
                 headerButtons.appendChild( getStartedButton.root );
             }
 
-            if( !this.fs.user )
+            if ( !this.fs.user )
             {
-                const loginContainer = LX.makeContainer( ["100%", "auto"], "max-w-128 flex flex-col gap-2 p-6 text-center text-card-foreground", "Sign in to save your shaders:", container );
-                const formData = { email: { label: "Email", value: "", icon: "AtSign" }, password: { label: "Password", icon: "Key", value: "", type: "password" } };
-                const form = new LX.Form( null, formData, async (value, event) => {
+                const loginContainer = LX.makeContainer( [ '100%', 'auto' ], 'max-w-128 flex flex-col gap-2 p-6 text-center text-card-foreground', 'Sign in to save your shaders:', container );
+                const formData = { email: { label: 'Email', value: '', icon: 'AtSign' }, password: { label: 'Password', icon: 'Key', value: '', type: 'password' } };
+                const form = new LX.Form( null, formData, async ( value, event ) => {
                     await this.fs.login( value.email, value.password, async ( user, session ) => {
                         await this.onLogin( user );
-                    }, (err) => {
+                    }, ( err ) => {
                         Utils.toast( `❌ Error`, err, -1 );
                     } );
-                }, { primaryActionName: "Login" });
+                }, { primaryActionName: 'Login' } );
                 loginContainer.appendChild( form.root );
-                const forgotButton = new LX.Button( null, "Forgot my password", async () => {
+                const forgotButton = new LX.Button( null, 'Forgot my password', async () => {
                     this.openRecoverPasswordDialog();
-                }, { buttonClass: "link" } );
+                }, { buttonClass: 'link' } );
                 loginContainer.appendChild( forgotButton.root );
             }
         }
 
-        let skeletonHtml = "";
+        let skeletonHtml = '';
 
-        for( let i = 0; i < 3; ++i )
+        for ( let i = 0; i < 3; ++i )
         {
-            const shaderItem = LX.makeElement( "li", `shader-item ${ i === 0 ? "featured" : "" } lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, "" );
-            const shaderPreview = LX.makeElement( "img", "opacity-0 rounded-lg border-none cursor-pointer self-center mt-2", "", shaderItem );
-            shaderPreview.style.width = "calc(100% - 1rem)";
-            shaderPreview.style.height = "calc(100% - 1rem)";
+            const shaderItem = LX.makeElement( 'li', `shader-item ${i === 0 ? 'featured' : ''} lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
+            const shaderPreview = LX.makeElement( 'img', 'opacity-0 rounded-lg border-none cursor-pointer self-center mt-2', '', shaderItem );
+            shaderPreview.style.width = 'calc(100% - 1rem)';
+            shaderPreview.style.height = 'calc(100% - 1rem)';
             shaderPreview.src = ShaderHub.shaderPreviewPath;
-            LX.makeContainer( ["100%", "auto"], "bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none", `
+            LX.makeContainer( [ '100%', 'auto' ], 'bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
                 <div class="w-full flex flex-col gap-1">
                     <div class="w-3/4 h-3 lexskeletonpart"></div>
                     <div class="w-1/2 h-3 lexskeletonpart"></div>
@@ -503,106 +505,106 @@ export const ui = {
             skeletonHtml += shaderItem.outerHTML;
         }
 
-        LX.makeContainer( ["100%", "auto"], "font-medium text-card-foreground", `Featured Shaders`, leftSide, { fontSize: "2rem" } );
+        LX.makeContainer( [ '100%', 'auto' ], 'font-medium text-card-foreground', `Featured Shaders`, leftSide, { fontSize: '2rem' } );
 
         const skeleton = new LX.Skeleton( skeletonHtml );
-        skeleton.root.classList.add( "grid", "shader-list-initial", "gap-8", "justify-center" );
+        skeleton.root.classList.add( 'grid', 'shader-list-initial', 'gap-8', 'justify-center' );
         leftSide.appendChild( skeleton.root );
 
         // Get all stored shader files (not the code, only the data)
         const result = await this.fs.listDocuments( FS.SHADERS_COLLECTION_ID, [
-            Query.or( [ Query.equal( "public", true ), Query.isNull( "public" ) ] ),
+            Query.or( [ Query.equal( 'public', true ), Query.isNull( 'public' ) ] ),
             Query.orderDesc( 'like_count' ),
-            Query.limit( 3 ),
+            Query.limit( 3 )
         ] );
 
         const previewFiles = await this.fs.listFiles( [
-            Query.startsWith( "name", ShaderHub.previewNamePrefix ),
-            Query.endsWith( "name", ".png" ),
-            Query.contains( "name", result.documents.map( d => d[ "$id" ] ) )
+            Query.startsWith( 'name', ShaderHub.previewNamePrefix ),
+            Query.endsWith( 'name', '.png' ),
+            Query.contains( 'name', result.documents.map( ( d ) => d['$id'] ) )
         ] );
 
         const usersDocuments = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [
-            Query.contains( "user_id", result.documents.map( d => d[ "author_id" ] ) )
+            Query.contains( 'user_id', result.documents.map( ( d ) => d['author_id'] ) )
         ] );
 
         LX.doAsync( async () => {
-
             let shaderList = [];
 
-            for( const document of result.documents )
+            for ( const document of result.documents )
             {
                 const name = document.name;
 
                 const shaderInfo = {
                     name,
-                    uid: document[ "$id" ],
-                    creationDate: Utils.toESDate( document[ "$createdAt" ] ),
-                    likeCount: document[ "like_count" ] ?? 0
+                    uid: document['$id'],
+                    creationDate: Utils.toESDate( document['$createdAt'] ),
+                    likeCount: document['like_count'] ?? 0
                 };
 
-                const authorId = document[ "author_id" ];
-                if( authorId )
+                const authorId = document['author_id'];
+                if ( authorId )
                 {
-                    const userDocument = usersDocuments.documents.find( d => d[ "user_id" ] === authorId );
-                    const author = userDocument[ "user_name" ];
+                    const userDocument = usersDocuments.documents.find( ( d ) => d['user_id'] === authorId );
+                    const author = userDocument['user_name'];
                     shaderInfo.author = author;
                     shaderInfo.authorId = authorId;
                 }
                 else
                 {
-                    shaderInfo.author = document[ "author_name" ];
+                    shaderInfo.author = document['author_name'];
                     shaderInfo.anonAuthor = true;
                 }
 
                 const previewName = ShaderHub.getShaderPreviewName( shaderInfo.uid );
-                const previewFile = previewFiles.files.find( f => f.name === previewName );
-                if( previewFile )
+                const previewFile = previewFiles.files.find( ( f ) => f.name === previewName );
+                if ( previewFile )
                 {
-                    shaderInfo.preview = await this.fs.getFileUrl( previewFile[ "$id" ] );
+                    shaderInfo.preview = await this.fs.getFileUrl( previewFile['$id'] );
                 }
                 else
                 {
-                    console.warn( `Can't find shader preview image for Shader: ${ shaderInfo.name }` );
+                    console.warn( `Can't find shader preview image for Shader: ${shaderInfo.name}` );
                 }
 
                 shaderList.push( shaderInfo );
             }
 
             // Instead of destroying it, convert to normal container
-            skeleton.root.querySelectorAll( ".lexskeletonpart" ).forEach( i => i.classList.remove( "lexskeletonpart" ) );
+            skeleton.root.querySelectorAll( '.lexskeletonpart' ).forEach( ( i ) => i.classList.remove( 'lexskeletonpart' ) );
 
-            for( let i = 0; i < shaderList.length; ++i )
+            for ( let i = 0; i < shaderList.length; ++i )
             {
-                const shader = shaderList[ i ];
-                const shaderItem = skeleton.root.children[ i ];
-                const shaderPreview = shaderItem.querySelector( "img" );
-                shaderPreview.style.width = "calc(100% - 1rem)";
+                const shader = shaderList[i];
+                const shaderItem = skeleton.root.children[i];
+                const shaderPreview = shaderItem.querySelector( 'img' );
+                shaderPreview.style.width = 'calc(100% - 1rem)';
                 shaderPreview.src = shader.preview ?? ShaderHub.shaderPreviewPath;
-                shaderPreview.onload = () => shaderPreview.classList.remove( "opacity-0" );
-                shaderItem.querySelector( "div" ).remove();
-                LX.makeContainer( ["100%", "auto"], "flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none", `
+                shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
+                shaderItem.querySelector( 'div' ).remove();
+                LX.makeContainer( [ '100%', 'auto' ], 'flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none', `
                     <div class="flex flex-row w-full items-center gap-2">
-                        <span class="text-base font-medium text-nowrap truncate">${ shader.name }</span>
-                        <span class="text-base font-light text-muted-foreground flex-auto-keep">by ${ !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${ shader.authorId }")' class='hub-link font-medium'>` : "" }<span>${ shader.author }</span>${ !shader.anonAuthor ? "</a>" : "" }</span>
+                        <span class="text-base font-medium text-nowrap truncate">${shader.name}</span>
+                        <span class="text-base font-light text-muted-foreground flex-auto-keep">by ${
+                    !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${shader.authorId}")' class='hub-link font-medium'>` : ''
+                }<span>${shader.author}</span>${!shader.anonAuthor ? '</a>' : ''}</span>
                         <div class="flex flex-row gap-1 items-center ml-auto flex-auto-keep">
-                            ${ LX.makeIcon( "Heart", { svgClass: "fill-current text-card-foreground" } ).innerHTML }
-                            <span>${ shader.likeCount ?? 0 }</span>
+                            ${LX.makeIcon( 'Heart', { svgClass: 'fill-current text-card-foreground' } ).innerHTML}
+                            <span>${shader.likeCount ?? 0}</span>
                         </div>
                     </div>`, shaderItem );
 
-                shaderPreview.addEventListener( "mousedown", e => e.preventDefault() );
-                shaderPreview.addEventListener( "mouseup", ( e ) => {
+                shaderPreview.addEventListener( 'mousedown', ( e ) => e.preventDefault() );
+                shaderPreview.addEventListener( 'mouseup', ( e ) => {
                     this._openShader( shader.uid, e );
                 } );
             }
 
-            if( shaderList.length === 0 )
+            if ( shaderList.length === 0 )
             {
-                skeleton.root.innerHTML = "";
-                LX.makeContainer( ["100%", "auto"], "mt-8 text-2xl font-medium justify-center text-center", "No shaders found.", skeleton.root );
+                skeleton.root.innerHTML = '';
+                LX.makeContainer( [ '100%', 'auto' ], 'mt-8 text-2xl font-medium justify-center text-center', 'No shaders found.', skeleton.root );
             }
-
         }, 10 );
     },
 
@@ -613,31 +615,31 @@ export const ui = {
         this.currentView = 'explore';
 
         const params = new URLSearchParams( document.location.search );
-        const queryFeature = params.get( "feature" );
-        const queryOrderBy = params.get( "order_by" );
-        const queryPage = params.get( "page" );
-        const querySearch = params.get( "search" );
+        const queryFeature = params.get( 'feature' );
+        const queryOrderBy = params.get( 'order_by' );
+        const queryPage = params.get( 'page' );
+        const querySearch = params.get( 'search' );
 
-        var [ topArea, bottomArea ] = this.area.split({ type: "vertical", sizes: ["calc(100% - 48px)", null], resize: false });
-        topArea.root.parentElement.classList.add( "hub-background" )
-        topArea.root.className += " p-6 overflow-scroll hub-background-blur";
-        bottomArea.root.className += " hub-background-blur-md items-center content-center";
+        var [ topArea, bottomArea ] = this.area.split( { type: 'vertical', sizes: [ 'calc(100% - 48px)', null ], resize: false } );
+        topArea.root.parentElement.classList.add( 'hub-background' );
+        topArea.root.className += ' p-6 overflow-scroll hub-background-blur';
+        bottomArea.root.className += ' hub-background-blur-md items-center content-center';
 
-        const header = LX.makeContainer( ["100%", "auto"], `flex ${ mobile ? "flex-col mb-2" : "flex-row" } font-medium text-card-foreground`, ``, topArea, { fontSize: "2rem" } );
+        const header = LX.makeContainer( [ '100%', 'auto' ], `flex ${mobile ? 'flex-col mb-2' : 'flex-row'} font-medium text-card-foreground`, ``, topArea, { fontSize: '2rem' } );
 
         this._makeFooter( bottomArea );
 
         // Filters
         {
-            const filtersPanel = new LX.Panel( { className: "p-4 bg-none flex-auto-fill", height: "auto" } );
+            const filtersPanel = new LX.Panel( { className: 'p-4 bg-none flex-auto-fill', height: 'auto' } );
             filtersPanel.sameLine();
 
-            filtersPanel.addLabel( "Features", { fit: true } );
+            filtersPanel.addLabel( 'Features', { fit: true } );
 
-            for( let f of Constants.FEATURES )
+            for ( let f of Constants.FEATURES )
             {
                 const fLower = f.toLowerCase();
-                filtersPanel.addButton( null, f, (v) => this._exploreFeature( v.toLowerCase() ), { buttonClass: `xs ${queryFeature === fLower ? "primary" : "outline bg-card!"}` } );
+                filtersPanel.addButton( null, f, ( v ) => this._exploreFeature( v.toLowerCase() ), { buttonClass: `xs ${queryFeature === fLower ? 'primary' : 'outline bg-card!'}` } );
             }
 
             filtersPanel.endLine();
@@ -646,17 +648,17 @@ export const ui = {
 
         // Exploring Shader Order
         {
-            const filtersPanel = new LX.Panel( { className: "p-4 bg-none flex-auto-fill", height: "auto" } );
+            const filtersPanel = new LX.Panel( { className: 'p-4 bg-none flex-auto-fill', height: 'auto' } );
             filtersPanel.sameLine();
 
-            filtersPanel.addLabel( "Order by", { fit: true } );
+            filtersPanel.addLabel( 'Order by', { fit: true } );
 
             const currentOrderFilter = queryOrderBy ?? 'recent';
 
-            for( let f of Constants.ORDER_BY_NAMES )
+            for ( let f of Constants.ORDER_BY_NAMES )
             {
                 const fLower = f.toLowerCase();
-                filtersPanel.addButton( null, f, (v) => this._exploreOrderBy( v.toLowerCase() ), { buttonClass: `xs ${currentOrderFilter === fLower ? "primary" : "outline bg-card!"}` } );
+                filtersPanel.addButton( null, f, ( v ) => this._exploreOrderBy( v.toLowerCase() ), { buttonClass: `xs ${currentOrderFilter === fLower ? 'primary' : 'outline bg-card!'}` } );
             }
 
             filtersPanel.endLine();
@@ -664,44 +666,44 @@ export const ui = {
         }
 
         const page = queryPage ? parseInt( queryPage ) : 1;
-        const orderBy = queryOrderBy ? Constants.ORDER_BY_MAPPING[ queryOrderBy ] : Constants.ORDER_BY_MAPPING[ "recent" ];
-        console.log( "Order by:", orderBy );
+        const orderBy = queryOrderBy ? Constants.ORDER_BY_MAPPING[queryOrderBy] : Constants.ORDER_BY_MAPPING['recent'];
+        console.log( 'Order by:', orderBy );
 
         const shaderQueries = [
-            Query.or( [ Query.equal( "public", true ), Query.isNull( "public" ) ] ),
-            orderBy.direction === "asc" ? Query.orderAsc( orderBy.field ) : Query.orderDesc( orderBy.field ),
+            Query.or( [ Query.equal( 'public', true ), Query.isNull( 'public' ) ] ),
+            orderBy.direction === 'asc' ? Query.orderAsc( orderBy.field ) : Query.orderDesc( orderBy.field ),
             Query.offset( ( page - 1 ) * this.pageExploreLimit ),
             Query.limit( this.pageExploreLimit )
-        ]
+        ];
 
-        if( querySearch )
+        if ( querySearch )
         {
             // Tag search
-            if( querySearch[ 0 ] === '#' )
+            if ( querySearch[0] === '#' )
             {
                 const tag = querySearch.substring( 1 );
-                shaderQueries.push( Query.contains( "tags", tag ) );
+                shaderQueries.push( Query.contains( 'tags', tag ) );
             }
             else
             {
                 shaderQueries.push( Query.or( [
-                    Query.contains( "name", querySearch ),
-                    Query.contains( "description", querySearch ),
-                    Query.contains( "author_name", querySearch ),
+                    Query.contains( 'name', querySearch ),
+                    Query.contains( 'description', querySearch ),
+                    Query.contains( 'author_name', querySearch )
                 ] ) );
             }
         }
 
-        if( queryFeature )
+        if ( queryFeature )
         {
-            shaderQueries.push( Query.contains( "features", queryFeature ) );
+            shaderQueries.push( Query.contains( 'features', queryFeature ) );
         }
 
         // Get all stored shader files (not the code, only the data)
         const result = await this.fs.listDocuments( FS.SHADERS_COLLECTION_ID, shaderQueries );
         const totalPages = Math.ceil( result.total / this.pageExploreLimit );
 
-        this.paginator = new LX.Pagination({
+        this.paginator = new LX.Pagination( {
             page,
             pages: totalPages,
             maxButtons: 4,
@@ -710,35 +712,35 @@ export const ui = {
             allowChangeItemsPerPage: true,
             className: 'flex-auto-keep',
             itemsPerPage: this.pageExploreLimit,
-            onChange: (page) => {
+            onChange: ( page ) => {
                 this._explorePage( page.toString() );
             },
-            onItemsPerPageChange: (n) => {
+            onItemsPerPageChange: ( n ) => {
                 this.pageExploreLimit = n;
                 this._explorePage();
             }
-        });
+        } );
         header.appendChild( this.paginator.root );
 
         this.paginator.setPages( totalPages );
 
         const dbShaders = ShaderHub.filterShaders( result.documents, querySearch );
-        if( dbShaders.length === 0 )
+        if ( dbShaders.length === 0 )
         {
-            LX.makeContainer( ["100%", "auto"], "mt-8 text-2xl font-medium justify-center text-center", "No shaders found.", topArea );
+            LX.makeContainer( [ '100%', 'auto' ], 'mt-8 text-2xl font-medium justify-center text-center', 'No shaders found.', topArea );
             return;
         }
 
-        let skeletonHtml = "";
+        let skeletonHtml = '';
 
-        for( let i = 0; i < dbShaders.length; ++i )
+        for ( let i = 0; i < dbShaders.length; ++i )
         {
-            const shaderItem = LX.makeElement( "li", `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, "" );
-            const shaderPreview = LX.makeElement( "img", "relative opacity-0 rounded-lg border-none cursor-pointer self-center mt-2", "", shaderItem );
-            shaderPreview.style.width = "calc(100% - 1rem)";
-            shaderPreview.style.height = "calc(100% - 1rem)";
+            const shaderItem = LX.makeElement( 'li', `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
+            const shaderPreview = LX.makeElement( 'img', 'relative opacity-0 rounded-lg border-none cursor-pointer self-center mt-2', '', shaderItem );
+            shaderPreview.style.width = 'calc(100% - 1rem)';
+            shaderPreview.style.height = 'calc(100% - 1rem)';
             shaderPreview.src = ShaderHub.shaderPreviewPath;
-            LX.makeContainer( ["100%", "auto"], "absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none", `
+            LX.makeContainer( [ '100%', 'auto' ], 'absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
                 <div class="w-full flex flex-col gap-1">
                     <div class="w-3/4 h-3 lexskeletonpart"></div>
                     <div class="w-1/2 h-3 lexskeletonpart"></div>
@@ -748,91 +750,92 @@ export const ui = {
         }
 
         const skeleton = new LX.Skeleton( skeletonHtml );
-        skeleton.root.classList.add( "grid", "shader-list", "gap-6", "justify-center" );
+        skeleton.root.classList.add( 'grid', 'shader-list', 'gap-6', 'justify-center' );
         topArea.attach( skeleton.root );
 
         // This should list only the preview files we need
         const previewFiles = await this.fs.listFiles( [
-            Query.startsWith( "name", ShaderHub.previewNamePrefix ),
-            Query.endsWith( "name", ".png" ),
-            Query.contains( "name", dbShaders.map( d => d[ "$id" ] ) ),
+            Query.startsWith( 'name', ShaderHub.previewNamePrefix ),
+            Query.endsWith( 'name', '.png' ),
+            Query.contains( 'name', dbShaders.map( ( d ) => d['$id'] ) ),
             Query.limit( this.pageExploreLimit )
         ] );
-        const usersDocuments = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_name", dbShaders.map( d => d[ "author_name" ] ) ) ] );
+        const usersDocuments = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_name', dbShaders.map( ( d ) => d['author_name'] ) ) ] );
 
         LX.doAsync( async () => {
-
             let shaderList = [];
 
-            for( const document of dbShaders )
+            for ( const document of dbShaders )
             {
                 const name = document.name;
-                const uid = document[ "$id" ];
+                const uid = document['$id'];
 
                 const shaderInfo = {
                     name,
                     uid,
-                    creationDate: Utils.toESDate( document[ "$createdAt" ] ),
-                    likeCount: document[ "like_count" ],
-                    features: ( document[ "features" ] ?? "" ).split( "," ),
-                    public: document[ "public" ] ?? true,
+                    creationDate: Utils.toESDate( document['$createdAt'] ),
+                    likeCount: document['like_count'],
+                    features: ( document['features'] ?? '' ).split( ',' ),
+                    public: document['public'] ?? true,
                     liked: this.dbUser ? ( this.dbUser.liked_shaders ?? [] ).includes( uid ) : false,
-                    backend: document[ "backend" ] ?? 'webgpu',
+                    backend: document['backend'] ?? 'webgpu'
                 };
 
-                const authorId = document[ "author_id" ];
-                if( authorId )
+                const authorId = document['author_id'];
+                if ( authorId )
                 {
-                    const userDocument = usersDocuments.documents.find( d => d[ "user_id" ] === authorId );
-                    const author = userDocument[ "user_name" ];
+                    const userDocument = usersDocuments.documents.find( ( d ) => d['user_id'] === authorId );
+                    const author = userDocument['user_name'];
                     shaderInfo.author = author;
                     shaderInfo.authorId = authorId;
                 }
                 else
                 {
-                    shaderInfo.author = document[ "author_name" ];
+                    shaderInfo.author = document['author_name'];
                     shaderInfo.anonAuthor = true;
                 }
 
                 const previewName = ShaderHub.getShaderPreviewName( shaderInfo.uid );
-                const previewFile = previewFiles.files.find( f => f.name === previewName );
-                if( previewFile )
+                const previewFile = previewFiles.files.find( ( f ) => f.name === previewName );
+                if ( previewFile )
                 {
-                    shaderInfo.preview = await this.fs.getFileUrl( previewFile[ "$id" ] );
+                    shaderInfo.preview = await this.fs.getFileUrl( previewFile['$id'] );
                 }
                 else
                 {
-                    console.warn( `Can't find shader preview image for Shader: ${ shaderInfo.name }` );
+                    console.warn( `Can't find shader preview image for Shader: ${shaderInfo.name}` );
                 }
 
                 shaderList.push( shaderInfo );
             }
 
             // Instead of destroying it, convert to normal container
-            skeleton.root.querySelectorAll( ".lexskeletonpart" ).forEach( i => i.classList.remove( "lexskeletonpart" ) );
+            skeleton.root.querySelectorAll( '.lexskeletonpart' ).forEach( ( i ) => i.classList.remove( 'lexskeletonpart' ) );
 
-            for( let i = 0; i < shaderList.length; ++i )
+            for ( let i = 0; i < shaderList.length; ++i )
             {
-                const shader = shaderList[ i ];
-                const shaderItem = skeleton.root.children[ i ];
-                const shaderPreview = shaderItem.querySelector( "img" );
-                shaderPreview.style.width = "calc(100% - 1rem)";
+                const shader = shaderList[i];
+                const shaderItem = skeleton.root.children[i];
+                const shaderPreview = shaderItem.querySelector( 'img' );
+                shaderPreview.style.width = 'calc(100% - 1rem)';
                 shaderPreview.src = shader.preview ?? ShaderHub.shaderPreviewPath;
-                shaderPreview.onload = () => shaderPreview.classList.remove( "opacity-0" );
-                shaderItem.querySelector( "div" ).remove();
-                if( shader.backend === 'webgl' ) LX.makeElement( 'span', 'absolute m-4 bg-background-blur border-color text-sm p-1 rounded-lg select-none', 'WebGL', shaderItem );
-                LX.makeContainer( ["100%", "auto"], "flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none", `
+                shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
+                shaderItem.querySelector( 'div' ).remove();
+                if ( shader.backend === 'webgl' ) LX.makeElement( 'span', 'absolute m-4 bg-background-blur border-color text-sm p-1 rounded-lg select-none', 'WebGL', shaderItem );
+                LX.makeContainer( [ '100%', 'auto' ], 'flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none', `
                     <div class="flex flex-row w-full items-center gap-2">
-                        <span class="text-sm font-medium text-nowrap truncate">${ shader.name }</span>
-                        <span class="text-sm font-light text-muted-foreground flex-auto-keep">by ${ !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${ shader.authorId }")' class='hub-link font-medium'>` : "" }<span>${ shader.author }</span>${ !shader.anonAuthor ? "</a>" : "" }</span>
+                        <span class="text-sm font-medium text-nowrap truncate">${shader.name}</span>
+                        <span class="text-sm font-light text-muted-foreground flex-auto-keep">by ${
+                    !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${shader.authorId}")' class='hub-link font-medium'>` : ''
+                }<span>${shader.author}</span>${!shader.anonAuthor ? '</a>' : ''}</span>
                         <div class="flex flex-row gap-1 items-center ml-auto flex-auto-keep">
-                            ${ LX.makeIcon( "Heart", { svgClass: `${ shader.liked ? "text-orange-600" : "" } fill-current sm` } ).innerHTML }
-                            <span class="text-sm">${ shader.likeCount ?? 0 }</span>
+                            ${LX.makeIcon( 'Heart', { svgClass: `${shader.liked ? 'text-orange-600' : ''} fill-current sm` } ).innerHTML}
+                            <span class="text-sm">${shader.likeCount ?? 0}</span>
                         </div>
                     </div>`, shaderItem );
 
-                shaderPreview.addEventListener( "mousedown", e => e.preventDefault() );
-                shaderPreview.addEventListener( "mouseup", ( e ) => {
+                shaderPreview.addEventListener( 'mousedown', ( e ) => e.preventDefault() );
+                shaderPreview.addEventListener( 'mouseup', ( e ) => {
                     this._openShader( shader.uid, e );
                 } );
             }
@@ -850,13 +853,13 @@ export const ui = {
         this.currentView = ( shaderUid === 'new' ) ? 'create' : 'view';
 
         // force expand as much as possible
-        this.area.root.style.height = "calc(100dvh - 48px)";
+        this.area.root.style.height = 'calc(100dvh - 48px)';
 
         const shader = await ShaderHub.getShaderById( shaderUid );
-        if( !shader ) return;
+        if ( !shader ) return;
 
         // force backend to load shader
-        if( shader.backend )
+        if ( shader.backend )
         {
             LX.doAsync( () => Utils.toast( 'Warning', `⚠️ GLSL Shader. Fallback to WebGL mode.`, -1 ), 50 );
             ShaderHub.backend = shader.backend;
@@ -864,32 +867,32 @@ export const ui = {
 
         this.shader = shader;
 
-        let [ leftArea, rightArea ] = this.area.split({ sizes: ["50%", "50%"] });
-        rightArea.root.className = rightArea.root.className.replace("bg-background", "bg-none p-3 shader-edit-content");
-        leftArea.root.className = leftArea.root.className.replace("bg-background", "bg-none p-3 flex flex-col gap-2");
+        let [ leftArea, rightArea ] = this.area.split( { sizes: [ '50%', '50%' ] } );
+        rightArea.root.className = rightArea.root.className.replace( 'bg-background', 'bg-none p-3 shader-edit-content' );
+        leftArea.root.className = leftArea.root.className.replace( 'bg-background', 'bg-none p-3 flex flex-col gap-2' );
 
         // Set background to parent area
-        this.area.root.parentElement.className = this.area.root.parentElement.className.replace( "bg-background", "hub-background" );
-        leftArea.root.parentElement.classList.add( "hub-background-blur" );
+        this.area.root.parentElement.className = this.area.root.parentElement.className.replace( 'bg-background', 'hub-background' );
+        leftArea.root.parentElement.classList.add( 'hub-background-blur' );
 
-        let [ codeArea, shaderSettingsArea ] = rightArea.split({ type: "vertical", sizes: ["80%", "20%"], resize: false });
-        codeArea.root.className += " box-shadow rounded-xl overflow-hidden code-border-default";
-        shaderSettingsArea.root.className += " bg-none content-center";
+        let [ codeArea, shaderSettingsArea ] = rightArea.split( { type: 'vertical', sizes: [ '80%', '20%' ], resize: false } );
+        codeArea.root.className += ' box-shadow rounded-xl overflow-hidden code-border-default';
+        shaderSettingsArea.root.className += ' bg-none content-center';
 
-        this.channelsContainer = LX.makeContainer( ["100%", "100%"], "channel-list grid gap-2 pt-2 items-center justify-center", "", shaderSettingsArea );
+        this.channelsContainer = LX.makeContainer( [ '100%', '100%' ], 'channel-list grid gap-2 pt-2 items-center justify-center', '', shaderSettingsArea );
 
-        document.title = `${ shader.name } (${ shader.author }) - ShaderHub`;
+        document.title = `${shader.name} (${shader.author}) - ShaderHub`;
 
         // Manage code area resize when channels are collapsed
         {
-            if( window.ResizeObserver )
+            if ( window.ResizeObserver )
             {
                 const ro = new ResizeObserver( function( entries, observer )
                 {
-                    var entry = entries[ 0 ];
+                    var entry = entries[0];
                     let box = entry.contentRect;
-                    codeArea.root.style.height = `calc(100% - ${ box.height }px)`;
-                });
+                    codeArea.root.style.height = `calc(100% - ${box.height}px)`;
+                } );
 
                 ro.observe( shaderSettingsArea.root );
             }
@@ -897,16 +900,16 @@ export const ui = {
 
         const iCompileShader = async () => {
             const error = await ShaderHub.compileShader( true, null, false, true );
-            if( error === 0 && !window.onbeforeunload )
+            if ( error === 0 && !window.onbeforeunload )
             {
                 window.onbeforeunload = ( event ) => {
                     event.preventDefault();
-                    event.returnValue = "";
+                    event.returnValue = '';
                 };
             }
         };
 
-        if( mobile )
+        if ( mobile )
         {
             // Create unused editor by now
             this.editor = new LX.CodeEditor( codeArea );
@@ -930,16 +933,16 @@ export const ui = {
             onCreateFile: ( editor ) => null,
             onContextMenu: ( editor, content, event ) => {
                 const pass = ShaderHub.currentPass;
-                if( pass.name === "Common" || !content ) return;
+                if ( pass.name === 'Common' || !content ) return;
 
-                const word = content.trim().match( /([A-Za-z0-9_]+)/g )[ 0 ];
-                if( !word ) return;
+                const word = content.trim().match( /([A-Za-z0-9_]+)/g )[0];
+                if ( !word ) return;
 
                 const options = [];
-                const USED_UNIFORM_NAMES = [ ...Constants.DEFAULT_UNIFORM_NAMES, ...pass.uniforms.map( u => u.name ) ];
-                const regex = new RegExp( "\\b(?!(" + USED_UNIFORM_NAMES.join("|") + ")\\b)(i[A-Z]\\w*)\\b" );
+                const USED_UNIFORM_NAMES = [ ...Constants.DEFAULT_UNIFORM_NAMES, ...pass.uniforms.map( ( u ) => u.name ) ];
+                const regex = new RegExp( '\\b(?!(' + USED_UNIFORM_NAMES.join( '|' ) + ')\\b)(i[A-Z]\\w*)\\b' );
 
-                options.push( { path: "Create Uniform", disabled: !regex.test( word ), callback: async () => {
+                options.push( { path: 'Create Uniform', disabled: !regex.test( word ), callback: async () => {
                     await ShaderHub.addUniform( word );
                     await ShaderHub.compileShader( true, pass );
                     this.openUniformsDialog();
@@ -948,14 +951,14 @@ export const ui = {
                 return options;
             },
             onNewTab: ( e ) => {
-                const canCreateCommon = ( shader.passes.filter( p => p.type === "common" ).length === 0 );
-                const canCreateBufferOrCompute = ( shader.passes.filter( p => p.type === "buffer" || p.type === "compute" ).length < 4 );
+                const canCreateCommon = shader.passes.filter( ( p ) => p.type === 'common' ).length === 0;
+                const canCreateBufferOrCompute = shader.passes.filter( ( p ) => p.type === 'buffer' || p.type === 'compute' ).length < 4;
                 const dmOptions = [
-                    { name: "Common", icon: "FileText", disabled: !canCreateCommon, callback: ( v ) => ShaderHub.onShaderPassCreated( "common", v ) },
-                    { name: "Buffer", icon: "Image", disabled: !canCreateBufferOrCompute, callback: ( v ) => ShaderHub.onShaderPassCreated( "buffer", v ) },
-                    ShaderHub.backend === 'webgpu' ? { name: "Compute", icon: "Binary", disabled: !canCreateBufferOrCompute, callback: ( v ) => ShaderHub.onShaderPassCreated( "compute", v ) } : false,
+                    { name: 'Common', icon: 'FileText', disabled: !canCreateCommon, callback: ( v ) => ShaderHub.onShaderPassCreated( 'common', v ) },
+                    { name: 'Buffer', icon: 'Image', disabled: !canCreateBufferOrCompute, callback: ( v ) => ShaderHub.onShaderPassCreated( 'buffer', v ) },
+                    ShaderHub.backend === 'webgpu' ? { name: 'Compute', icon: 'Binary', disabled: !canCreateBufferOrCompute, callback: ( v ) => ShaderHub.onShaderPassCreated( 'compute', v ) } : false
                 ].filter( Boolean );
-                new LX.DropdownMenu( e.target, dmOptions, { side: "bottom", align: "start" });
+                new LX.DropdownMenu( e.target, dmOptions, { side: 'bottom', align: 'start' } );
             },
             onSelectTab: async ( name, editor ) => {
                 ShaderHub.onShaderPassSelected( name );
@@ -963,160 +966,166 @@ export const ui = {
             onReady: async ( editor ) => {
                 await this.onCodeEditorReady( editor, leftArea );
             }
-        });
+        } );
     },
 
     async onCodeEditorReady( editor, area )
     {
-        let [ graphicsArea, shaderDataArea ] = area.split({ type: "vertical", sizes: ["auto", "auto"], resize: false });
-        graphicsArea.root.className += " bg-none box-shadow box-border rounded-xl overflow-hidden flex-auto-keep";
-        shaderDataArea.root.className += " bg-none box-shadow box-border rounded-xl items-center justify-center flex-auto-fill";
+        let [ graphicsArea, shaderDataArea ] = area.split( { type: 'vertical', sizes: [ 'auto', 'auto' ], resize: false } );
+        graphicsArea.root.className += ' bg-none box-shadow box-border rounded-xl overflow-hidden flex-auto-keep';
+        shaderDataArea.root.className += ' bg-none box-shadow box-border rounded-xl items-center justify-center flex-auto-fill';
 
         const shader = this.shader;
-        const isNewShader = ( shader.uid === "EMPTY_ID" );
+        const isNewShader = shader.uid === 'EMPTY_ID';
 
         // Add Shader data
-        this._createShaderDataView = async () =>
-        {
+        this._createShaderDataView = async () => {
             const ownProfile = this.fs.user && ( shader.authorId === this.fs.getUserId() );
             const originalShader = shader.originalId ? await ShaderHub.getShaderById( shader.originalId ) : null;
 
             // Clear
-            shaderDataArea.root.innerHTML = "";
+            shaderDataArea.root.innerHTML = '';
 
-            const shaderDataContainer = LX.makeContainer( [`100%`, "100%"], "p-3 sm:p-6 flex flex-col gap-2 rounded-xl bg-card overflow-scroll overflow-x-hidden", "", shaderDataArea );
-            const shaderNameAuthorOptionsContainer = LX.makeContainer( [`100%`, "auto"], "flex flex-row", `
+            const shaderDataContainer = LX.makeContainer( [ `100%`, '100%' ], 'p-3 sm:p-6 flex flex-col gap-2 rounded-xl bg-card overflow-scroll overflow-x-hidden', '', shaderDataArea );
+            const shaderNameAuthorOptionsContainer = LX.makeContainer( [ `100%`, 'auto' ], 'flex flex-row', `
                 <div class="flex flex-col gap-1 justify-center">
                     <div class="flex flex-row items-center">
-                        ${ ( ownProfile || isNewShader ) ? LX.makeIcon("Edit", { svgClass: "mr-2 cursor-pointer hover:text-foreground" } ).innerHTML : "" }
-                        <div class="text-foreground text-lg font-semibold">${ shader.name }</div>
+                        ${( ownProfile || isNewShader ) ? LX.makeIcon( 'Edit', { svgClass: 'mr-2 cursor-pointer hover:text-foreground' } ).innerHTML : ''}
+                        <div class="text-foreground text-lg font-semibold">${shader.name}</div>
                     </div>
-                    ${ isNewShader ? '' : `<div class="text-muted-foreground text-sm">Created by ${ !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${ shader.authorId }")' class='hub-link font-medium'>` : `` }<span>${ shader.author }</span>${ !shader.anonAuthor ? "</a>" : "" } on ${ shader.creationDate }
-                    ${ originalShader ? `(remixed from <a onclick='ui._openShader("${ shader.originalId }")' class='hub-link font-medium'>${ originalShader.name }</a> by <a onclick='ui._openUserProfile("${ originalShader.authorId }")' class='hub-link font-medium'>${ originalShader.author }</a>)` : `` } ` }
+                    ${
+                isNewShader
+                    ? ''
+                    : `<div class="text-muted-foreground text-sm">Created by ${
+                        !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${shader.authorId}")' class='hub-link font-medium'>` : ``
+                    }<span>${shader.author}</span>${!shader.anonAuthor ? '</a>' : ''} on ${shader.creationDate}
+                    ${
+                        originalShader
+                            ? `(remixed from <a onclick='ui._openShader("${shader.originalId}")' class='hub-link font-medium'>${originalShader.name}</a> by <a onclick='ui._openUserProfile("${originalShader.authorId}")' class='hub-link font-medium'>${originalShader.author}</a>)`
+                            : ``
+                    } `
+            }
                     </div>
                 </div>
             `, shaderDataContainer );
 
             // Dditable shader name
-            const editButton = shaderNameAuthorOptionsContainer.querySelector( "svg" );
-            if( editButton )
+            const editButton = shaderNameAuthorOptionsContainer.querySelector( 'svg' );
+            if ( editButton )
             {
-                const iSaveName = async ( text, textDiv, input ) =>
-                {
+                const iSaveName = async ( text, textDiv, input ) => {
                     shader.name = text.substring( 0, 64 ); // CAP TO 64 chars
                     textDiv.innerText = shader.name;
                     input.root.replaceWith( textDiv );
                     this._editingName = false;
 
-                    if( isNewShader ) return;
+                    if ( isNewShader ) return;
 
                     let r = await ShaderHub.shaderExists();
-                    if( r && r.name !== shader.name )
+                    if ( r && r.name !== shader.name )
                     {
-                        await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r[ "$id" ], {
-                            "name": shader.name
+                        await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r['$id'], {
+                            'name': shader.name
                         } );
-                        Utils.toast( `✅ Shader updated`, `Shader: ${ r.name } by ${ this.fs.user.name }` );
+                        Utils.toast( `✅ Shader updated`, `Shader: ${r.name} by ${this.fs.user.name}` );
                     }
                 };
 
-                editButton.addEventListener( "click", (e) => {
-                    if( this._editingName ) return;
+                editButton.addEventListener( 'click', ( e ) => {
+                    if ( this._editingName ) return;
                     e.preventDefault();
-                    const textDiv = e.target.parentElement.children[ 1 ]; // get non-editable text
+                    const textDiv = e.target.parentElement.children[1]; // get non-editable text
                     const input = new LX.TextInput( null, textDiv.textContent, async ( v ) => {
                         iSaveName( v, textDiv, input );
-                    }, { inputClass: "text-foreground text-lg font-semibold", pattern: LX.buildTextPattern( { minLength: 3 } ) } );
+                    }, { inputClass: 'text-foreground text-lg font-semibold', pattern: LX.buildTextPattern( { minLength: 3 } ) } );
                     textDiv.replaceWith( input.root );
                     LX.doAsync( () => input.root.focus() );
                     this._editingName = true;
-                } )
+                } );
             }
 
-            const shaderOptions = LX.makeContainer( [`auto`, "auto"], "ml-auto flex flex-row p-1 gap-1 self-start content-center items-center", ``, shaderNameAuthorOptionsContainer );
-            const editable  = ( ownProfile || isNewShader );
+            const shaderOptions = LX.makeContainer( [ `auto`, 'auto' ], 'ml-auto flex flex-row p-1 gap-1 self-start content-center items-center', ``, shaderNameAuthorOptionsContainer );
+            const editable = ownProfile || isNewShader;
 
-            if( this.fs.user )
+            if ( this.fs.user )
             {
-                const shaderOptionsButton = new LX.Button( null, "ShaderOptions", async () => {
+                const shaderOptionsButton = new LX.Button( null, 'ShaderOptions', async () => {
+                    const result = await ShaderHub.shaderExists();
 
-                    const result    = await ShaderHub.shaderExists();
-                    
                     let dmOptions = [];
 
-                    if( editable )
+                    if ( editable )
                     {
                         dmOptions.push(
-                            mobile ? 0 : { name: "Save Shader", icon: "Save", callback: () => ShaderHub.saveShader( result ) },
-                            ( isNewShader || mobile ) ? 0 : { name: "Settings", icon: "Settings", callback: () => this.openShaderSettingsDialog( result ) }
+                            mobile ? 0 : { name: 'Save Shader', icon: 'Save', callback: () => ShaderHub.saveShader( result ) },
+                            ( isNewShader || mobile ) ? 0 : { name: 'Settings', icon: 'Settings', callback: () => this.openShaderSettingsDialog( result ) }
                         );
 
-                        if( result )
+                        if ( result )
                         {
                             dmOptions.push(
-                                mobile ? 0 : { name: "Update Preview", icon: "ImageUp", callback: () => ShaderHub.updateShaderPreview( shader.uid, true ) },
+                                mobile ? 0 : { name: 'Update Preview', icon: 'ImageUp', callback: () => ShaderHub.updateShaderPreview( shader.uid, true ) }
                             );
                         }
                     }
                     else
                     {
-                        dmOptions.push( mobile ? 0 : { name: "Remix Shader", icon: "GitFork", disabled: !( result.remixable ?? true ), callback: () => ShaderHub.remixShader() } );
+                        dmOptions.push( mobile ? 0 : { name: 'Remix Shader', icon: 'GitFork', disabled: !( result.remixable ?? true ), callback: () => ShaderHub.remixShader() } );
                     }
 
                     dmOptions.push(
-                        !result ? 0 : { name: "Share", icon: "Share2", callback: () => this.openShareiFrameDialog( result ) }
+                        !result ? 0 : { name: 'Share', icon: 'Share2', callback: () => this.openShareiFrameDialog( result ) }
                     );
 
-                    if( editable && result )
+                    if ( editable && result )
                     {
                         dmOptions.push(
                             mobile ? 0 : null,
-                            { name: "Delete Shader", icon: "Trash2", className: "destructive", callback: () => ShaderHub.deleteShader() },
+                            { name: 'Delete Shader', icon: 'Trash2', className: 'destructive', callback: () => ShaderHub.deleteShader() }
                         );
                     }
 
-                    dmOptions = dmOptions.filter( o => o !== 0 );
+                    dmOptions = dmOptions.filter( ( o ) => o !== 0 );
 
-                    if( dmOptions.length )
+                    if ( dmOptions.length )
                     {
-                        LX.addDropdownMenu( shaderOptionsButton.root, dmOptions, { side: "bottom", align: "end" });
+                        LX.addDropdownMenu( shaderOptionsButton.root, dmOptions, { side: 'bottom', align: 'end' } );
                     }
-
-                }, { icon: "Menu" } );
+                }, { icon: 'Menu' } );
                 shaderOptions.appendChild( shaderOptionsButton.root );
             }
             else
             {
-                LX.makeContainer( [`144px`, "auto"], "text-muted-foreground text-sm", "Login to Save or Remix", shaderOptions );
+                LX.makeContainer( [ `144px`, 'auto' ], 'text-muted-foreground text-sm', 'Login to Save or Remix', shaderOptions );
             }
 
-            if( !isNewShader )
+            if ( !isNewShader )
             {
                 // Like click events
-                const shaderStats = LX.makeContainer( [`auto`, "auto"], "ml-auto flex p-1 gap-1 items-center", `
-                    ${ LX.makeIcon( "Heart", { svgClass: "shader-like-button lg fill-current transition duration-150 ease-in-out" } ).innerHTML } <span></span>
+                const shaderStats = LX.makeContainer( [ `auto`, 'auto' ], 'ml-auto flex p-1 gap-1 items-center', `
+                    ${LX.makeIcon( 'Heart', { svgClass: 'shader-like-button lg fill-current transition duration-150 ease-in-out' } ).innerHTML} <span></span>
                 ` );
                 shaderOptions.prepend( shaderStats );
-    
-                const likeSpan = shaderStats.querySelector( "span" );
-                const likeButton = shaderOptions.querySelector( "svg.shader-like-button" );
-                likeButton.classList.add( "hover:text-orange-600", "cursor-pointer" );
-    
-                LX.addSignal( "@on_like_changed", ( target, likeData ) => {
+
+                const likeSpan = shaderStats.querySelector( 'span' );
+                const likeButton = shaderOptions.querySelector( 'svg.shader-like-button' );
+                likeButton.classList.add( 'hover:text-orange-600', 'cursor-pointer' );
+
+                LX.addSignal( '@on_like_changed', ( target, likeData ) => {
                     const [ likesCount, alreadyLiked ] = likeData;
                     likeSpan.innerHTML = likesCount;
-                    likeButton.classList.toggle( "text-orange-600", alreadyLiked );
+                    likeButton.classList.toggle( 'text-orange-600', alreadyLiked );
                 } );
 
                 // Like action
-                if( !this.fs.user )
+                if ( !this.fs.user )
                 {
-                    likeButton.title = "Like Shader";
+                    likeButton.title = 'Like Shader';
                     LX.asTooltip( likeButton, likeButton.title );
-                    likeButton.addEventListener( "click", (e) => {
+                    likeButton.addEventListener( 'click', ( e ) => {
                         e.preventDefault();
-                       
-                        if( this._lastOpenedDialog )
+
+                        if ( this._lastOpenedDialog )
                         {
                             this._lastOpenedDialog.close();
                         }
@@ -1132,11 +1141,11 @@ export const ui = {
                         this._lastOpenedDialog = dialog;
                     } );
                 }
-                else if( !ownProfile )
+                else if ( !ownProfile )
                 {
-                    likeButton.title = "Like Shader";
+                    likeButton.title = 'Like Shader';
                     LX.asTooltip( likeButton, likeButton.title );
-                    likeButton.addEventListener( "click", (e) => {
+                    likeButton.addEventListener( 'click', ( e ) => {
                         e.preventDefault();
                         ShaderHub.onShaderLike();
                     } );
@@ -1144,9 +1153,9 @@ export const ui = {
                 // Check likes
                 else
                 {
-                    likeButton.title = "Check Likes";
+                    likeButton.title = 'Check Likes';
                     LX.asTooltip( likeButton, likeButton.title );
-                    likeButton.addEventListener( "click", (e) => {
+                    likeButton.addEventListener( 'click', ( e ) => {
                         e.preventDefault();
                         this.openCurrentShaderLikesDialog( shader );
                     } );
@@ -1154,73 +1163,70 @@ export const ui = {
             }
 
             // Shader tags
-            if( editable || shader.tags.length )
+            if ( editable || shader.tags.length )
             {
-                const tags = new LX.Tags( null, "", async (v) => {
-                
+                const tags = new LX.Tags( null, '', async ( v ) => {
                     shader.tags = v;
 
-                    if( isNewShader ) return;
+                    if ( isNewShader ) return;
 
                     let r = await ShaderHub.shaderExists();
-                    if( r )
+                    if ( r )
                     {
-                        await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r[ "$id" ], {
-                            "tags": shader.tags
+                        await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r['$id'], {
+                            'tags': shader.tags
                         } );
-                        Utils.toast( `✅ Shader updated`, `Shader: ${ r.name } by ${ this.fs.user.name }` );
+                        Utils.toast( `✅ Shader updated`, `Shader: ${r.name} by ${this.fs.user.name}` );
                     }
-                    
                 }, { disabled: !ownProfile, tagClass: 'items-center text-xs' } );
                 tags.set( shader.tags, true );
                 shaderDataContainer.appendChild( tags.root );
             }
 
-            const iSaveDescription = async ( text, format = true ) =>
-            {
+            const iSaveDescription = async ( text, format = true ) => {
                 shader.description = format ? Utils.formatMD( text ) : text;
 
-                if( isNewShader ) return;
+                if ( isNewShader ) return;
 
                 let r = await ShaderHub.shaderExists();
-                if( r && r.description !== shader.description )
+                if ( r && r.description !== shader.description )
                 {
-                    await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r[ "$id" ], {
-                        "description": shader.description
+                    await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r['$id'], {
+                        'description': shader.description
                     } );
-                    Utils.toast( `✅ Shader updated`, `Shader: ${ r.name } by ${ this.fs.user.name }` );
+                    Utils.toast( `✅ Shader updated`, `Shader: ${r.name} by ${this.fs.user.name}` );
                 }
             };
 
             // Editable description
-            if( ownProfile && isNewShader )
+            if ( ownProfile && isNewShader )
             {
-                const input = new LX.TextArea( null, shader.description, async (v) => {
+                const input = new LX.TextArea( null, shader.description, async ( v ) => {
                     iSaveDescription( v, false );
-                }, { resize: false, placeholder: "Enter your shader description here", className: "w-full", inputClass: "bg-accent/50!" , fitHeight: true } );
+                }, { resize: false, placeholder: 'Enter your shader description here', className: 'w-full', inputClass: 'bg-accent/50!', fitHeight: true } );
                 shaderDataContainer.appendChild( input.root );
             }
-            else if( ownProfile || ( shader.description ?? '' ).length )
+            else if ( ownProfile || ( shader.description ?? '' ).length )
             {
-                const descContainer = LX.makeContainer( [`auto`, "auto"], "text-foreground mt-2 flex flex-row items-center", `
-                    <div class="w-auto self-start">${ editable ? LX.makeIcon("Edit", { svgClass: "mr-3 cursor-pointer hover:text-foreground" } ).innerHTML : "" }</div>
-                    <div class="desc-content w-full text-sm break-keep">${ shader.description }</div>
+                const descContainer = LX.makeContainer( [ `auto`, 'auto' ], 'text-foreground mt-2 flex flex-row items-center', `
+                    <div class="w-auto self-start">${editable ? LX.makeIcon( 'Edit', { svgClass: 'mr-3 cursor-pointer hover:text-foreground' } ).innerHTML : ''}</div>
+                    <div class="desc-content w-full text-sm break-keep">${shader.description}</div>
                     `, shaderDataContainer );
 
-                const editButton = descContainer.querySelector( "svg" );
-                if( editButton )
+                const editButton = descContainer.querySelector( 'svg' );
+                if ( editButton )
                 {
-                    editButton.addEventListener( "click", (e) => {
-                        if( this._editingDescription ) return;
+                    editButton.addEventListener( 'click', ( e ) => {
+                        if ( this._editingDescription ) return;
                         e.preventDefault();
-                        const textDiv = descContainer.querySelector( ".desc-content" );
-                        const input = new LX.TextArea( null, Utils.unformatMD( textDiv.innerHTML ), async (v) => {
+                        const textDiv = descContainer.querySelector( '.desc-content' );
+                        const input = new LX.TextArea( null, Utils.unformatMD( textDiv.innerHTML ), async ( v ) => {
                             // save desc and update DOM
                             iSaveDescription( v );
                             textDiv.innerHTML = shader.description;
                             input.root.replaceWith( textDiv );
                             this._editingDescription = false;
-                        }, { resize: false, placeholder: "Enter your shader description here", className: "w-full h-full", inputClass: "bg-accent/50! h-full" , fitHeight: true } );
+                        }, { resize: false, placeholder: 'Enter your shader description here', className: 'w-full h-full', inputClass: 'bg-accent/50! h-full', fitHeight: true } );
                         textDiv.replaceWith( input.root );
                         LX.doAsync( () => input.root.focus() );
                         this._editingDescription = true;
@@ -1228,245 +1234,245 @@ export const ui = {
                 }
             }
 
-            if( !isNewShader )
+            if ( !isNewShader )
             {
                 // Comments
                 {
                     const canComment = this.fs.user && !isNewShader;
-                    const commentsContainer = LX.makeContainer( [`auto`, "auto"], "text-foreground mt-2 flex flex-col gap-2", "", shaderDataContainer );
+                    const commentsContainer = LX.makeContainer( [ `auto`, 'auto' ], 'text-foreground mt-2 flex flex-col gap-2', '', shaderDataContainer );
 
-                    const refreshComments = async () =>
-                    {
+                    const refreshComments = async () => {
                         const shaderComments = await this.fs.listDocuments( FS.INTERACTIONS_COLLECTION_ID, [
-                            Query.equal( "type", [ "comment", "comment-reply" ] ),
-                            Query.equal( "shader_id", shader.uid ),
+                            Query.equal( 'type', [ 'comment', 'comment-reply' ] ),
+                            Query.equal( 'shader_id', shader.uid ),
                             Query.limit( 300 ),
-                            Query.orderDesc( "$createdAt" )
+                            Query.orderDesc( '$createdAt' )
                         ] );
-                        commentsContainer.innerHTML = `Comments (${ shaderComments.total })`;
+                        commentsContainer.innerHTML = `Comments (${shaderComments.total})`;
 
-                        if( canComment )
+                        if ( canComment )
                         {
-                            const avatar = new LX.Avatar({
+                            const avatar = new LX.Avatar( {
                                 imgSource: this.dbUser.avatar,
-                                fallback: this.dbUser.user_name[ 0 ].toUpperCase(),
+                                fallback: this.dbUser.user_name[0].toUpperCase(),
                                 className: 'mx-2 flex-auto-keep mt-1'
-                            });
+                            } );
 
-                            const newCommentItem = LX.makeContainer( [`100%`, "auto"], "flex flex-row mt-2 p-2 gap-2 bg-muted/75 rounded-lg items-start content-center", `
-                                ${ avatar.root.outerHTML }
+                            const newCommentItem = LX.makeContainer( [ `100%`, 'auto' ], 'flex flex-row mt-2 p-2 gap-2 bg-muted/75 rounded-lg items-start content-center', `
+                                ${avatar.root.outerHTML}
                             `, commentsContainer );
 
-                            const commentInput = new LX.TextArea( null, "", null, { placeholder: "Add a comment...", className: "flex w-full flex-auto-fill", inputClass: "bg-background/50!", fitHeight: true } );
+                            const commentInput = new LX.TextArea( null, '', null, { placeholder: 'Add a comment...', className: 'flex w-full flex-auto-fill', inputClass: 'bg-background/50!',
+                                fitHeight: true } );
                             newCommentItem.appendChild( commentInput.root );
-                            const submitButton = new LX.Button( null, "SubmitComment", async () => {
+                            const submitButton = new LX.Button( null, 'SubmitComment', async () => {
                                 const commentText = Utils.formatMD( commentInput.value().trim() );
-                                if( commentText.length === 0 ) return;
+                                if ( commentText.length === 0 ) return;
                                 await ShaderHub.saveComment( shader.uid, commentText );
                                 refreshComments();
-                            }, { className: "flex-auto-keep", buttonClass: "primary self-start", icon: "Send", title: "Submit Comment" } );
+                            }, { className: 'flex-auto-keep', buttonClass: 'primary self-start', icon: 'Send', title: 'Submit Comment' } );
                             newCommentItem.appendChild( submitButton.root );
                         }
 
-                        if( shaderComments.total > 0 )
+                        if ( shaderComments.total > 0 )
                         {
-                            const authorIds = Array.from( new Set( shaderComments.documents.map( c => c["author_id"] ) ) );
-                            const usersWithComments = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_id", authorIds ) ] );
+                            const authorIds = Array.from( new Set( shaderComments.documents.map( ( c ) => c['author_id'] ) ) );
+                            const usersWithComments = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_id', authorIds ) ] );
                             const revReplies = LX.deepCopy( shaderComments.documents ).reverse();
 
-                            for( const comment of shaderComments.documents )
+                            for ( const comment of shaderComments.documents )
                             {
-                                if( comment["type"] !== "comment" )
+                                if ( comment['type'] !== 'comment' )
                                 {
                                     continue;
                                 }
 
-                                const commentAuthorId = comment[ "author_id" ];
-                                const dbUser = usersWithComments.documents.find( u => u["user_id"] === commentAuthorId );
+                                const commentAuthorId = comment['author_id'];
+                                const dbUser = usersWithComments.documents.find( ( u ) => u['user_id'] === commentAuthorId );
                                 const commentAuthorName = dbUser.user_name;
-                                const avatar = new LX.Avatar({
+                                const avatar = new LX.Avatar( {
                                     imgSource: dbUser.avatar,
-                                    fallback: commentAuthorName[ 0 ].toUpperCase(),
+                                    fallback: commentAuthorName[0].toUpperCase(),
                                     className: 'mx-2 flex-auto-keep'
-                                });
+                                } );
 
-                                let commentText = ( comment[ "text" ] ?? "" );
+                                let commentText = comment['text'] ?? '';
 
                                 const regex = /(^|\s)@([a-zA-Z0-9._]+)/g;
-                                const users = [ ...commentText.matchAll(regex)];
-                                if( users.length )
+                                const users = [ ...commentText.matchAll( regex ) ];
+                                if ( users.length )
                                 {
-                                    for (const m of users )
+                                    for ( const m of users )
                                     {
-                                        const dbMentionedUsers = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_name", m[2] ) ] );
-                                        if( dbMentionedUsers.total === 0 ) continue;
-                                        commentText = commentText.substring( 0, m.index ) + commentText.substring( m.index ).replace(m[0],
-                                        ` <span onclick='ui._openUserProfile("${ dbMentionedUsers.documents[0].user_id }")' class="hub-mention">${m[0]}</span>` );   
+                                        const dbMentionedUsers = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_name', m[2] ) ] );
+                                        if ( dbMentionedUsers.total === 0 ) continue;
+                                        commentText = commentText.substring( 0, m.index )
+                                            + commentText.substring( m.index ).replace( m[0],
+                                                ` <span onclick='ui._openUserProfile("${dbMentionedUsers.documents[0].user_id}")' class="hub-mention">${m[0]}</span>` );
                                     }
                                 }
 
-                                const commentDate = ( new Date( comment[ "$createdAt" ] ) ).toLocaleDateString( undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' } );
-                                const commentItemContainer = LX.makeContainer( [`100%`, "auto"], "flex flex-col bg-muted/75 rounded-lg", "", commentsContainer );
-                                const commentItem = LX.makeContainer( [`100%`, "auto"], "flex flex-row p-2 gap-2 items-center content-center", `
-                                    ${ avatar.root.outerHTML }
+                                const commentDate = ( new Date( comment['$createdAt'] ) ).toLocaleDateString( undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric',
+                                    minute: 'numeric' } );
+                                const commentItemContainer = LX.makeContainer( [ `100%`, 'auto' ], 'flex flex-col bg-muted/75 rounded-lg', '', commentsContainer );
+                                const commentItem = LX.makeContainer( [ `100%`, 'auto' ], 'flex flex-row p-2 gap-2 items-center content-center', `
+                                    ${avatar.root.outerHTML}
                                     <div class="flex flex-col gap-1 flex-auto-fill">
                                         <div class="flex flex-row gap-2 items-center">
-                                            <div class="text-sm font-medium">${ `<a onclick='ui._openUserProfile("${ commentAuthorId }")' class='hub-link font-medium'>${ commentAuthorName }</a>` }</div>
-                                            <div class="text-xs text-muted-foreground">${ commentDate }</div>
+                                            <div class="text-sm font-medium">${`<a onclick='ui._openUserProfile("${commentAuthorId}")' class='hub-link font-medium'>${commentAuthorName}</a>`}</div>
+                                            <div class="text-xs text-muted-foreground">${commentDate}</div>
                                         </div>
-                                        <div class="text-sm w-full break-keep">${ commentText }</div>
+                                        <div class="text-sm w-full break-keep">${commentText}</div>
                                     </div>
                                 `, commentItemContainer );
 
-                                if( canComment )
+                                if ( canComment )
                                 {
-                                    const commentActionsButton = new LX.Button( null, "ActionsButton", async () => {
-        
+                                    const commentActionsButton = new LX.Button( null, 'ActionsButton', async () => {
                                         const options = [
                                             {
-                                                name: "Reply",
-                                                icon: "Reply",
+                                                name: 'Reply',
+                                                icon: 'Reply',
                                                 callback: () => {
-                                                    document.querySelectorAll( ".shader-comment-reply-item" ).forEach( e => e.remove() );
-            
-                                                    const newReplyItem = LX.makeContainer( [`100%`, "auto"], "shader-comment-reply-item flex flex-row mt-2 p-2 gap-2 bg-muted/75 rounded-lg items-start content-center",
-                                                        ``, commentItemContainer );
-                    
-                                                    const replyInput = new LX.TextArea( null, "", (v) => {
-                                                        if( v.length === 0 ) newReplyItem.remove();
-                                                    }, { placeholder: `Replying to ${commentAuthorName}...`, className: "flex w-full flex-auto-fill", inputClass: "bg-background/50!", fitHeight: true } );
+                                                    document.querySelectorAll( '.shader-comment-reply-item' ).forEach( ( e ) => e.remove() );
+
+                                                    const newReplyItem = LX.makeContainer( [ `100%`, 'auto' ],
+                                                        'shader-comment-reply-item flex flex-row mt-2 p-2 gap-2 bg-muted/75 rounded-lg items-start content-center', ``, commentItemContainer );
+
+                                                    const replyInput = new LX.TextArea( null, '', ( v ) => {
+                                                        if ( v.length === 0 ) newReplyItem.remove();
+                                                    }, { placeholder: `Replying to ${commentAuthorName}...`, className: 'flex w-full flex-auto-fill', inputClass: 'bg-background/50!',
+                                                        fitHeight: true } );
                                                     newReplyItem.appendChild( replyInput.root );
-                                                    const submitButton = new LX.Button( null, "SubmitReply", async () => {
+                                                    const submitButton = new LX.Button( null, 'SubmitReply', async () => {
                                                         const replyText = Utils.formatMD( replyInput.value().trim() );
-                                                        if( replyText.length === 0 ) return;
-                                                        
+                                                        if ( replyText.length === 0 ) return;
+
                                                         // Add reply interaction to DB
                                                         {
                                                             await this.fs.createDocument( FS.INTERACTIONS_COLLECTION_ID, {
-                                                                type: "comment-reply",
+                                                                type: 'comment-reply',
                                                                 shader_id: shader.uid,
                                                                 author_id: this.fs.getUserId(),
-                                                                comment_id: comment[ "$id" ], 
+                                                                comment_id: comment['$id'],
                                                                 text: replyText
                                                             } );
                                                         }
-                                                        
+
                                                         refreshComments();
-                                                    }, { buttonClass: "primary self-start", icon: "Send", title: "Submit Reply" } );
+                                                    }, { buttonClass: 'primary self-start', icon: 'Send', title: 'Submit Reply' } );
                                                     newReplyItem.appendChild( submitButton.root );
                                                 }
                                             }
-                                        ]
+                                        ];
 
-                                        if( this.fs.getUserId() === commentAuthorId )
+                                        if ( this.fs.getUserId() === commentAuthorId )
                                         {
                                             options.push( null, {
-                                                name: "Delete",
-                                                icon: "Trash2",
-                                                className: "destructive",
+                                                name: 'Delete',
+                                                icon: 'Trash2',
+                                                className: 'destructive',
                                                 callback: async () => {
                                                     // Remove comment interaction from DB
-                                                    await this.fs.deleteDocument( FS.INTERACTIONS_COLLECTION_ID, comment[ "$id" ] );
+                                                    await this.fs.deleteDocument( FS.INTERACTIONS_COLLECTION_ID, comment['$id'] );
                                                     // Remove DOM el
                                                     commentItemContainer.remove();
                                                 }
-                                            });
+                                            } );
                                         }
 
-                                        LX.addDropdownMenu( commentActionsButton.root, options, { side: "bottom", align: "end" });
-        
-                                    }, { buttonClass: "h-7 p-0 ghost self-center ml-auto flex-auto-keep", icon: "EllipsisVertical" } );
+                                        LX.addDropdownMenu( commentActionsButton.root, options, { side: 'bottom', align: 'end' } );
+                                    }, { buttonClass: 'h-7 p-0 ghost self-center ml-auto flex-auto-keep', icon: 'EllipsisVertical' } );
                                     commentItem.appendChild( commentActionsButton.root );
                                 }
 
-                                const repliesContainer = LX.makeContainer( [`100%`, "auto"], "flex flex-col bg-accent/50! rounded-b-lg", "", commentItemContainer );
+                                const repliesContainer = LX.makeContainer( [ `100%`, 'auto' ], 'flex flex-col bg-accent/50! rounded-b-lg', '', commentItemContainer );
 
                                 // Add replies to Comment
-                                for( const reply of revReplies )
+                                for ( const reply of revReplies )
                                 {
                                     // Discard replies to other comments!
-                                    if( ( reply["type"] !== "comment-reply" ) || ( reply["comment_id"] !== comment["$id"] ) )
+                                    if ( ( reply['type'] !== 'comment-reply' ) || ( reply['comment_id'] !== comment['$id'] ) )
                                     {
                                         continue;
                                     }
 
-                                    let replyText = ( reply[ "text" ] ?? "" );
+                                    let replyText = reply['text'] ?? '';
                                     const regex = /(^|\s)@([a-zA-Z0-9._]+)/g;
-                                    const users = [ ...replyText.matchAll(regex)];
-                                    if( users.length )
+                                    const users = [ ...replyText.matchAll( regex ) ];
+                                    if ( users.length )
                                     {
-                                        for (const m of users )
+                                        for ( const m of users )
                                         {
-                                            const dbMentionedUsers = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_name", m[2] ) ] );
-                                            if( dbMentionedUsers.total === 0 ) continue;
-                                            replyText = replyText.substring( 0, m.index ) + replyText.substring( m.index ).replace(m[0],
-                                            ` <span onclick='ui._openUserProfile("${ dbMentionedUsers.documents[0].user_id }")' class="hub-mention">${m[0]}</span>` );   
+                                            const dbMentionedUsers = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_name', m[2] ) ] );
+                                            if ( dbMentionedUsers.total === 0 ) continue;
+                                            replyText = replyText.substring( 0, m.index )
+                                                + replyText.substring( m.index ).replace( m[0],
+                                                    ` <span onclick='ui._openUserProfile("${dbMentionedUsers.documents[0].user_id}")' class="hub-mention">${m[0]}</span>` );
                                         }
                                     }
 
-                                    const replyAuthorId = reply[ "author_id" ];
-                                    const dbUser = usersWithComments.documents.find( u => u["user_id"] === replyAuthorId );
+                                    const replyAuthorId = reply['author_id'];
+                                    const dbUser = usersWithComments.documents.find( ( u ) => u['user_id'] === replyAuthorId );
                                     const replyAuthorName = dbUser.user_name;
-                                    const avatar = new LX.Avatar({
+                                    const avatar = new LX.Avatar( {
                                         imgSource: dbUser.avatar,
-                                        fallback: replyAuthorName[ 0 ].toUpperCase(),
+                                        fallback: replyAuthorName[0].toUpperCase(),
                                         className: 'mx-2 flex-auto-keep'
-                                    });
-                                    const replyDate = ( new Date( reply[ "$createdAt" ] ) ).toLocaleDateString( undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: 'numeric' } );
-                                    const replyItem = LX.makeContainer( [`95%`, "auto"], "flex flex-row p-2 gap-2 items-center content-center ml-auto", `
-                                        ${ LX.makeIcon( "CornerDownRight", { svgClass: "text-muted-foreground" } ).innerHTML }
-                                        ${ avatar.root.outerHTML }
+                                    } );
+                                    const replyDate = ( new Date( reply['$createdAt'] ) ).toLocaleDateString( undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric',
+                                        minute: 'numeric' } );
+                                    const replyItem = LX.makeContainer( [ `95%`, 'auto' ], 'flex flex-row p-2 gap-2 items-center content-center ml-auto', `
+                                        ${LX.makeIcon( 'CornerDownRight', { svgClass: 'text-muted-foreground' } ).innerHTML}
+                                        ${avatar.root.outerHTML}
                                         <div class="flex flex-col gap-1 flex-auto-fill">
                                             <div class="flex flex-row gap-2 items-center">
-                                                <div class="text-sm font-medium">${ `<a onclick='ui._openUserProfile("${ replyAuthorId }")' class='hub-link font-medium'>${ replyAuthorName }</a>` }</div>
-                                                <div class="text-xs text-muted-foreground">${ replyDate }</div>
+                                                <div class="text-sm font-medium">${`<a onclick='ui._openUserProfile("${replyAuthorId}")' class='hub-link font-medium'>${replyAuthorName}</a>`}</div>
+                                                <div class="text-xs text-muted-foreground">${replyDate}</div>
                                             </div>
-                                            <div class="text-sm w-full break-keep">${ replyText }</div>
+                                            <div class="text-sm w-full break-keep">${replyText}</div>
                                         </div>
                                     `, repliesContainer );
 
-                                    if( canComment )
+                                    if ( canComment )
                                     {
-                                        const commentActionsButton = new LX.Button( null, "ActionsButton", async () => {
-            
+                                        const commentActionsButton = new LX.Button( null, 'ActionsButton', async () => {
                                             const options = [];
-        
-                                            if( this.fs.getUserId() === replyAuthorId )
+
+                                            if ( this.fs.getUserId() === replyAuthorId )
                                             {
                                                 options.push( {
-                                                    name: "Delete",
-                                                    icon: "Trash2",
-                                                    className: "destructive",
+                                                    name: 'Delete',
+                                                    icon: 'Trash2',
+                                                    className: 'destructive',
                                                     callback: async () => {
                                                         // Remove reply interaction from DB
-                                                        await this.fs.deleteDocument( FS.INTERACTIONS_COLLECTION_ID, reply[ "$id" ] );
+                                                        await this.fs.deleteDocument( FS.INTERACTIONS_COLLECTION_ID, reply['$id'] );
                                                         // Remove DOM el
                                                         replyItem.remove();
                                                     }
                                                 } );
                                             }
-        
-                                            LX.addDropdownMenu( commentActionsButton.root, options, { side: "bottom", align: "end" });
-            
-                                        }, { buttonClass: "h-7 p-0 ghost self-center ml-auto flex-auto-keep", icon: "EllipsisVertical" } );
+
+                                            LX.addDropdownMenu( commentActionsButton.root, options, { side: 'bottom', align: 'end' } );
+                                        }, { buttonClass: 'h-7 p-0 ghost self-center ml-auto flex-auto-keep', icon: 'EllipsisVertical' } );
                                         replyItem.appendChild( commentActionsButton.root );
                                     }
                                 }
                             }
                         }
-                    }
+                    };
 
                     await refreshComments();
                 }
             }
 
-            if( mobile )
+            if ( mobile )
             {
-                shaderDataContainer.appendChild( new LX.Button( null, "Open Code", () => {
+                shaderDataContainer.appendChild( new LX.Button( null, 'Open Code', () => {
+                    if ( window.__currentSheet ) window.__currentSheet.destroy();
 
-                    if( window.__currentSheet ) window.__currentSheet.destroy();
-
-                    const sheetArea = new LX.Area({ className: 'overflow-scroll' });
+                    const sheetArea = new LX.Area( { className: 'overflow-scroll' } );
 
                     const tmpEditor = new LX.CodeEditor( sheetArea, {
                         disableEdition: true,
@@ -1488,110 +1494,111 @@ export const ui = {
                             ShaderHub.onShaderPassSelected( name );
                         },
                         onReady: async ( editor ) => {
-
                             const pass = ShaderHub.currentPass;
-                            if( pass )
+                            if ( pass )
                             {
                                 editor.loadTab( pass.name );
                                 const code = pass.codeLines.join( '\n' );
                                 editor.setText( code, null, true );
                             }
 
-                            window.__currentSheet = new LX.Sheet( "80%", [ sheetArea ], { side: "bottom" } );
+                            window.__currentSheet = new LX.Sheet( '80%', [ sheetArea ], { side: 'bottom' } );
                         }
-                    });
+                    } );
                 }, { icon: 'Code', iconPosition: 'end', className: 'absolute bottom-0 mb-6 self-center mx-auto', buttonClass: 'outline' } ).root );
             }
-        }
+        };
 
         await this._createShaderDataView();
 
         // Add shader visualization UI
         {
-            let [ canvasArea, canvasControlsArea ] = graphicsArea.split({ type: "vertical", sizes: ["calc(100% - 48px)", null], resize: false });
-            canvasArea.root.className += " bg-none";
-            canvasControlsArea.root.className += " px-2 rounded-b-xl bg-card";
+            let [ canvasArea, canvasControlsArea ] = graphicsArea.split( { type: 'vertical', sizes: [ 'calc(100% - 48px)', null ], resize: false } );
+            canvasArea.root.className += ' bg-none';
+            canvasControlsArea.root.className += ' px-2 rounded-b-xl bg-card';
 
             const canvas = this.makeGPUCanvas();
             canvasArea.attach( canvas );
 
-            const panel = canvasControlsArea.addPanel( { className: "flex flex-row" } );
+            const panel = canvasControlsArea.addPanel( { className: 'flex flex-row' } );
             panel.sameLine();
-            panel.addButton( null, "ResetTime", () => ShaderHub.onShaderTimeReset(), { className: 'flex-auto-keep', icon: "SkipBack", title: "Reset time", tooltip: true } );
-            panel.addButton( null, "PauseTime", () => ShaderHub.onShaderTimePaused(), { className: 'flex-auto-keep', icon: "Pause", title: "Pause/Resume", tooltip: true, swap: "Play" } );
-            panel.addLabel( "0.0", { signal: "@elapsed-time", inputClass: "size-content" } );
-            panel.addLabel( "0 FPS", { signal: "@fps", inputClass: "size-content" } );
-            panel.addLabel( "0x0", { signal: "@resolution", inputClass: "size-content" } );
-            panel.endLine( "items-center h-full" );
+            panel.addButton( null, 'ResetTime', () => ShaderHub.onShaderTimeReset(), { className: 'flex-auto-keep', icon: 'SkipBack', title: 'Reset time', tooltip: true } );
+            panel.addButton( null, 'PauseTime', () => ShaderHub.onShaderTimePaused(), { className: 'flex-auto-keep', icon: 'Pause', title: 'Pause/Resume', tooltip: true, swap: 'Play' } );
+            panel.addLabel( '0.0', { signal: '@elapsed-time', inputClass: 'size-content' } );
+            panel.addLabel( '0 FPS', { signal: '@fps', inputClass: 'size-content' } );
+            panel.addLabel( '0x0', { signal: '@resolution', inputClass: 'size-content' } );
+            panel.endLine( 'items-center h-full' );
 
-            if( !mobile )
+            if ( !mobile )
             {
                 let exportOptions = {
-                    format: "gif",
-                    frames: "120",
-                    framerate: "30"
+                    format: 'gif',
+                    frames: '120',
+                    framerate: '30'
                 };
 
-                const iUpdateExportOptions = ( o, v ) =>
-                {
-                    exportOptions[ o ] = v;
+                const iUpdateExportOptions = ( o, v ) => {
+                    exportOptions[o] = v;
                 };
 
                 panel.sameLine();
-                const container = LX.makeContainer( ["auto", "auto"], "flex flex-row ml-auto" );
-                this._recordButton = new LX.Button( null, "RecordButton", ( name, event ) => {
-                    if( this.captureInProgress )
+                const container = LX.makeContainer( [ 'auto', 'auto' ], 'flex flex-row ml-auto' );
+                this._recordButton = new LX.Button( null, 'RecordButton', ( name, event ) => {
+                    if ( this.captureInProgress )
                     {
                         return;
                     }
-                    const iButton = this._recordButton.root.querySelector( "button" );
-                    iButton.classList.remove( "bg-none", "lexbutton" );
-                    iButton.classList.add( "bg-destructive", "hover:bg-destructive", "rounded-lg", "border-none" );
+                    const iButton = this._recordButton.root.querySelector( 'button' );
+                    iButton.classList.remove( 'bg-none', 'lexbutton' );
+                    iButton.classList.add( 'bg-destructive', 'hover:bg-destructive', 'rounded-lg', 'border-none' );
                     this.captureInProgress = true;
                     LX.doAsync( () => ShaderHub.startCapture( exportOptions ) );
-                }, { icon: "Video", className: "p-0", buttonClass: "outline record-button", title: "Record", tooltip: true } );
+                }, { icon: 'Video', className: 'p-0', buttonClass: 'outline record-button', title: 'Record', tooltip: true } );
                 container.appendChild( this._recordButton.root );
-                const b = new LX.Button( null, "RecordSettingsButton", ( name, event ) => {
+                const b = new LX.Button( null, 'RecordSettingsButton', ( name, event ) => {
                     const button = event.target;
-                    button["Format"] = exportOptions.format;
-                    button["Frames"] = exportOptions.frames;
-                    button["Frame Rate"] = exportOptions.framerate;
+                    button['Format'] = exportOptions.format;
+                    button['Frames'] = exportOptions.frames;
+                    button['Frame Rate'] = exportOptions.framerate;
                     LX.addDropdownMenu( button, [
                         {
-                            name: "Format",
-                            icon: "FileArchive",
-                            submenu: [ "gif", "png", "webm" ].map( o => {
-                                const checked = ( exportOptions[ "format" ] === `${ o }` );
-                                return { name: `${ checked ? LX.makeIcon( "Circle", { svgClass: "2xs fill-current inline-flex! mr-2" } ).innerHTML : "" }${ o }`, callback: (v) => iUpdateExportOptions( "format", v ) };
+                            name: 'Format',
+                            icon: 'FileArchive',
+                            submenu: [ 'gif', 'png', 'webm' ].map( ( o ) => {
+                                const checked = exportOptions['format'] === `${o}`;
+                                return { name: `${checked ? LX.makeIcon( 'Circle', { svgClass: '2xs fill-current inline-flex! mr-2' } ).innerHTML : ''}${o}`, callback: ( v ) =>
+                                    iUpdateExportOptions( 'format', v ) };
                             } )
                         },
                         {
-                            name: "Frames",
-                            icon: "Film",
-                            submenu: [ 60, 120, 180, 240, 300 ].map( o => {
-                                const checked = ( exportOptions[ "frames" ] === `${ o }` );
-                                return { name: `${ checked ? LX.makeIcon( "Circle", { svgClass: "2xs fill-current inline-flex! mr-2" } ).innerHTML : "" }${ o }`, callback: (v) => iUpdateExportOptions( "frames", v ) };
+                            name: 'Frames',
+                            icon: 'Film',
+                            submenu: [ 60, 120, 180, 240, 300 ].map( ( o ) => {
+                                const checked = exportOptions['frames'] === `${o}`;
+                                return { name: `${checked ? LX.makeIcon( 'Circle', { svgClass: '2xs fill-current inline-flex! mr-2' } ).innerHTML : ''}${o}`, callback: ( v ) =>
+                                    iUpdateExportOptions( 'frames', v ) };
                             } )
                         },
                         {
-                            name: "Frame Rate",
-                            icon: "Gauge",
-                            submenu: [ 10, 15, 30, 60 ].map( o => {
-                                const checked = ( exportOptions[ "framerate" ] === `${ o }` );
-                                return { name: `${ checked ? LX.makeIcon( "Circle", { svgClass: "2xs fill-current inline-flex! mr-2" } ).innerHTML : "" }${ o }`, callback: (v) => iUpdateExportOptions( "framerate", v ) };
+                            name: 'Frame Rate',
+                            icon: 'Gauge',
+                            submenu: [ 10, 15, 30, 60 ].map( ( o ) => {
+                                const checked = exportOptions['framerate'] === `${o}`;
+                                return { name: `${checked ? LX.makeIcon( 'Circle', { svgClass: '2xs fill-current inline-flex! mr-2' } ).innerHTML : ''}${o}`, callback: ( v ) =>
+                                    iUpdateExportOptions( 'framerate', v ) };
                             } )
-                        },
-                    ], { side: "bottom", align: "end" });
-                }, { icon: "ChevronDown", className: "p-0", buttonClass: "bg-none"});
+                        }
+                    ], { side: 'bottom', align: 'end' } );
+                }, { icon: 'ChevronDown', className: 'p-0', buttonClass: 'bg-none' } );
                 container.appendChild( b.root );
                 panel.addContent( null, container );
-                panel.addButton( null, "Fullscreen", () => ShaderHub.requestFullscreen(), { icon: "Fullscreen", title: "Fullscreen", tooltip: true } );
-                panel.endLine( "items-center h-full ml-auto" );
+                panel.addButton( null, 'Fullscreen', () => ShaderHub.requestFullscreen(), { icon: 'Fullscreen', title: 'Fullscreen', tooltip: true } );
+                panel.endLine( 'items-center h-full ml-auto' );
             }
 
             await ShaderHub.onShaderEditorCreated( shader, canvas );
 
-            if( editor )
+            if ( editor )
             {
                 LX.doAsync( () => editor.charWidth = editor._measureChar(), 400 );
             }
@@ -1604,54 +1611,54 @@ export const ui = {
 
         this.currentView = 'user';
 
-        let [ topArea, bottomArea ] = this.area.split({ type: "vertical", sizes: ["calc(100% - 48px)", null], resize: false });
-        topArea.root.parentElement.classList.add( "hub-background" )
-        topArea.root.className += " p-6 hub-background-blur overflow-scroll";
-        bottomArea.root.className += " items-center content-center";
+        let [ topArea, bottomArea ] = this.area.split( { type: 'vertical', sizes: [ 'calc(100% - 48px)', null ], resize: false } );
+        topArea.root.parentElement.classList.add( 'hub-background' );
+        topArea.root.className += ' p-6 hub-background-blur overflow-scroll';
+        bottomArea.root.className += ' items-center content-center';
 
         this._makeFooter( bottomArea );
 
         const ownProfile = this.fs.user && ( userID === this.fs.getUserId() );
-        if( !ownProfile )
+        if ( !ownProfile )
         {
-            const users = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_id", userID ) ] );
-            if( users.total === 0 )
+            const users = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_id', userID ) ] );
+            if ( users.total === 0 )
             {
-                LX.makeContainer( ["100%", "auto"], "mt-8 text-2xl font-medium justify-center text-center", "No user found.", topArea );
+                LX.makeContainer( [ '100%', 'auto' ], 'mt-8 text-2xl font-medium justify-center text-center', 'No user found.', topArea );
                 return;
             }
         }
 
         const usersDocuments = await this.fs.listDocuments( FS.USERS_COLLECTION_ID );
-        const user = usersDocuments.documents.find( d => d.user_id === userID );
-        const userName = user[ "user_name" ];
-        const isPublicProfile = user["public"];
+        const user = usersDocuments.documents.find( ( d ) => d.user_id === userID );
+        const userName = user['user_name'];
+        const isPublicProfile = user['public'];
 
-        document.title = `${ userName } - ShaderHub`;
+        document.title = `${userName} - ShaderHub`;
 
         const params = new URLSearchParams( document.location.search );
-        const queryOrderBy = params.get( "order_by" );
+        const queryOrderBy = params.get( 'order_by' );
 
         // Likes are only shown for the active user, they are private!
-        
+
         const PAGE_LIMIT = 8;
 
-        const avatar = new LX.Avatar({ imgSource: user["avatar"], fallback: userName[0].toUpperCase(), className: `size-12 [&_span]:text-xl [&_span]:leading-12` });
-        const infoContainer = LX.makeContainer( ["100%", "auto"], "flex flex-col gap-4 p-2 my-8 justify-center", `
+        const avatar = new LX.Avatar( { imgSource: user['avatar'], fallback: userName[0].toUpperCase(), className: `size-12 [&_span]:text-xl [&_span]:leading-12` } );
+        const infoContainer = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col gap-4 p-2 my-8 justify-center', `
             <div class="avatar-container flex flex-row gap-3 text-3xl font-bold content-center items-center">
-                ${ user[ "display_name" ] ? `${ user[ "display_name" ] } <span class="text-xl font-normal text-muted-foreground">(${ userName })</span>` : userName }
+                ${user['display_name'] ? `${user['display_name']} <span class="text-xl font-normal text-muted-foreground">(${userName})</span>` : userName}
             </div>
             <div class="flex flex-row gap-2">
-                <div style="max-width: 600px; overflow-wrap: break-word;" class="desc-content text-lg font-medium text-card-foreground">${ user[ "description" ] ?? "" }</div>
+                <div style="max-width: 600px; overflow-wrap: break-word;" class="desc-content text-lg font-medium text-card-foreground">${user['description'] ?? ''}</div>
             </div>
         `, topArea );
 
-        const avatarContainer = infoContainer.querySelector( ".avatar-container" );
+        const avatarContainer = infoContainer.querySelector( '.avatar-container' );
         avatarContainer.prepend( avatar.root );
 
-        if( !ownProfile && !isPublicProfile )
+        if ( !ownProfile && !isPublicProfile )
         {
-            LX.makeContainer( ["100%", "auto"], "mt-8 text-2xl font-medium justify-center text-center", "Private user, sorry :(", topArea );
+            LX.makeContainer( [ '100%', 'auto' ], 'mt-8 text-2xl font-medium justify-center text-center', 'Private user, sorry :(', topArea );
             return;
         }
 
@@ -1661,29 +1668,31 @@ export const ui = {
         {
             const shadersContainer = LX.makeContainer( [ null, 'auto' ], 'flex flex-col relative p-1 pt-0 rounded-lg overflow-hidden' );
             tabs.add( 'Shaders', shadersContainer, { selected: true, onSelect: ( event, name ) => {
-                document.title = `${ userName } - ShaderHub`;
+                document.title = `${userName} - ShaderHub`;
             } } );
 
-            const listHeader = LX.makeContainer( [ "100%", 'auto' ], 'flex flex-col sm:flex-row', '', shadersContainer );
+            const listHeader = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col sm:flex-row', '', shadersContainer );
 
-            const searchShaderInput = new LX.TextInput(null, '', v => {
+            const searchShaderInput = new LX.TextInput( null, '', ( v ) => {
                 this._refreshOwnShaders( v );
-            }, { placeholder: "Filter shaders...", className: "w-full flex-auto-fill sm:max-w-[25%]" });
+            }, { placeholder: 'Filter shaders...', className: 'w-full flex-auto-fill sm:max-w-[25%]' } );
             listHeader.appendChild( searchShaderInput.root );
 
             // Profile Shader Order
             {
-                const filtersPanel = new LX.Panel( { className: "p-4 bg-none", height: "auto" } );
+                const filtersPanel = new LX.Panel( { className: 'p-4 bg-none', height: 'auto' } );
                 filtersPanel.sameLine();
 
-                filtersPanel.addLabel( "Order by", { fit: true } );
+                filtersPanel.addLabel( 'Order by', { fit: true } );
 
                 const currentOrderFilter = queryOrderBy ?? 'recent';
 
-                for( let f of Constants.ORDER_BY_NAMES )
+                for ( let f of Constants.ORDER_BY_NAMES )
                 {
                     const fLower = f.toLowerCase();
-                    filtersPanel.addButton( null, f, (v) => this._exploreOrderBy( v.toLowerCase(), 'user' ), { buttonClass: `xs ${currentOrderFilter === fLower ? "primary" : "outline bg-card!"}` } );
+                    filtersPanel.addButton( null, f, ( v ) => this._exploreOrderBy( v.toLowerCase(), 'user' ), {
+                        buttonClass: `xs ${currentOrderFilter === fLower ? 'primary' : 'outline bg-card!'}`
+                    } );
                 }
 
                 filtersPanel.endLine();
@@ -1691,54 +1700,53 @@ export const ui = {
             }
 
             // Add pagination for shader list
-            const paginator = new LX.Pagination({
-                className: "ml-auto",
+            const paginator = new LX.Pagination( {
+                className: 'ml-auto',
                 maxButtons: 4,
                 useEllipsis: true,
                 alwaysShowEdges: false,
                 xallowChangeItemsPerPage: true,
-                onChange: (page) => {
+                onChange: ( page ) => {
                     this._refreshOwnShaders( undefined, page.toString() );
                 }
-            });
+            } );
             listHeader.appendChild( paginator.root );
 
-            const listContent = LX.makeContainer( [ "100%", 'auto' ], 'flex p-1 my-2', '', shadersContainer );
+            const listContent = LX.makeContainer( [ '100%', 'auto' ], 'flex p-1 my-2', '', shadersContainer );
 
             this._refreshOwnShaders = async ( filterSearch, filterPage ) => {
-
-                listContent.innerHTML = "";
+                listContent.innerHTML = '';
 
                 this._lastFilterSearch = filterSearch ?? '';
                 this._lastFilteredPage = filterPage ? parseInt( filterPage ) : 1;
 
-                const orderBy = queryOrderBy ? Constants.ORDER_BY_MAPPING[ queryOrderBy ] : Constants.ORDER_BY_MAPPING[ "recent" ];
+                const orderBy = queryOrderBy ? Constants.ORDER_BY_MAPPING[queryOrderBy] : Constants.ORDER_BY_MAPPING['recent'];
                 const queries = [
-                    Query.equal( "author_id", userID ),
-                    orderBy.direction === "asc" ? Query.orderAsc( orderBy.field ) : Query.orderDesc( orderBy.field ),
+                    Query.equal( 'author_id', userID ),
+                    orderBy.direction === 'asc' ? Query.orderAsc( orderBy.field ) : Query.orderDesc( orderBy.field ),
                     Query.offset( ( this._lastFilteredPage - 1 ) * PAGE_LIMIT ),
                     Query.limit( PAGE_LIMIT )
                 ];
 
-                if( !ownProfile )
+                if ( !ownProfile )
                 {
-                    queries.push( Query.or( [ Query.equal( "public", true ), Query.isNull( "public" ) ] ) );
+                    queries.push( Query.or( [ Query.equal( 'public', true ), Query.isNull( 'public' ) ] ) );
                 }
 
-                if( this._lastFilterSearch !== '' )
+                if ( this._lastFilterSearch !== '' )
                 {
                     // Tag search
-                    if( this._lastFilterSearch[ 0 ] === '#' )
+                    if ( this._lastFilterSearch[0] === '#' )
                     {
                         const tag = this._lastFilterSearch.substring( 1 );
-                        queries.push( Query.contains( "tags", tag ) );
+                        queries.push( Query.contains( 'tags', tag ) );
                     }
                     else
                     {
                         queries.push( Query.or( [
-                            Query.contains( "name", this._lastFilterSearch ),
-                            Query.contains( "description", this._lastFilterSearch ),
-                            Query.contains( "author_name", this._lastFilterSearch ),
+                            Query.contains( 'name', this._lastFilterSearch ),
+                            Query.contains( 'description', this._lastFilterSearch ),
+                            Query.contains( 'author_name', this._lastFilterSearch )
                         ] ) );
                     }
                 }
@@ -1749,25 +1757,26 @@ export const ui = {
                 paginator.setPage( this._lastFilteredPage );
 
                 const dbShaders = ShaderHub.filterShaders( result.documents, this._lastFilterSearch );
-                if( dbShaders.length === 0 )
+                if ( dbShaders.length === 0 )
                 {
-                    const headerButtons = LX.makeContainer( [ "100%", "auto" ], "flex flex-col p-2 justify-center", ``, listContent );
-                    LX.makeContainer( ["100%", "auto"], "mt-2 text-2xl font-medium justify-center text-center", `No shaders found.`, headerButtons );
-                    const getStartedButton = new LX.Button( null, "Create a Shader", () => this._openShader( "new" ), { className: "mt-2 place-self-center w-fit!", icon: "ChevronRight", iconPosition: "end", buttonClass: "lg primary" } );
+                    const headerButtons = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col p-2 justify-center', ``, listContent );
+                    LX.makeContainer( [ '100%', 'auto' ], 'mt-2 text-2xl font-medium justify-center text-center', `No shaders found.`, headerButtons );
+                    const getStartedButton = new LX.Button( null, 'Create a Shader', () => this._openShader( 'new' ), { className: 'mt-2 place-self-center w-fit!', icon: 'ChevronRight',
+                        iconPosition: 'end', buttonClass: 'lg primary' } );
                     headerButtons.appendChild( getStartedButton.root );
                     return;
                 }
 
-                let skeletonHtml = "";
+                let skeletonHtml = '';
 
-                for( let i = 0; i < dbShaders.length; ++i )
+                for ( let i = 0; i < dbShaders.length; ++i )
                 {
-                    const shaderItem = LX.makeElement( "li", `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, "" );
-                    const shaderPreview = LX.makeElement( "img", "opacity-0 rounded-lg border-none cursor-pointer self-center mt-2", "", shaderItem );
-                    shaderPreview.style.width = "calc(100% - 1rem)";
-                    shaderPreview.style.height = "calc(100% - 1rem)";
+                    const shaderItem = LX.makeElement( 'li', `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
+                    const shaderPreview = LX.makeElement( 'img', 'opacity-0 rounded-lg border-none cursor-pointer self-center mt-2', '', shaderItem );
+                    shaderPreview.style.width = 'calc(100% - 1rem)';
+                    shaderPreview.style.height = 'calc(100% - 1rem)';
                     shaderPreview.src = ShaderHub.shaderPreviewPath;
-                    LX.makeContainer( ["100%", "auto"], "absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none", `
+                    LX.makeContainer( [ '100%', 'auto' ], 'absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
                         <div class="w-full flex flex-col gap-1">
                             <div class="w-3/4 h-3 lexskeletonpart"></div>
                             <div class="w-1/2 h-3 lexskeletonpart"></div>
@@ -1777,107 +1786,106 @@ export const ui = {
                 }
 
                 const skeleton = new LX.Skeleton( skeletonHtml );
-                skeleton.root.classList.add( "grid", "shader-list", "gap-6", "justify-center" );
+                skeleton.root.classList.add( 'grid', 'shader-list', 'gap-6', 'justify-center' );
                 listContent.appendChild( skeleton.root );
 
                 const previewFiles = await this.fs.listFiles( [
-                    Query.startsWith( "name", ShaderHub.previewNamePrefix ),
-                    Query.endsWith( "name", ".png" ),
-                    Query.contains( "name", dbShaders.map( d => d[ "$id" ] ) ),
+                    Query.startsWith( 'name', ShaderHub.previewNamePrefix ),
+                    Query.endsWith( 'name', '.png' ),
+                    Query.contains( 'name', dbShaders.map( ( d ) => d['$id'] ) ),
                     Query.limit( PAGE_LIMIT )
                 ] );
 
                 LX.doAsync( async () => {
-
                     // Instead of destroying it, convert to normal container
-                    skeleton.root.querySelectorAll( ".lexskeletonpart" ).forEach( i => i.classList.remove( "lexskeletonpart" ) );
+                    skeleton.root.querySelectorAll( '.lexskeletonpart' ).forEach( ( i ) => i.classList.remove( 'lexskeletonpart' ) );
 
-                    for( let i = 0; i < dbShaders.length; ++i )
+                    for ( let i = 0; i < dbShaders.length; ++i )
                     {
-                        const document = dbShaders[ i ];
-                        const uid = document[ "$id" ];
+                        const document = dbShaders[i];
+                        const uid = document['$id'];
                         const name = document.name;
 
                         const shaderInfo = {
                             name,
                             uid,
-                            likeCount: document[ "like_count" ] ?? 0,
-                            public: document[ "public" ] ?? true,
-                            url: await this.fs.getFileUrl( document[ "file_id" ] ),
+                            likeCount: document['like_count'] ?? 0,
+                            public: document['public'] ?? true,
+                            url: await this.fs.getFileUrl( document['file_id'] ),
                             liked: this.dbUser ? ( this.dbUser.liked_shaders ?? [] ).includes( uid ) : false
                         };
 
                         const previewName = ShaderHub.getShaderPreviewName( shaderInfo.uid );
-                        const previewFile = previewFiles.files.find( f => f.name === previewName );
-                        if( previewFile )
+                        const previewFile = previewFiles.files.find( ( f ) => f.name === previewName );
+                        if ( previewFile )
                         {
-                            shaderInfo.preview = await this.fs.getFileUrl( previewFile[ "$id" ] );
+                            shaderInfo.preview = await this.fs.getFileUrl( previewFile['$id'] );
                         }
 
-                        const shaderItem = skeleton.root.children[ i ];
-                        const shaderPreview = shaderItem.querySelector( "img" );
-                        shaderPreview.style.width = "calc(100% - 1rem)";
+                        const shaderItem = skeleton.root.children[i];
+                        const shaderPreview = shaderItem.querySelector( 'img' );
+                        shaderPreview.style.width = 'calc(100% - 1rem)';
                         shaderPreview.src = shaderInfo.preview ?? ShaderHub.shaderPreviewPath;
-                        shaderPreview.onload = () => shaderPreview.classList.remove( "opacity-0" );
-                        shaderItem.querySelector( "div" ).remove();
-                        const shaderDesc = LX.makeContainer( ["100%", "auto"], "flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none", `
+                        shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
+                        shaderItem.querySelector( 'div' ).remove();
+                        const shaderDesc = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none', `
                             <div class="w-full flex-auto-fill overflow-hidden">
-                                <div class="text-sm sm:text-base font-medium"><span class="truncate max-w-full block">${ shaderInfo.name }</span></div>
+                                <div class="text-sm sm:text-base font-medium"><span class="truncate max-w-full block">${shaderInfo.name}</span></div>
                             </div>
                             <div class="flex flex-row gap-2 flex-auto-keep items-center">
-                                ${ ownProfile ? LX.makeIcon( shaderInfo.public ? "Eye" : "EyeOff", { svgClass: "viz-icon text-card-foreground" } ).innerHTML : "" }
+                                ${ownProfile ? LX.makeIcon( shaderInfo.public ? 'Eye' : 'EyeOff', { svgClass: 'viz-icon text-card-foreground' } ).innerHTML : ''}
                                 <div class="flex flex-row gap-1 items-center">
-                                    ${ LX.makeIcon( "Heart", { svgClass: `${ shaderInfo.liked ? "text-orange-600" : "" } fill-current` } ).innerHTML }
-                                    <span>${ shaderInfo.likeCount ?? 0 }</span>
+                                    ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600' : ''} fill-current` } ).innerHTML}
+                                    <span>${shaderInfo.likeCount ?? 0}</span>
                                 </div>
-                                ${ ownProfile ? `<span class="h-4 mx-2 border-right border-color text-muted-foreground self-center items-center"></span>` : "" }
-                                ${ ownProfile ? LX.makeIcon( "EllipsisVertical", { svgClass: "shader-prof-opt text-card-foreground cursor-pointer" } ).innerHTML : "" }
+                                ${ownProfile ? `<span class="h-4 mx-2 border-right border-color text-muted-foreground self-center items-center"></span>` : ''}
+                                ${ownProfile ? LX.makeIcon( 'EllipsisVertical', { svgClass: 'shader-prof-opt text-card-foreground cursor-pointer' } ).innerHTML : ''}
                             </div>`, shaderItem );
 
-                        let vizIcon = shaderDesc.querySelector( ".viz-icon" );
-                        const optButton = shaderDesc.querySelector( ".shader-prof-opt" );
-                        if( optButton )
+                        let vizIcon = shaderDesc.querySelector( '.viz-icon' );
+                        const optButton = shaderDesc.querySelector( '.shader-prof-opt' );
+                        if ( optButton )
                         {
-                            optButton.addEventListener( "click", ( e ) => {
+                            optButton.addEventListener( 'click', ( e ) => {
                                 LX.addDropdownMenu( optButton, [
-                                    { name: shaderInfo.public ? "Make Private" : "Make Public", icon: shaderInfo.public ? "EyeOff" : "Eye", callback: async () => {
+                                    { name: shaderInfo.public ? 'Make Private' : 'Make Public', icon: shaderInfo.public ? 'EyeOff' : 'Eye', callback: async () => {
                                         shaderInfo.public = !shaderInfo.public;
-                                        const newIcon = LX.makeIcon( shaderInfo.public ? "Eye" : "EyeOff", { svgClass: "viz-icon text-card-foreground" } ).querySelector( "svg" );
+                                        const newIcon = LX.makeIcon( shaderInfo.public ? 'Eye' : 'EyeOff', { svgClass: 'viz-icon text-card-foreground' } ).querySelector( 'svg' );
                                         vizIcon.replaceWith( newIcon );
                                         vizIcon = newIcon;
                                         await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, uid, {
-                                            "public": shaderInfo.public,
+                                            'public': shaderInfo.public
                                         } );
                                     } },
-                                    { name: "Export", icon: "Download", callback: async () => {
-                                        const json = JSON.parse( await this.fs.requestFile( shaderInfo.url, "text" ) );
-                                        const code = json.passes.map( (p, i) => {
+                                    { name: 'Export', icon: 'Download', callback: async () => {
+                                        const json = JSON.parse( await this.fs.requestFile( shaderInfo.url, 'text' ) );
+                                        const code = json.passes.map( ( p, i ) => {
                                             const lines = [];
-                                            if( i !== 0 ) lines.push( "" );
-                                            lines.push( `// ${ p.name }`, "", ...p.codeLines );
-                                            return lines.join( "\n" );
-                                        } ).join( "\n" );
-                                        LX.downloadFile( `${ shaderInfo.name.replaceAll( " ", "" ) }.wgsl`, code );
+                                            if ( i !== 0 ) lines.push( '' );
+                                            lines.push( `// ${p.name}`, '', ...p.codeLines );
+                                            return lines.join( '\n' );
+                                        } ).join( '\n' );
+                                        LX.downloadFile( `${shaderInfo.name.replaceAll( ' ', '' )}.wgsl`, code );
                                     } },
                                     null,
-                                    { name: "Delete", icon: "Trash2", className: "destructive", callback: () => ShaderHub.deleteShader( { uid, name } ) },
-                                ], { side: "top", align: "end" });
+                                    { name: 'Delete', icon: 'Trash2', className: 'destructive', callback: () => ShaderHub.deleteShader( { uid, name } ) }
+                                ], { side: 'top', align: 'end' } );
                             } );
                         }
 
-                        shaderPreview.addEventListener( "mousedown", e => e.preventDefault() );
-                        shaderPreview.addEventListener( "mouseup", ( e ) => {
+                        shaderPreview.addEventListener( 'mousedown', ( e ) => e.preventDefault() );
+                        shaderPreview.addEventListener( 'mouseup', ( e ) => {
                             this._openShader( shaderInfo.uid, e );
                         } );
                     }
                 }, 10 );
-            }
+            };
 
             await this._refreshOwnShaders();
         }
 
         // Show likes only for account owner
-        if( !ownProfile )
+        if ( !ownProfile )
         {
             return;
         }
@@ -1887,81 +1895,80 @@ export const ui = {
             let likesOpened = false;
             const likesContainer = LX.makeContainer( [ null, 'auto' ], 'flex flex-col relative p-1 pt-0 rounded-lg overflow-hidden' );
             tabs.add( 'Liked', likesContainer, { xselected: true, onSelect: async ( event, name ) => {
-                document.title = `${ userName } Liked - ShaderHub`;
+                document.title = `${userName} Liked - ShaderHub`;
 
-                if( likesOpened )
+                if ( likesOpened )
                 {
                     return;
                 }
 
                 likesOpened = true;
 
-                const listHeader = LX.makeContainer( [ "100%", 'auto' ], 'flex flex-col sm:flex-row', '', likesContainer );
+                const listHeader = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col sm:flex-row', '', likesContainer );
 
-                const searchShaderInput = new LX.TextInput(null, '', v => {
+                const searchShaderInput = new LX.TextInput( null, '', ( v ) => {
                     this._refreshLikedShaders( v );
-                }, { placeholder: "Filter shaders...", className: "w-full flex-auto-fill sm:max-w-[25%]" });
+                }, { placeholder: 'Filter shaders...', className: 'w-full flex-auto-fill sm:max-w-[25%]' } );
                 listHeader.appendChild( searchShaderInput.root );
 
-                const paginator = new LX.Pagination({
-                    className: "ml-auto",
+                const paginator = new LX.Pagination( {
+                    className: 'ml-auto',
                     maxButtons: 4,
                     useEllipsis: true,
                     alwaysShowEdges: false,
                     xallowChangeItemsPerPage: true,
-                    onChange: (page) => {
+                    onChange: ( page ) => {
                         this._refreshLikedShaders( undefined, page.toString() );
                     }
-                });
+                } );
                 listHeader.appendChild( paginator.root );
 
-                const listContent = LX.makeContainer( [ "100%", 'auto' ], 'flex p-1 my-2', '', likesContainer );
+                const listContent = LX.makeContainer( [ '100%', 'auto' ], 'flex p-1 my-2', '', likesContainer );
 
                 this._refreshLikedShaders = async ( filterSearch, filterPage ) => {
-
-                    listContent.innerHTML = "";
+                    listContent.innerHTML = '';
 
                     this._lastFilterSearch = filterSearch ?? '';
                     this._lastFilteredPage = filterPage ? parseInt( filterPage ) : 1;
 
                     const queries = [
-                        Query.or( [ Query.equal( "public", true ), Query.isNull( "public" ) ] ),
+                        Query.or( [ Query.equal( 'public', true ), Query.isNull( 'public' ) ] ),
                         Query.offset( ( this._lastFilteredPage - 1 ) * PAGE_LIMIT ),
                         Query.limit( PAGE_LIMIT )
                     ];
 
-                    const likes = user[ "liked_shaders" ];
+                    const likes = user['liked_shaders'];
                     const qOrs = [];
-                    likes.forEach( l => {
-                        qOrs.push( Query.equal( "$id", l ) );
-                    } )
+                    likes.forEach( ( l ) => {
+                        qOrs.push( Query.equal( '$id', l ) );
+                    } );
 
-                    if( qOrs.length )
+                    if ( qOrs.length )
                     {
-                        queries.push( qOrs.length === 1 ? qOrs[ 0 ] : Query.or( qOrs ) );
+                        queries.push( qOrs.length === 1 ? qOrs[0] : Query.or( qOrs ) );
                     }
                     else
                     {
-                        LX.makeContainer( ["100%", "auto"], "mt-2 text-2xl font-medium justify-center text-center", `
+                        LX.makeContainer( [ '100%', 'auto' ], 'mt-2 text-2xl font-medium justify-center text-center', `
                             No liked shaders found. <br>
                             Start browsing now to discover new shaders!`, likesContainer );
                         return;
                     }
 
-                    if( this._lastFilterSearch !== '' )
+                    if ( this._lastFilterSearch !== '' )
                     {
                         // Tag search
-                        if( this._lastFilterSearch[ 0 ] === '#' )
+                        if ( this._lastFilterSearch[0] === '#' )
                         {
                             const tag = this._lastFilterSearch.substring( 1 );
-                            queries.push( Query.contains( "tags", tag ) );
+                            queries.push( Query.contains( 'tags', tag ) );
                         }
                         else
                         {
                             queries.push( Query.or( [
-                                Query.contains( "name", this._lastFilterSearch ),
-                                Query.contains( "description", this._lastFilterSearch ),
-                                Query.contains( "author_name", this._lastFilterSearch ),
+                                Query.contains( 'name', this._lastFilterSearch ),
+                                Query.contains( 'description', this._lastFilterSearch ),
+                                Query.contains( 'author_name', this._lastFilterSearch )
                             ] ) );
                         }
                     }
@@ -1972,22 +1979,22 @@ export const ui = {
                     paginator.setPage( this._lastFilteredPage );
 
                     let dbShaders = ShaderHub.filterShaders( result.documents, this._lastFilterSearch );
-                    if( dbShaders.length === 0 )
+                    if ( dbShaders.length === 0 )
                     {
-                        LX.makeContainer( ["100%", "auto"], "mt-2 text-2xl font-medium justify-center text-center", "No shaders found.", listContent );
+                        LX.makeContainer( [ '100%', 'auto' ], 'mt-2 text-2xl font-medium justify-center text-center', 'No shaders found.', listContent );
                         return;
                     }
 
-                    let skeletonHtml = "";
+                    let skeletonHtml = '';
 
-                    for( let i = 0; i < dbShaders.length; ++i )
+                    for ( let i = 0; i < dbShaders.length; ++i )
                     {
-                        const shaderItem = LX.makeElement( "li", `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, "" );
-                        const shaderPreview = LX.makeElement( "img", "opacity-0 rounded-lg border-none cursor-pointer self-center mt-2", "", shaderItem );
-                        shaderPreview.style.width = "calc(100% - 1rem)";
-                        shaderPreview.style.height = "calc(100% - 1rem)";
+                        const shaderItem = LX.makeElement( 'li', `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
+                        const shaderPreview = LX.makeElement( 'img', 'opacity-0 rounded-lg border-none cursor-pointer self-center mt-2', '', shaderItem );
+                        shaderPreview.style.width = 'calc(100% - 1rem)';
+                        shaderPreview.style.height = 'calc(100% - 1rem)';
                         shaderPreview.src = ShaderHub.shaderPreviewPath;
-                        LX.makeContainer( ["100%", "auto"], "absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none", `
+                        LX.makeContainer( [ '100%', 'auto' ], 'absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
                             <div class="w-full flex flex-col gap-1">
                                 <div class="w-3/4 h-3 lexskeletonpart"></div>
                                 <div class="w-1/2 h-3 lexskeletonpart"></div>
@@ -1997,81 +2004,82 @@ export const ui = {
                     }
 
                     const skeleton = new LX.Skeleton( skeletonHtml );
-                    skeleton.root.classList.add( "grid", "shader-list", "gap-6", "justify-center" );
+                    skeleton.root.classList.add( 'grid', 'shader-list', 'gap-6', 'justify-center' );
                     listContent.appendChild( skeleton.root );
 
                     const previewFiles = await this.fs.listFiles( [
-                        Query.startsWith( "name", ShaderHub.previewNamePrefix ),
-                        Query.endsWith( "name", ".png" ),
-                        Query.contains( "name", dbShaders.map( d => d[ "$id" ] ) ),
+                        Query.startsWith( 'name', ShaderHub.previewNamePrefix ),
+                        Query.endsWith( 'name', '.png' ),
+                        Query.contains( 'name', dbShaders.map( ( d ) => d['$id'] ) ),
                         Query.limit( PAGE_LIMIT )
                     ] );
 
                     LX.doAsync( async () => {
-
                         // Instead of destroying it, convert to normal container
-                        skeleton.root.querySelectorAll( ".lexskeletonpart" ).forEach( i => i.classList.remove( "lexskeletonpart" ) );
+                        skeleton.root.querySelectorAll( '.lexskeletonpart' ).forEach( ( i ) => i.classList.remove( 'lexskeletonpart' ) );
 
                         const indexMap = new Map( likes.map( ( id, i ) => [ id, i ] ) );
                         dbShaders = dbShaders.sort( ( a, b ) => indexMap.get( a ) - indexMap.get( b ) ).reverse();
 
-                        for( let i = 0; i < dbShaders.length; ++i )
+                        for ( let i = 0; i < dbShaders.length; ++i )
                         {
-                            const document = dbShaders[ i ];
+                            const document = dbShaders[i];
                             const name = document.name;
-                            const uid = document[ "$id" ];
+                            const uid = document['$id'];
 
                             const shaderInfo = {
                                 name,
                                 uid,
-                                likeCount: document[ "like_count" ] ?? 0,
+                                likeCount: document['like_count'] ?? 0,
                                 liked: true // we're in liked tab...
                             };
 
-                            const authorId = document[ "author_id" ];
-                            if( authorId )
+                            const authorId = document['author_id'];
+                            if ( authorId )
                             {
-                                const userDocument = usersDocuments.documents.find( d => d[ "user_id" ] === authorId );
-                                const author = userDocument[ "user_name" ];
+                                const userDocument = usersDocuments.documents.find( ( d ) => d['user_id'] === authorId );
+                                const author = userDocument['user_name'];
                                 shaderInfo.author = author;
                                 shaderInfo.authorId = authorId;
                             }
                             else
                             {
-                                shaderInfo.author = document[ "author_name" ];
+                                shaderInfo.author = document['author_name'];
                                 shaderInfo.anonAuthor = true;
                             }
 
                             const previewName = ShaderHub.getShaderPreviewName( shaderInfo.uid );
-                            const previewFile = previewFiles.files.find( f => f.name === previewName );
-                            if( previewFile )
+                            const previewFile = previewFiles.files.find( ( f ) => f.name === previewName );
+                            if ( previewFile )
                             {
-                                shaderInfo.preview = await this.fs.getFileUrl( previewFile[ "$id" ] );
+                                shaderInfo.preview = await this.fs.getFileUrl( previewFile['$id'] );
                             }
 
-                            const shaderItem = skeleton.root.children[ i ];
-                            const shaderPreview = shaderItem.querySelector( "img" );
-                            shaderPreview.style.width = "calc(100% - 1rem)";
+                            const shaderItem = skeleton.root.children[i];
+                            const shaderPreview = shaderItem.querySelector( 'img' );
+                            shaderPreview.style.width = 'calc(100% - 1rem)';
                             shaderPreview.src = shaderInfo.preview ?? ShaderHub.shaderPreviewPath;
-                            shaderPreview.onload = () => shaderPreview.classList.remove( "opacity-0" );
-                            shaderItem.querySelector( "div" ).remove();
-                            const shaderDesc = LX.makeContainer( ["100%", "auto"], "flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none", `
+                            shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
+                            shaderItem.querySelector( 'div' ).remove();
+                            const shaderDesc = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none', `
                                 <div class="flex flex-row w-full items-center gap-2">
-                                   <span class="text-sm font-medium text-nowrap truncate">${ shaderInfo.name }</span>
-                                    <span class="text-sm font-light text-muted-foreground flex-auto-keep">by ${ !shaderInfo.anonAuthor ? `<a onclick='ui._openUserProfile("${ shaderInfo.authorId }")' class='hub-link font-medium'>` : "" }<span>${ shaderInfo.author }</span>${ !shaderInfo.anonAuthor ? "</a>" : "" }</span>
+                                   <span class="text-sm font-medium text-nowrap truncate">${shaderInfo.name}</span>
+                                    <span class="text-sm font-light text-muted-foreground flex-auto-keep">by ${
+                                !shaderInfo.anonAuthor ? `<a onclick='ui._openUserProfile("${shaderInfo.authorId}")' class='hub-link font-medium'>` : ''
+                            }<span>${shaderInfo.author}</span>${!shaderInfo.anonAuthor ? '</a>' : ''}</span>
                                     <div class="flex flex-row gap-1 items-center ml-auto flex-auto-keep">
-                                        ${ LX.makeIcon( "Heart", { svgClass: `${ shaderInfo.liked ? "text-orange-600" : "" } fill-current sm` } ).innerHTML }
-                                        <span class="text-sm">${ shaderInfo.likeCount ?? 0 }</span>
+                                        ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600' : ''} fill-current sm` } ).innerHTML}
+                                        <span class="text-sm">${shaderInfo.likeCount ?? 0}</span>
                                     </div>
                                 </div>`, shaderItem );
 
-                            shaderPreview.addEventListener( "mousedown", e => e.preventDefault() );
-                            shaderPreview.addEventListener( "mouseup", ( e ) => {
+                            shaderPreview.addEventListener( 'mousedown', ( e ) => e.preventDefault() );
+                            shaderPreview.addEventListener( 'mouseup', ( e ) => {
                                 this._openShader( shaderInfo.uid, e );
                             } );
                         }
                     }, 10 );
-                }
+                };
 
                 await this._refreshLikedShaders();
             } } );
@@ -2081,41 +2089,40 @@ export const ui = {
         {
             const preferencesContainer = LX.makeContainer( [ null, 'auto' ], 'flex flex-col relative p-1 pt-0 rounded-lg overflow-hidden' );
             tabs.add( 'Preferences', preferencesContainer, { xselected: true, onSelect: ( event, name ) => {
-                document.title = `${ userName } Preferences - ShaderHub`;
+                document.title = `${userName} Preferences - ShaderHub`;
             } } );
 
-            const content = LX.makeContainer( [ "100%", 'auto' ], 'flex flex-col md:flex-row gap-2 p-1 my-2', '', preferencesContainer );
+            const content = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col md:flex-row gap-2 p-1 my-2', '', preferencesContainer );
 
             // profile
             {
                 let profileDirty = false;
-                let userAvatar = user.avatar ?? "", userDescription = user.description ?? "",
-                    userDisplayName = user.display_name ?? "", userAppMode = user.app_mode ?? 'Auto',
+                let userAvatar = user.avatar ?? '', userDescription = user.description ?? '', userDisplayName = user.display_name ?? '', userAppMode = user.app_mode ?? 'Auto',
                     publicProfile = user.public ?? true;
 
-                const p = new LX.Panel({ className: "rounded-xl border-color" });
-                p.addTitle( "Profile" );
-                p.addToggle( "Public", publicProfile, (v) => {
+                const p = new LX.Panel( { className: 'rounded-xl border-color' } );
+                p.addTitle( 'Profile' );
+                p.addToggle( 'Public', publicProfile, ( v ) => {
                     publicProfile = v;
                     profileDirty = true;
-                }, { className: "primary", nameWidth: "70%", skipReset: true } );
-                p.addText( "Avatar", userAvatar, (v) => {
+                }, { className: 'primary', nameWidth: '70%', skipReset: true } );
+                p.addText( 'Avatar', userAvatar, ( v ) => {
                     userAvatar = v;
                     profileDirty = true;
                 }, { skipReset: true, placeholder: `Enter a URL (optional)` } );
-                p.addText( "Display Name", userDisplayName, (v) => {
+                p.addText( 'Display Name', userDisplayName, ( v ) => {
                     userDisplayName = v;
                     profileDirty = true;
                 }, { skipReset: true, placeholder: `Your full name (optional)` } );
-                p.addTextArea( "About", userDescription, (v) => {
+                p.addTextArea( 'About', userDescription, ( v ) => {
                     userDescription = v;
                     profileDirty = true;
-                }, { fitHeight: true, skipReset: true, inputClass: "bg-secondary!", placeholder: `Tell us something about yourself! (optional)` } );
-                p.addTitle( "App" );
-                p.addSelect( "Default Mode (Auto, Light, Dark)", [ 'Auto', 'Light', 'Dark' ], userAppMode, async (v) => {
+                }, { fitHeight: true, skipReset: true, inputClass: 'bg-secondary!', placeholder: `Tell us something about yourself! (optional)` } );
+                p.addTitle( 'App' );
+                p.addSelect( 'Default Mode (Auto, Light, Dark)', [ 'Auto', 'Light', 'Dark' ], userAppMode, async ( v ) => {
                     userAppMode = v;
                     profileDirty = true;
-                    if( v === 'Auto' )
+                    if ( v === 'Auto' )
                     {
                         LX.setSystemMode();
                     }
@@ -2123,125 +2130,130 @@ export const ui = {
                     {
                         LX.setMode( v.toLowerCase() );
                     }
-                }, { nameWidth: "70%", skipReset: true, overflowContainer: p.root } );
+                }, { nameWidth: '70%', skipReset: true, overflowContainer: p.root } );
                 p.addSeparator();
-                const saveButton = p.addButton( null, "Save Changes", async () => {
-                    if( !profileDirty )
+                const saveButton = p.addButton( null, 'Save Changes', async () => {
+                    if ( !profileDirty )
                     {
                         return;
                     }
                     const spinner = new LX.Spinner();
                     saveButton.root.querySelector( 'button' ).prepend( spinner.root );
-                    this.fs.updateDocument( FS.USERS_COLLECTION_ID, user[ "$id" ], {
-                        "avatar": userAvatar,
-                        "description": userDescription,
-                        "display_name": userDisplayName,
-                        "app_mode": userAppMode,
-                        "public": publicProfile,
-                    } ).then( r => {
-                        if( !r ) return;
+                    this.fs.updateDocument( FS.USERS_COLLECTION_ID, user['$id'], {
+                        'avatar': userAvatar,
+                        'description': userDescription,
+                        'display_name': userDisplayName,
+                        'app_mode': userAppMode,
+                        'public': publicProfile
+                    } ).then( ( r ) => {
+                        if ( !r ) return;
                         spinner.destroy();
                         profileDirty = false;
                         Object.assign( user, r );
-                        infoContainer.querySelector( ".desc-content" ).innerHTML = userDescription;
-                        document.querySelectorAll( ".lexavatar img" ).forEach( i => i.src = userAvatar );
-                        Utils.toast( `✅ Settings updated`, `User: ${ userName }` );
+                        infoContainer.querySelector( '.desc-content' ).innerHTML = userDescription;
+                        document.querySelectorAll( '.lexavatar img' ).forEach( ( i ) => i.src = userAvatar );
+                        Utils.toast( `✅ Settings updated`, `User: ${userName}` );
                     } );
-                    
-                }, { className: "place-self-center w-fit!", buttonClass: "primary" } );
+                }, { className: 'place-self-center w-fit!', buttonClass: 'primary' } );
                 content.appendChild( p.root );
             }
 
             // notifications
             {
-                const p = new LX.Panel({ className: "rounded-xl border-color" });
-                p.addTitle( "Notifications" );
-                p.addToggle( "Comments", false, () => {}, { className: "primary", disabled: true, nameWidth: "70%" } );
-                p.addToggle( "Comment Replies", false, () => {}, { className: "primary", disabled: true, nameWidth: "70%" } );
-                p.addToggle( "Likes", false, () => {}, { className: "primary", disabled: true, nameWidth: "70%" } );
-                p.addToggle( "New Followers", false, () => {}, { className: "primary", disabled: true, nameWidth: "70%" } );
-                p.addToggle( "Follower New Shaders", false, () => {}, { className: "primary", disabled: true, nameWidth: "70%" } );
+                const p = new LX.Panel( { className: 'rounded-xl border-color' } );
+                p.addTitle( 'Notifications' );
+                p.addToggle( 'Comments', false, () => {}, { className: 'primary', disabled: true, nameWidth: '70%' } );
+                p.addToggle( 'Comment Replies', false, () => {}, { className: 'primary', disabled: true, nameWidth: '70%' } );
+                p.addToggle( 'Likes', false, () => {}, { className: 'primary', disabled: true, nameWidth: '70%' } );
+                p.addToggle( 'New Followers', false, () => {}, { className: 'primary', disabled: true, nameWidth: '70%' } );
+                p.addToggle( 'Follower New Shaders', false, () => {}, { className: 'primary', disabled: true, nameWidth: '70%' } );
                 p.addSeparator();
-                const saveButton = p.addButton( null, "Save Changes", async () => {
+                const saveButton = p.addButton( null, 'Save Changes', async () => {
                     // TODO
-                }, { disabled: true, className: "place-self-center w-fit!", buttonClass: "primary" } );
+                }, { disabled: true, className: 'place-self-center w-fit!', buttonClass: 'primary' } );
                 content.appendChild( p.root );
             }
 
             // account
             {
-                let password = "";
+                let password = '';
 
-                const p = new LX.Panel({ className: "rounded-xl border-color" });
-                p.addTitle( "Account" );
+                const p = new LX.Panel( { className: 'rounded-xl border-color' } );
+                p.addTitle( 'Account' );
 
-                if( this.fs.user?.emailVerification )
+                if ( this.fs.user?.emailVerification )
                 {
-                    let iconStr = LX.makeIcon( "BadgeCheck", { svgClass: 'md text-inherit!' } ).innerHTML
-                    p.attach( LX.badge( iconStr + "Email verified", "success m-4 flex place-self-center", { asElement: true } ) );
+                    let iconStr = LX.makeIcon( 'BadgeCheck', { svgClass: 'md text-inherit!' } ).innerHTML;
+                    p.attach( LX.badge( iconStr + 'Email verified', 'success m-4 flex place-self-center', { asElement: true } ) );
                 }
                 else
                 {
-                    let iconStr = LX.makeIcon( "BadgeX", { svgClass: 'md text-inherit!' } ).innerHTML
-                    p.attach( LX.badge( iconStr + "Email not verified yet", "destructive m-4 flex place-self-center", { asElement: true } ) );
+                    let iconStr = LX.makeIcon( 'BadgeX', { svgClass: 'md text-inherit!' } ).innerHTML;
+                    p.attach( LX.badge( iconStr + 'Email not verified yet', 'destructive m-4 flex place-self-center', { asElement: true } ) );
 
-                    p.addButton( null, "Send email verification", async () => {
+                    p.addButton( null, 'Send email verification', async () => {
                         const url = new URL( window.location.href );
-                        url.search = "";
+                        url.search = '';
                         const result = await this.fs.account.createEmailVerification( {
-                            url: url.href + "?verifyEmail=true" // Redirect URL after recovery
+                            url: url.href + '?verifyEmail=true' // Redirect URL after recovery
                         } );
-                    }, { className: "place-self-center w-fit!", buttonClass: "primary" } );
+                    }, { className: 'place-self-center w-fit!', buttonClass: 'primary' } );
                 }
 
                 p.addSeparator();
-                p.addLabel( "Change Password" );
+                p.addLabel( 'Change Password' );
                 const formData = {
-                    password: { label: "Password", value: "", type: "password" },
-                    newPassword: { label: "New Password", value: "", type: "password", pattern: { minLength: Constants.PASSWORD_MIN_LENGTH, digit: true } },
-                    repeatPassword: { label: "Repeat New Password", value: "", type: "password", pattern: { fieldMatchName: "newPassword" } },
+                    password: { label: 'Password', value: '', type: 'password' },
+                    newPassword: { label: 'New Password', value: '', type: 'password', pattern: { minLength: Constants.PASSWORD_MIN_LENGTH, digit: true } },
+                    repeatPassword: { label: 'Repeat New Password', value: '', type: 'password', pattern: { fieldMatchName: 'newPassword' } }
                 };
-                const form = p.addForm( null, formData, async (value, err) => {
+                const form = p.addForm( null, formData, async ( value, err ) => {
                     form.syncInputs(); // Force sync
-                    if( err.length )
+                    if ( err.length )
                     {
-                        Utils.toast( `❌ Error`, err.map( e => `${ e.entry }: ${ e.messages.join( "\n" ) }` ).join( "\n\n" ), -1 );
+                        Utils.toast( `❌ Error`, err.map( ( e ) => `${e.entry}: ${e.messages.join( '\n' )}` ).join( '\n\n' ), -1 );
                         return;
                     }
 
                     const spinner = new LX.Spinner();
                     form.root.querySelector( 'button' ).prepend( spinner.root );
 
-                    try {
-                        this.fs.account.updatePassword( value.newPassword, value.password ).then( r => {
-                            if( !r ) return;
+                    try
+                    {
+                        this.fs.account.updatePassword( value.newPassword, value.password ).then( ( r ) => {
+                            if ( !r ) return;
                             spinner.destroy();
-                            form.root.querySelectorAll( "input[type=password]" ).forEach( t => t.value = "" );
+                            form.root.querySelectorAll( 'input[type=password]' ).forEach( ( t ) => t.value = '' );
                             form.syncInputs(); // Force sync
-                            Utils.toast( `✅ Password updated!`, `User: ${ userName }` );
+                            Utils.toast( `✅ Password updated!`, `User: ${userName}` );
                         } );
-                    } catch( err ) {
-                        console.log(err)
+                    }
+                    catch ( err )
+                    {
+                        console.log( err );
                         Utils.toast( `❌ Error`, err, -1 );
                     }
-                }, { primaryActionName: "Update" } );
+                }, { primaryActionName: 'Update' } );
                 p.addSeparator();
-                p.addLabel( "This action will delete your ShaderHub account. This is irreversible!" );
-                p.addText( "Password", password, (v) => {
+                p.addLabel( 'This action will delete your ShaderHub account. This is irreversible!' );
+                p.addText( 'Password', password, ( v ) => {
                     password = v;
-                }, { disabled: true, type: "password", skipReset: true } );
-                p.addButton( "Delete Account", "Delete", async () => {
-                    try {
+                }, { disabled: true, type: 'password', skipReset: true } );
+                p.addButton( 'Delete Account', 'Delete', async () => {
+                    try
+                    {
                         // const r = await this.fs.account.updatePassword( password, password );
                         // if( r )
                         // {
                         //     // TODO
                         // }
-                    } catch( err ) {
-                        console.log(err)
+                    }
+                    catch ( err )
+                    {
+                        console.log( err );
                         Utils.toast( `❌ Error`, err, -1 );
                     }
-                }, { disabled: true, buttonClass: "destructive" } );
+                }, { disabled: true, buttonClass: 'destructive' } );
                 content.appendChild( p.root );
             }
         }
@@ -2249,24 +2261,25 @@ export const ui = {
 
     async makeStatusBarButtons( p, editor )
     {
-        const usingWebGPU = ( ShaderHub.backend === 'webgpu' );
-        const customTabInfoButtonsPanel = new LX.Panel( { className: "flex flex-row items-center", height: "auto" } );
+        const usingWebGPU = ShaderHub.backend === 'webgpu';
+        const customTabInfoButtonsPanel = new LX.Panel( { className: 'flex flex-row items-center', height: 'auto' } );
 
         customTabInfoButtonsPanel.sameLine();
 
         const makeParagraph = ( text, p, extraClass ) => {
-            LX.makeContainer( ["auto", "auto"], "p-2 text-card-foreground text-xs " + ( extraClass ?? "" ), text, p, { wordBreak: "break-word" } );
-        }
+            LX.makeContainer( [ 'auto', 'auto' ], 'p-2 text-card-foreground text-xs ' + ( extraClass ?? '' ), text, p, { wordBreak: 'break-word' } );
+        };
 
         const openQuickHelp = () => {
+            const dialog = new LX.Dialog( 'Quick Help', ( p ) => {
+                p.root.classList.add( 'custom-parameters-panel', 'help-content', 'p-2', 'overflow-y-scroll' );
 
-            const dialog = new LX.Dialog( "Quick Help", ( p ) => {
+                makeParagraph(
+                    `ShaderHub is a playground for both WebGPU render and compute shaders. Everything here is written in WGSL, which is WebGPU's native shader language. For up-to-date information on WGSL, please see the <a href='https://www.w3.org/TR/WGSL/'>WGSL draft specification</a>. You can also take a <a href='https://google.github.io/tour-of-wgsl/'>tour of WGSL</a>.`,
+                    p
+                );
 
-                p.root.classList.add( "custom-parameters-panel", "help-content", "p-2", "overflow-y-scroll" );
-
-                makeParagraph( `ShaderHub is a playground for both WebGPU render and compute shaders. Everything here is written in WGSL, which is WebGPU's native shader language. For up-to-date information on WGSL, please see the <a href='https://www.w3.org/TR/WGSL/'>WGSL draft specification</a>. You can also take a <a href='https://google.github.io/tour-of-wgsl/'>tour of WGSL</a>.`, p );
-
-                p.addTitle( "Inputs" );
+                p.addTitle( 'Inputs' );
                 makeParagraph( `ShaderHub allows to use custom values controlled by sliders and provides the following default inputs:`, p );
                 makeParagraph( `Mouse input can be accessed from the <span class="text-destructive font-semibold">iMouse</span> struct:`, p );
                 makeParagraph( `<span class="text-foreground">iMouse.pos: vec2f</span> <span class="text-muted-foreground">// Mouse move position when pressed</span><br>
@@ -2289,7 +2302,7 @@ export const ui = {
 <span class="text-muted-foreground">// "nearestRepeatSampler", "bilinearRepeatSampler" or "trilinearRepeatSampler"</span><br>
 <span class="text-foreground">textureSample(iChannel0...3, <span class="text-destructive font-semibold">sampler</span>, uv)</span>`, p );
 
-                p.addTitle( "Preprocessor" );
+                p.addTitle( 'Preprocessor' );
 
                 makeParagraph( `ShaderHub also provides an experimental WGSL preprocessor. It currently allows the use of some directives:`, p );
                 makeParagraph( `<ul style="margin-block:0">
@@ -2298,7 +2311,7 @@ export const ui = {
     <li><span class="text-destructive font-semibold">SCREEN_WIDTH</span> and <span class="text-destructive font-semibold">SCREEN_HEIGHT</span> are predefined variables for accessing canvas dimensions</li>
 </ul>`, p );
 
-                if( usingWebGPU )
+                if ( usingWebGPU )
                 {
                     makeParagraph( `For <span class="text-destructive font-semibold">compute</span> shaders:`, p );
                     makeParagraph( `<ul style="margin-block:0">
@@ -2308,48 +2321,57 @@ export const ui = {
     </ul>`, p );
                 }
 
-                p.addTitle( "Examples" );
-                makeParagraph( `<a href="/?shader=68b8931090e336e8a1ad" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Custom Uniforms</a>`, p);
-                makeParagraph( `<a href="/?shader=68c449875d3a5535bba0" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Texture Buffer pass</a>`, p);
+                p.addTitle( 'Examples' );
+                makeParagraph(
+                    `<a href="/?shader=68b8931090e336e8a1ad" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Custom Uniforms</a>`,
+                    p
+                );
+                makeParagraph(
+                    `<a href="/?shader=68c449875d3a5535bba0" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Texture Buffer pass</a>`,
+                    p
+                );
 
-                if( usingWebGPU )
+                if ( usingWebGPU )
                 {
-                    makeParagraph( `<a href="/?shader=68dac43a64cff0f5fa9d" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Simple Compute Pass</a>`, p);
-                    makeParagraph( `<a href="/?shader=68da7c00ef76c57eb056" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Compute Storage usage</a>`, p);
+                    makeParagraph(
+                        `<a href="/?shader=68dac43a64cff0f5fa9d" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Simple Compute Pass</a>`,
+                        p
+                    );
+                    makeParagraph(
+                        `<a href="/?shader=68da7c00ef76c57eb056" class="text-foreground decoration-none font-semibold hover:text-card-foreground underline-offset-4 hover:underline cursor-pointer">Compute Storage usage</a>`,
+                        p
+                    );
                 }
 
                 const pass = ShaderHub.currentPass;
-                if( pass )
+                if ( pass )
                 {
-                    p.addTitle( "Shader Code" );
+                    p.addTitle( 'Shader Code' );
                     makeParagraph( `Here are the current contents of this shader:`, p );
 
-                    const code = pass.codeContent ?? "";
-                    const lines = code.replaceAll( "    ", "&emsp;" ).split( "\n" ).map( l => `<span>${ l }</span>` )
-                    makeParagraph( lines.join( "" ), p, "flex flex-col p-4 text-muted-foreground select-text" );
+                    const code = pass.codeContent ?? '';
+                    const lines = code.replaceAll( '    ', '&emsp;' ).split( '\n' ).map( ( l ) => `<span>${l}</span>` );
+                    makeParagraph( lines.join( '' ), p, 'flex flex-col p-4 text-muted-foreground select-text' );
                 }
-
-            }, { modal: false, size: [ "700px", "min(calc(100% - 32px), 900px)" ] } );
-
+            }, { modal: false, size: [ '700px', 'min(calc(100% - 32px), 900px)' ] } );
         };
 
         /*
             More options
         */
 
-        const moreButton = customTabInfoButtonsPanel.addButton( null, "MoreButton", async () => {
-            
-            const isNewShader = ( this.shader.uid === "EMPTY_ID" );
+        const moreButton = customTabInfoButtonsPanel.addButton( null, 'MoreButton', async () => {
+            const isNewShader = this.shader.uid === 'EMPTY_ID';
             const options = [];
 
-            if( isNewShader )
+            if ( isNewShader )
             {
                 options.push( {
-                    name: "Graphics",
+                    name: 'Graphics',
                     icon: 'Sparkle',
                     submenu: [
-                        { name: "WebGPU", callback: () => window.location.href = `${window.location.origin}/create` },
-                        { name: "WebGL", callback: () => window.location.search = "?r=gl" }
+                        { name: 'WebGPU', callback: () => window.location.href = `${window.location.origin}/create` },
+                        { name: 'WebGL', callback: () => window.location.search = '?r=gl' }
                     ]
                 }, null );
             }
@@ -2357,189 +2379,188 @@ export const ui = {
             LX.addDropdownMenu( moreButton.root, [
                 ...options,
                 {
-                    name: "Templates",
+                    name: 'Templates',
                     icon: 'FolderCode',
                     submenu: [
-                        { name: "Default", callback: () => {} },
-                        { name: "Texture", callback: () => {} }
+                        { name: 'Default', callback: () => {} },
+                        { name: 'Texture', callback: () => {} }
                     ]
                 },
                 {
-                    name: "Quick Help",
+                    name: 'Quick Help',
                     icon: 'CircleQuestionMark',
                     callback: () => openQuickHelp()
                 }
-            ], { side: "top", align: "start" });
-
-        }, { icon: "EllipsisVertical", title: "More", tooltip: true, buttonClass: "ghost" } );
+            ], { side: 'top', align: 'start' } );
+        }, { icon: 'EllipsisVertical', title: 'More', tooltip: true, buttonClass: 'ghost' } );
 
         /*
             Custom Uniforms info
         */
 
         const customParametersContainer = LX.makeContainer(
-            [`${ Math.min( 800, window.innerWidth - 64 ) }px`, "auto"],
-            "overflow-scroll",
-            "",
+            [ `${Math.min( 800, window.innerWidth - 64 )}px`, 'auto' ],
+            'overflow-scroll',
+            '',
             null,
-            { maxHeight: "256px", maxWidth: `${ window.innerWidth - 64 }px` }
+            { maxHeight: '256px', maxWidth: `${window.innerWidth - 64}px` }
         );
 
-        const uniformsHeader = LX.makeContainer( ["auto", "auto"], "flex flex-row p-2 items-center", "", customParametersContainer );
-        const uniformsCountTitle = LX.makeContainer( ["auto", "auto"], "", `Uniforms [0]`, uniformsHeader );
-        const addUniformButton = new LX.Button( null, "AddNewCustomUniform", () => {
+        const uniformsHeader = LX.makeContainer( [ 'auto', 'auto' ], 'flex flex-row p-2 items-center', '', customParametersContainer );
+        const uniformsCountTitle = LX.makeContainer( [ 'auto', 'auto' ], '', `Uniforms [0]`, uniformsHeader );
+        const addUniformButton = new LX.Button( null, 'AddNewCustomUniform', () => {
             ShaderHub.addUniform();
             this.customParametersPanel.refresh();
-        }, { icon: "Plus", className: "ml-auto self-center", buttonClass: "bg-none", title: "Add New Uniform", tooltip: true, width: "38px" } );
+        }, { icon: 'Plus', className: 'ml-auto self-center', buttonClass: 'bg-none', title: 'Add New Uniform', tooltip: true, width: '38px' } );
         uniformsHeader.appendChild( addUniformButton.root );
 
         // Create the content for the uniforms panel
         {
-            this.customParametersPanel = new LX.Panel({ className: "custom-parameters-panel w-full" });
+            this.customParametersPanel = new LX.Panel( { className: 'custom-parameters-panel w-full' } );
             customParametersContainer.appendChild( this.customParametersPanel.root );
 
             this.customParametersPanel.refresh = ( overridePanel, onRefresh ) => {
-
                 const pass = ShaderHub.currentPass;
-                if( !pass || pass.type === "common" ) return;
+                if ( !pass || pass.type === 'common' ) return;
 
                 overridePanel = overridePanel ?? this.customParametersPanel;
 
                 overridePanel.clear();
 
-                overridePanel.addLabel( "Uniform names must start with i + Capital letter (e.g. iTime)." );
+                overridePanel.addLabel( 'Uniform names must start with i + Capital letter (e.g. iTime).' );
 
-                for( let i = 0; i < pass.uniforms.length; ++i )
+                for ( let i = 0; i < pass.uniforms.length; ++i )
                 {
-                    const u = pass.uniforms[ i ];
+                    const u = pass.uniforms[i];
 
                     overridePanel.sameLine();
                     overridePanel.addText( null, u.name, ( v ) => {
                         u.name = v;
                         ShaderHub.compileShader( true, pass );
-                    }, { width: "25%", skipReset: true, pattern: "\\b(?!(" + Constants.DEFAULT_UNIFORM_NAMES.join("|") + ")\\b)(i[A-Z]\\w*)\\b" } );
+                    }, { width: '25%', skipReset: true, pattern: '\\b(?!(' + Constants.DEFAULT_UNIFORM_NAMES.join( '|' ) + ')\\b)(i[A-Z]\\w*)\\b' } );
 
-                    const step = ( u.type.includes( "f" ) ) ? 0.01 : 1;
+                    const step = ( u.type.includes( 'f' ) ) ? 0.01 : 1;
 
-                    if( [ "f32", "i32", "u32" ].includes( u.type ) )
+                    if ( [ 'f32', 'i32', 'u32' ].includes( u.type ) )
                     {
-                        overridePanel.addNumber( "Min", u.min, ( v ) => {
+                        overridePanel.addNumber( 'Min', u.min, ( v ) => {
                             u.min = v;
                             uRangeComponent.setLimits( u.min, u.max );
                             pass.uniformsDirty = true;
-                        }, { nameWidth: "40%", width: "17%", skipReset: true, step } );
+                        }, { nameWidth: '40%', width: '17%', skipReset: true, step } );
                         const uRangeComponent = overridePanel.addRange( null, u.value, ( v ) => {
                             u.value = v;
                             pass.uniformsDirty = true;
-                        }, { className: "primary", width: "35%", skipReset: true, min: u.min, max: u.max, step } );
-                        overridePanel.addNumber( "Max", u.max, ( v ) => {
+                        }, { className: 'primary', width: '35%', skipReset: true, min: u.min, max: u.max, step } );
+                        overridePanel.addNumber( 'Max', u.max, ( v ) => {
                             u.max = v;
                             uRangeComponent.setLimits( u.min, u.max );
                             pass.uniformsDirty = true;
-                        }, { nameWidth: "40%", width: "17%", skipReset: true, step } );
+                        }, { nameWidth: '40%', width: '17%', skipReset: true, step } );
                     }
-                    else if( u.isColor )
+                    else if ( u.isColor )
                     {
-                        const hasAlpha = ( u.type === "vec4f" );
-                        const color = { r: u.value[ 0 ], g: u.value[ 1 ], b: u.value[ 2 ] };
-                        if( hasAlpha )
+                        const hasAlpha = u.type === 'vec4f';
+                        const color = { r: u.value[0], g: u.value[1], b: u.value[2] };
+                        if ( hasAlpha )
                         {
-                            color.a = u.value[ 3 ];
+                            color.a = u.value[3];
                         }
                         overridePanel.addColor( null, LX.rgbToHex( color ), ( v ) => {
                             u.value = [ v.r, v.g, v.b ];
-                            if( hasAlpha ) u.value[ 3 ] = v.a;
+                            if ( hasAlpha ) u.value[3] = v.a;
                             pass.uniformsDirty = true;
-                        }, { width: "69%", skipReset: true, useRGB: true } );
+                        }, { width: '69%', skipReset: true, useRGB: true } );
                     }
                     else
                     {
-                        const vecFuncName = `addVector${ u.value.length }`;
-                        overridePanel[ vecFuncName ]( null, u.value, ( v ) => {
+                        const vecFuncName = `addVector${u.value.length}`;
+                        overridePanel[vecFuncName]( null, u.value, ( v ) => {
                             u.value = v;
                             pass.uniformsDirty = true;
-                        }, { width: "69%", skipReset: true, step } );
+                        }, { width: '69%', skipReset: true, step } );
                     }
 
-                    const optionsButton = overridePanel.addButton( null, "UniformOptionsButton", ( v ) =>
-                    {
+                    const optionsButton = overridePanel.addButton( null, 'UniformOptionsButton', ( v ) => {
                         const iUpdateUniformType = ( v ) => {
                             ShaderHub.updateUniformType( pass, i, v );
                             this.customParametersPanel.refresh( overridePanel );
                         };
 
                         const menu = LX.addDropdownMenu( optionsButton.root, [
-                            { name: "Number", submenu: [
-                                { name: "f32", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
-                                { name: "i32", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
-                                { name: "u32", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
+                            { name: 'Number', submenu: [
+                                { name: 'f32', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                                { name: 'i32', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                                { name: 'u32', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) }
                             ] },
-                            { name: "Vec2", submenu: [
-                                { name: "vec2f", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
-                                { name: "vec2i", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
-                                { name: "vec2u", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
+                            { name: 'Vec2', submenu: [
+                                { name: 'vec2f', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                                { name: 'vec2i', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                                { name: 'vec2u', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) }
                             ] },
-                            { name: "Vec3", submenu: [
-                                { name: "vec3f", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
-                                { name: "vec3i", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
-                                { name: "vec3u", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
+                            { name: 'Vec3', submenu: [
+                                { name: 'vec3f', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                                { name: 'vec3i', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                                { name: 'vec3u', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) }
                             ] },
-                            { name: "Vec4", submenu: [
-                                { name: "vec4f", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
-                                { name: "vec4i", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
-                                { name: "vec4u", icon: "Cuboid", callback: iUpdateUniformType.bind( this ) },
+                            { name: 'Vec4', submenu: [
+                                { name: 'vec4f', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                                { name: 'vec4i', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                                { name: 'vec4u', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) }
                             ] },
-                            { name: "Color", submenu: [
-                                { name: "color3", icon: "Pipette", callback: iUpdateUniformType.bind( this ) },
-                                { name: "color4", icon: "Pipette", callback: iUpdateUniformType.bind( this ) },
+                            { name: 'Color', submenu: [
+                                { name: 'color3', icon: 'Pipette', callback: iUpdateUniformType.bind( this ) },
+                                { name: 'color4', icon: 'Pipette', callback: iUpdateUniformType.bind( this ) }
                             ] },
                             null,
-                            { name: "Delete", icon: "Trash2", className: "destructive", callback: () => {
+                            { name: 'Delete', icon: 'Trash2', className: 'destructive', callback: () => {
                                 ShaderHub.removeUniform( pass, i );
                                 this.customParametersPanel.refresh( overridePanel );
-                            }}
-                        ], { side: "top", align: "end" });
+                            } }
+                        ], { side: 'top', align: 'end' } );
 
                         menu.root.skipFocus = true;
-                    }, { width: "6%", icon: "Menu", buttonClass: "bg-none" } );
+                    }, { width: '6%', icon: 'Menu', buttonClass: 'bg-none' } );
 
                     overridePanel.endLine();
                 }
 
                 // Updates probably to the panel at the dialog
-                if( onRefresh )
+                if ( onRefresh )
                 {
                     onRefresh();
                 }
                 else
                 {
                     // Updates to the popover
-                    uniformsCountTitle.innerHTML = `Uniforms [${ pass.uniforms.length }]`;
+                    uniformsCountTitle.innerHTML = `Uniforms [${pass.uniforms.length}]`;
 
-                    if( LX.Popover.activeElement )
+                    if ( LX.Popover.activeElement )
                     {
                         LX.Popover.activeElement._adjustPosition();
                     }
                 }
-            }
+            };
         }
 
-        this.openCustomParamsButton = customTabInfoButtonsPanel.addButton( null, "OpenCustomParams", ( name, event ) => {
+        this.openCustomParamsButton = customTabInfoButtonsPanel.addButton( null, 'OpenCustomParams', ( name, event ) => {
             const pass = ShaderHub.currentPass;
-            if( pass.name === "Common" )
+            if ( pass.name === 'Common' )
+            {
                 return;
+            }
 
-            this.customParametersPanel.refresh()
+            this.customParametersPanel.refresh();
             this.openUniformsDialog( event.target );
-        }, { icon: "Settings2", title: "Custom Parameters", tooltip: true, buttonClass: "ghost" } );
+        }, { icon: 'Settings2', title: 'Custom Parameters', tooltip: true, buttonClass: 'ghost' } );
 
         /*
             Compile Button
         */
 
-        customTabInfoButtonsPanel.addButton( null, "CompileShaderButton", async () => {
+        customTabInfoButtonsPanel.addButton( null, 'CompileShaderButton', async () => {
             await ShaderHub.compileShader( true, null, true );
-        }, { icon: "Play", title: "Compile", tooltip: true, buttonClass: "ghost" } );
+        }, { icon: 'Play', title: 'Compile', tooltip: true, buttonClass: 'ghost' } );
 
         customTabInfoButtonsPanel.endLine();
 
@@ -2548,9 +2569,9 @@ export const ui = {
 
     makeGPUCanvas()
     {
-        const canvas = document.createElement("canvas");
-        canvas.className = "webgpu-canvas w-full h-full rounded-b-none rounded-t-lg";
-        canvas.tabIndex = "0";
+        const canvas = document.createElement( 'canvas' );
+        canvas.className = 'webgpu-canvas w-full h-full rounded-b-none rounded-t-lg';
+        canvas.tabIndex = '0';
 
         // Manage canvas resize
         {
@@ -2562,89 +2583,89 @@ export const ui = {
 
             let bestAttemptFallback = () => {
                 let devicePixelRatio = window.devicePixelRatio || 1;
-                let xResolution = Math.round( canvas.offsetWidth  * devicePixelRatio ) | 0;
+                let xResolution = Math.round( canvas.offsetWidth * devicePixelRatio ) | 0;
                 let yResolution = Math.round( canvas.offsetHeight * devicePixelRatio ) | 0;
                 iResize( xResolution, yResolution );
             };
 
-            if( !window.ResizeObserver )
+            if ( !window.ResizeObserver )
             {
                 console.warn( "This browser doesn't support ResizeObserver." );
                 bestAttemptFallback();
-                window.addEventListener( "resize", bestAttemptFallback );
+                window.addEventListener( 'resize', bestAttemptFallback );
             }
             else
             {
                 this.ro = new ResizeObserver( function( entries, observer )
                 {
-                    var entry = entries[ 0 ];
-                    if( !entry['devicePixelContentBoxSize'] )
+                    var entry = entries[0];
+                    if ( !entry['devicePixelContentBoxSize'] )
                     {
                         observer.unobserve( canvas );
                         console.warn( "This browser doesn't support ResizeObserver + device-pixel-content-box (2)" );
                         bestAttemptFallback();
-                        window.addEventListener( "resize", bestAttemptFallback );
+                        window.addEventListener( 'resize', bestAttemptFallback );
                     }
                     else
                     {
-                        let box = entry.devicePixelContentBoxSize[ 0 ];
+                        let box = entry.devicePixelContentBoxSize[0];
                         iResize( box.inlineSize, box.blockSize );
                     }
-                });
+                } );
 
                 try
                 {
-                    this.ro.observe( canvas, { box: ["device-pixel-content-box"] } );
+                    this.ro.observe( canvas, { box: [ 'device-pixel-content-box' ] } );
                 }
-                catch( e )
+                catch ( e )
                 {
-                    console.warn( "This browser doesn't support ResizeObserver + device-pixel-content-box (1)");
+                    console.warn( "This browser doesn't support ResizeObserver + device-pixel-content-box (1)" );
                     bestAttemptFallback();
-                    window.addEventListener( "resize", bestAttemptFallback );
+                    window.addEventListener( 'resize', bestAttemptFallback );
                 }
             }
         }
 
-        canvas.addEventListener( 'keydown', async e => {
+        canvas.addEventListener( 'keydown', async ( e ) => {
             ShaderHub.onKeyDown( e );
             e.preventDefault();
-        }, false);
+        }, false );
 
-        canvas.addEventListener( 'keyup', async e => {
+        canvas.addEventListener( 'keyup', async ( e ) => {
             ShaderHub.onKeyUp( e );
             e.preventDefault();
-        }, false);
+        }, false );
 
-        canvas.addEventListener( 'mousedown', e => {
+        canvas.addEventListener( 'mousedown', ( e ) => {
             ShaderHub.onMouseDown( e.offsetX, e.offsetY, e.button );
-        });
+        } );
 
-        canvas.addEventListener( 'mouseup', e => {
+        canvas.addEventListener( 'mouseup', ( e ) => {
             ShaderHub.onMouseUp( e );
-        });
+        } );
 
-        canvas.addEventListener( 'mousemove', e => {
+        canvas.addEventListener( 'mousemove', ( e ) => {
             ShaderHub.onMouseMove( e.offsetX, e.offsetY );
-        });
+        } );
 
         // Touch events
 
-        canvas.addEventListener( 'touchstart', e => {
+        canvas.addEventListener( 'touchstart', ( e ) => {
             e.preventDefault();
-            const t = e.touches[ 0 ];
+            const t = e.touches[0];
             const rect = canvas.getBoundingClientRect();
             ShaderHub.onMouseDown( t.clientX - rect.x, t.clientY - rect.y, 1 /* simulate left button */ );
-        }, { passive: false });
+        }, { passive: false } );
 
-        canvas.addEventListener( 'touchend', e => {
+        canvas.addEventListener( 'touchend', ( e ) => {
             e.preventDefault();
-            const t = e.changedTouches[ 0 ];
-            if( t ) ShaderHub.onMouseUp( e );
-        }, { passive: false });
+            const t = e.changedTouches[0];
+            if ( t ) ShaderHub.onMouseUp( e );
+        }, { passive: false } );
 
-        canvas.addEventListener( 'touchmove', e => {
+        canvas.addEventListener( 'touchmove', ( e ) => {
             e.preventDefault(); // Prevent scrolling while dragging
-            const t = e.touches[ 0 ];
+            const t = e.touches[0];
             const rect = canvas.getBoundingClientRect();
             ShaderHub.onMouseMove( t.clientX - rect.x, t.clientY - rect.y );
         }, { passive: false } );
@@ -2654,30 +2675,30 @@ export const ui = {
 
     async onLogin( user )
     {
-        const users = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_id", this.fs.getUserId() ) ] );
-        if( !users.documents.length ) throw( 'Something happened onlogin' );
-        this.dbUser = users.documents[ 0 ];
+        const users = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_id', this.fs.getUserId() ) ] );
+        if ( !users.documents.length ) throw ( 'Something happened onlogin' );
+        this.dbUser = users.documents[0];
 
         // Update login info
-        const loginButton = document.querySelector( "#loginOptionsButton button" );
-        if( loginButton )
+        const loginButton = document.querySelector( '#loginOptionsButton button' );
+        if ( loginButton )
         {
             loginButton.innerHTML = await this.getLoginHtml( user );
         }
 
         // Hide signup info
-        document.querySelector( "#signupContainer" )?.classList.add( "hidden" );
+        document.querySelector( '#signupContainer' )?.classList.add( 'hidden' );
 
         // Login feedback
-        document.querySelectorAll( ".lextoast" ).forEach( t => t.close() );
-        Utils.toast( `✅ Logged in`, `Welcome ${ user.email }!` );
+        document.querySelectorAll( '.lextoast' ).forEach( ( t ) => t.close() );
+        Utils.toast( `✅ Logged in`, `Welcome ${user.email}!` );
 
         const path = window.location.pathname;
-        if( path.startsWith( '/view' ) || path.startsWith( '/create' ) )
+        if ( path.startsWith( '/view' ) || path.startsWith( '/create' ) )
         {
             await this._createShaderDataView();
         }
-        else if( path.startsWith( '/user' ) )
+        else if ( path.startsWith( '/user' ) )
         {
             const userUid = Utils.parsePathUid( 'user' );
             if ( !userUid )
@@ -2700,17 +2721,17 @@ export const ui = {
         this.dbUser = null;
 
         // Remove welcome message if any
-        LX.deleteElement( document.querySelector( "#welcomeMessage" ) );
+        LX.deleteElement( document.querySelector( '#welcomeMessage' ) );
 
         // Update login info
-        const loginButton = document.querySelector( "#loginOptionsButton button" );
-        if( loginButton )
+        const loginButton = document.querySelector( '#loginOptionsButton button' );
+        if ( loginButton )
         {
             loginButton.innerHTML = await this.getLoginHtml();
         }
 
         // Show again signup info
-        document.querySelector( "#signupContainer" )?.classList.remove( "hidden" );
+        document.querySelector( '#signupContainer' )?.classList.remove( 'hidden' );
 
         // Update shader description (menu, likes, etc)
         await this.router();
@@ -2718,45 +2739,46 @@ export const ui = {
 
     onStopCapture()
     {
-        const iButton = this._recordButton.root.querySelector( "button" );
-        iButton.classList.remove( "bg-destructive",  "hover:bg-destructive" );
-        iButton.classList.add( "bg-none", "lexbutton" );
+        const iButton = this._recordButton.root.querySelector( 'button' );
+        iButton.classList.remove( 'bg-destructive', 'hover:bg-destructive' );
+        iButton.classList.add( 'bg-none', 'lexbutton' );
 
         this.captureInProgress = false;
     },
 
     openRecoverPasswordDialog()
     {
-        if( this._lastOpenedDialog )
+        if ( this._lastOpenedDialog )
         {
             this._lastOpenedDialog.close();
         }
 
-        const dialog = new LX.Dialog( "Recover Password", ( p ) => {
+        const dialog = new LX.Dialog( 'Recover Password', ( p ) => {
             const formData = {
-                email: { label: "Email", value: "", icon: "AtSign" },
+                email: { label: 'Email', value: '', icon: 'AtSign' }
             };
-            const form = p.addForm( null, formData, async (value, errors, event) => {
-                
-                try {
-                    const r = await this.fs.account.createRecovery({
+            const form = p.addForm( null, formData, async ( value, errors, event ) => {
+                try
+                {
+                    const r = await this.fs.account.createRecovery( {
                         email: value.email,
                         url: window.location.href // Redirect URL after recovery
-                    });
+                    } );
 
-                    if( r )
+                    if ( r )
                     {
                         dialog.close();
-                        Utils.toast( `✅ Recovery email sent`, `Please check your email (${ value.email }) for further instructions.` );
+                        Utils.toast( `✅ Recovery email sent`, `Please check your email (${value.email}) for further instructions.` );
                     }
-                } catch( e ) {
-                    errorMsg.set( `❌ ${ e }` );
                 }
-
-            }, { primaryActionName: "Continue", secondaryButtonClass: "ghost", secondaryActionName: "Cancel", secondaryActionCallback: () => {
+                catch ( e )
+                {
+                    errorMsg.set( `❌ ${e}` );
+                }
+            }, { primaryActionName: 'Continue', secondaryButtonClass: 'ghost', secondaryActionName: 'Cancel', secondaryActionCallback: () => {
                 dialog.close();
-            } });
-            const errorMsg = p.addTextArea( null, "", null, { inputClass: "text-card-foreground", disabled: true, fitHeight: true } );
+            } } );
+            const errorMsg = p.addTextArea( null, '', null, { inputClass: 'text-card-foreground', disabled: true, fitHeight: true } );
         }, { modal: true } );
 
         this._lastOpenedDialog = dialog;
@@ -2764,31 +2786,29 @@ export const ui = {
 
     openUpdatePasswordRecoverDialog( userId, secret )
     {
-        if( this._lastOpenedDialog )
+        if ( this._lastOpenedDialog )
         {
             this._lastOpenedDialog.close();
         }
 
-        const dialog = new LX.Dialog( "Update Password", ( p ) => {
+        const dialog = new LX.Dialog( 'Update Password', ( p ) => {
             const formData = {
-                password: { label: "New password", value: "", type: "password", icon: "Key", pattern: { minLength: Constants.PASSWORD_MIN_LENGTH, digit: true } },
-                confirmPassword: { label: "Confirm new password", value: "", type: "password", icon: "Key", pattern: { fieldMatchName: "password" } }
+                password: { label: 'New password', value: '', type: 'password', icon: 'Key', pattern: { minLength: Constants.PASSWORD_MIN_LENGTH, digit: true } },
+                confirmPassword: { label: 'Confirm new password', value: '', type: 'password', icon: 'Key', pattern: { fieldMatchName: 'password' } }
             };
-            const form = p.addForm( null, formData, async (value, errors, event) => {
-                
-                const r = await this.fs.account.updateRecovery({
+            const form = p.addForm( null, formData, async ( value, errors, event ) => {
+                const r = await this.fs.account.updateRecovery( {
                     userId,
                     secret,
                     password: value.password
-                });
+                } );
 
                 // console.log(r);
                 dialog.close();
                 Utils.toast( `✅ Password updated`, `You can now login with your new password.` );
-
-            }, { primaryActionName: "Continue", secondaryButtonClass: "ghost", secondaryActionName: "Cancel", secondaryActionCallback: () => {
+            }, { primaryActionName: 'Continue', secondaryButtonClass: 'ghost', secondaryActionName: 'Cancel', secondaryActionCallback: () => {
                 dialog.close();
-            } });
+            } } );
         }, { modal: true } );
 
         this._lastOpenedDialog = dialog;
@@ -2796,31 +2816,31 @@ export const ui = {
 
     openLoginDialog()
     {
-        if( this._lastOpenedDialog )
+        if ( this._lastOpenedDialog )
         {
             this._lastOpenedDialog.close();
         }
 
-        const dialog = new LX.Dialog( "Login", ( p ) => {
+        const dialog = new LX.Dialog( 'Login', ( p ) => {
             const formData = {
-                email: { label: "Email", value: "", icon: "AtSign" },
-                password: { label: "Password", icon: "Key", value: "", type: "password" }
+                email: { label: 'Email', value: '', icon: 'AtSign' },
+                password: { label: 'Password', icon: 'Key', value: '', type: 'password' }
             };
-            const form = p.addForm( null, formData, async (value, errors, event) => {
+            const form = p.addForm( null, formData, async ( value, errors, event ) => {
                 form.syncInputs(); // Force sync
                 await this.fs.login( value.email, value.password, async ( user, session ) => {
                     dialog.close();
                     await this.onLogin( user );
-                }, (err) => {
+                }, ( err ) => {
                     Utils.toast( `❌ Error`, err, -1 );
                 } );
-            }, { primaryActionName: "Login", secondaryButtonClass: "ghost", secondaryActionName: "Cancel", secondaryActionCallback: () => {
+            }, { primaryActionName: 'Login', secondaryButtonClass: 'ghost', secondaryActionName: 'Cancel', secondaryActionCallback: () => {
                 dialog.close();
-            } });
+            } } );
             p.addSeparator();
-            p.addButton( null, "Forgot my password", async () => {
+            p.addButton( null, 'Forgot my password', async () => {
                 this.openRecoverPasswordDialog();
-            }, { buttonClass: "link" } );
+            }, { buttonClass: 'link' } );
         }, { modal: true } );
 
         this._lastOpenedDialog = dialog;
@@ -2828,54 +2848,51 @@ export const ui = {
 
     openSignUpDialog()
     {
-        if( this._lastOpenedDialog )
+        if ( this._lastOpenedDialog )
         {
             this._lastOpenedDialog.close();
         }
 
-        const dialog = new LX.Dialog( "Create account", ( p ) => {
-
+        const dialog = new LX.Dialog( 'Create account', ( p ) => {
             const formData = {
-                userName: { label: "Username", value: "", icon: "User", pattern: { minLength: Constants.USERNAME_MIN_LENGTH } },
-                name: { label: "Display Name (optional)", value: "" },
-                email: { label: "Email", value: "", icon: "AtSign", pattern: { email: true } },
-                password: { label: "Password", value: "", type: "password", icon: "Key", pattern: { minLength: Constants.PASSWORD_MIN_LENGTH, digit: true } },
-                confirmPassword: { label: "Confirm password", value: "", type: "password", icon: "Key", pattern: { fieldMatchName: "password" } }
+                userName: { label: 'Username', value: '', icon: 'User', pattern: { minLength: Constants.USERNAME_MIN_LENGTH } },
+                name: { label: 'Display Name (optional)', value: '' },
+                email: { label: 'Email', value: '', icon: 'AtSign', pattern: { email: true } },
+                password: { label: 'Password', value: '', type: 'password', icon: 'Key', pattern: { minLength: Constants.PASSWORD_MIN_LENGTH, digit: true } },
+                confirmPassword: { label: 'Confirm password', value: '', type: 'password', icon: 'Key', pattern: { fieldMatchName: 'password' } }
             };
 
-            const form = p.addForm( null, formData, async (value, errors, event) => {
-
-                if( errors.length > 0 )
+            const form = p.addForm( null, formData, async ( value, errors, event ) => {
+                if ( errors.length > 0 )
                 {
-                    errorMsg.set( errors.map( e => `${ e.entry }: ${ e.messages.join( "\n" ) }` ).join( "\n\n" ) );
+                    errorMsg.set( errors.map( ( e ) => `${e.entry}: ${e.messages.join( '\n' )}` ).join( '\n\n' ) );
                     return;
                 }
 
-                Utils.toast( `✅ Account created!`, `You can now login with your email: ${ value.email }` );
+                Utils.toast( `✅ Account created!`, `You can now login with your email: ${value.email}` );
 
                 await this.fs.createAccount( value.email, value.password, value.userName, async ( user ) => {
                     dialog.close();
-                    document.querySelectorAll( ".lextoast" ).forEach( t => t.close() );
-                    Utils.toast( `✅ Account created!`, `You can now login with your email: ${ value.email }` );
+                    document.querySelectorAll( '.lextoast' ).forEach( ( t ) => t.close() );
+                    Utils.toast( `✅ Account created!`, `You can now login with your email: ${value.email}` );
 
                     // Update DB
                     {
                         const result = await this.fs.createDocument( FS.USERS_COLLECTION_ID, {
-                            "user_id": user[ "$id" ],
-                            "user_name": value.userName,
-                            "display_name": value.name.length ? value.name : undefined,
+                            'user_id': user['$id'],
+                            'user_name': value.userName,
+                            'display_name': value.name.length ? value.name : undefined
                         } );
                     }
 
                     this.openLoginDialog();
-
-                }, (err) => {
-                    errorMsg.set( `❌ ${ err }` );
+                }, ( err ) => {
+                    errorMsg.set( `❌ ${err}` );
                 } );
-            }, { primaryActionName: "SignUp", secondaryButtonClass: "ghost", secondaryActionName: "Cancel", secondaryActionCallback: () => {
+            }, { primaryActionName: 'SignUp', secondaryButtonClass: 'ghost', secondaryActionName: 'Cancel', secondaryActionCallback: () => {
                 dialog.close();
-            } });
-            const errorMsg = p.addTextArea( null, "", null, { inputClass: "text-card-foreground", disabled: true, fitHeight: true } );
+            } } );
+            const errorMsg = p.addTextArea( null, '', null, { inputClass: 'text-card-foreground', disabled: true, fitHeight: true } );
         }, { modal: true } );
 
         this._lastOpenedDialog = dialog;
@@ -2883,40 +2900,38 @@ export const ui = {
 
     openShaderSettingsDialog( r )
     {
-        if( this._lastOpenedDialog )
+        if ( this._lastOpenedDialog )
         {
             this._lastOpenedDialog.close();
         }
 
         let shaderDirty = false;
 
-        const dialog = new LX.Dialog( "Shader Settings", ( p ) => {
-
-            p.addCheckbox( "Public", r.public ?? true, ( v ) => {
+        const dialog = new LX.Dialog( 'Shader Settings', ( p ) => {
+            p.addCheckbox( 'Public', r.public ?? true, ( v ) => {
                 shaderDirty = true;
                 r.public = v;
-            }, { className: "primary" } );
+            }, { className: 'primary' } );
 
-            p.addCheckbox( "Allow Remix", r.remixable ?? true, ( v ) => {
+            p.addCheckbox( 'Allow Remix', r.remixable ?? true, ( v ) => {
                 shaderDirty = true;
                 r.remixable = v;
-            }, { className: "primary" } );
+            }, { className: 'primary' } );
 
             p.addSeparator();
 
             p.sameLine( 2 );
-            p.addButton( null, "Discard Changes", () => dialog.close(), { width: "50%", buttonClass: "destructive" } );
-            p.addButton( null, "Save Shader", async () => {
-                if( !shaderDirty ) return;
-                await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r[ "$id" ], {
-                    "public": r.public ?? true,
-                    "remixable": r.remixable ?? true
+            p.addButton( null, 'Discard Changes', () => dialog.close(), { width: '50%', buttonClass: 'destructive' } );
+            p.addButton( null, 'Save Shader', async () => {
+                if ( !shaderDirty ) return;
+                await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, r['$id'], {
+                    'public': r.public ?? true,
+                    'remixable': r.remixable ?? true
                 } );
-                Utils.toast( `✅ Shader updated`, `Shader: ${ r.name } by ${ this.fs.user.name }` );
+                Utils.toast( `✅ Shader updated`, `Shader: ${r.name} by ${this.fs.user.name}` );
                 shaderDirty = false;
                 dialog.close();
-            }, { width: "50%", buttonClass: "primary" } );
-
+            }, { width: '50%', buttonClass: 'primary' } );
         }, { modal: false } );
 
         this._lastOpenedDialog = dialog;
@@ -2924,65 +2939,62 @@ export const ui = {
 
     async openCurrentShaderLikesDialog( shader )
     {
-        if( this._lastOpenedDialog )
+        if ( this._lastOpenedDialog )
         {
             this._lastOpenedDialog.close();
         }
 
         const shaderLikes = await this.fs.listDocuments( FS.INTERACTIONS_COLLECTION_ID, [
-            Query.equal( "type", "like" ),
-            Query.equal( "shader_id", shader.uid ),
+            Query.equal( 'type', 'like' ),
+            Query.equal( 'shader_id', shader.uid ),
             Query.limit( 300 ),
-            Query.orderDesc( "$createdAt" )
+            Query.orderDesc( '$createdAt' )
         ] );
 
-        if( shaderLikes.total === 0 )
+        if ( shaderLikes.total === 0 )
         {
             const dialog = new LX.Dialog( null, ( p ) => {
-
                 // As the AlertDialog
                 p.root.className = LX.mergeClass( p.root.className, 'pad-2xl flex flex-col gap-2' );
                 LX.makeContainer( [ '100%', '100%' ], 'text-lg font-medium text-foreground p-2', `This shader doesn't have likes yet.`, p );
 
-                p.addTextArea( null, `Share this shader so other people can check it and leave a like!`, null, { disabled: true, fitHeight: true, inputClass: 'bg-none text-sm text-muted-foreground' } );
+                p.addTextArea( null, `Share this shader so other people can check it and leave a like!`, null, { disabled: true, fitHeight: true,
+                    inputClass: 'bg-none text-sm text-muted-foreground' } );
                 p.addSeparator();
                 p.addButton( null, 'Close', () => {
                     dialog.destroy();
                 }, { buttonClass: 'h-8 ghost' } );
-
             }, { modal: true } );
 
             this._lastOpenedDialog = dialog;
             return;
         }
 
-        const authorIds = Array.from( new Set( shaderLikes.documents.map( c => c["author_id"] ) ) );
-        const usersWithLikes = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( "user_id", authorIds ) ] );
+        const authorIds = Array.from( new Set( shaderLikes.documents.map( ( c ) => c['author_id'] ) ) );
+        const usersWithLikes = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_id', authorIds ) ] );
 
-        const dialog = new LX.Dialog( `${shaderLikes.total} like${shaderLikes.total > 1 ? "s" : ""}`, ( p ) => {
+        const dialog = new LX.Dialog( `${shaderLikes.total} like${shaderLikes.total > 1 ? 's' : ''}`, ( p ) => {
+            const container = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col p-2 gap-2 max-h-64 overflow-scroll', '', p );
 
-            const container = LX.makeContainer( ["100%", "auto"], "flex flex-col p-2 gap-2 max-h-64 overflow-scroll", "", p );
-
-            for( const like of shaderLikes.documents )
+            for ( const like of shaderLikes.documents )
             {
-                const authorId = like[ "author_id" ];
-                const dbUser = usersWithLikes.documents.find( u => u["user_id"] === authorId );
+                const authorId = like['author_id'];
+                const dbUser = usersWithLikes.documents.find( ( u ) => u['user_id'] === authorId );
                 const commentAuthorName = dbUser.user_name;
-                const avatar = new LX.Avatar({
+                const avatar = new LX.Avatar( {
                     imgSource: dbUser.avatar,
-                    fallback: commentAuthorName[ 0 ].toUpperCase(),
+                    fallback: commentAuthorName[0].toUpperCase(),
                     className: 'mx-2 flex-auto-keep'
-                });
+                } );
 
-                const cont = LX.makeContainer( ["100%", "auto"], "flex flex-row items-center gap-1", `
-                    ${ avatar.root.outerHTML }
-                    <span>${ dbUser.user_name }</span>
+                const cont = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-row items-center gap-1', `
+                    ${avatar.root.outerHTML}
+                    <span>${dbUser.user_name}</span>
                 `, container );
             }
 
             p.addSeparator();
-            p.addButton( null, "Close", () => dialog.close(), { buttonClass: "h-8 ghost" } );
-
+            p.addButton( null, 'Close', () => dialog.close(), { buttonClass: 'h-8 ghost' } );
         }, { modal: true } );
 
         this._lastOpenedDialog = dialog;
@@ -2990,55 +3002,57 @@ export const ui = {
 
     openShareiFrameDialog( r )
     {
-        if( this._lastOpenedDialog )
+        if ( this._lastOpenedDialog )
         {
             this._lastOpenedDialog.close();
         }
 
         let showUI = true;
 
-        const dialog = new LX.Dialog( "Share this Shader", ( p ) => {
-
+        const dialog = new LX.Dialog( 'Share this Shader', ( p ) => {
             // direct link
             {
-                p.addTextArea( null, `Direct link - Just copy and paste the URL below:`, null, { inputClass: "text-card-foreground", disabled: true, fitHeight: true } );
-                const directLink = `${ window.location.origin }${ window.location.pathname }?shader=${ r[ "$id" ] }`;
+                p.addTextArea( null, `Direct link - Just copy and paste the URL below:`, null, { inputClass: 'text-card-foreground', disabled: true, fitHeight: true } );
+                const directLink = `${window.location.origin}${window.location.pathname}?shader=${r['$id']}`;
                 p.addTextArea( null, directLink, null, { disabled: true, fitHeight: true } );
-                const copyButtonComponent = p.addButton(null, "Copy Shader URL",  async () => {
+                const copyButtonComponent = p.addButton( null, 'Copy Shader URL', async () => {
                     navigator.clipboard.writeText( directLink );
-                    copyButtonComponent.root.querySelector( "input[type='checkbox']" ).style.pointerEvents = "none";
+                    copyButtonComponent.root.querySelector( "input[type='checkbox']" ).style.pointerEvents = 'none';
                     LX.doAsync( () => {
                         copyButtonComponent.swap( true );
-                        copyButtonComponent.root.querySelector( "input[type='checkbox']" ).style.pointerEvents = "auto";
+                        copyButtonComponent.root.querySelector( "input[type='checkbox']" ).style.pointerEvents = 'auto';
                     }, 3000 );
-                }, { swap: "Check", icon: "Copy", iconPosition: "start", title: "Copy Shader URL", tooltip: true } );
-                LX.addClass( copyButtonComponent.root.querySelector( ".swap-on svg" ), "text-success" );
+                }, { swap: 'Check', icon: 'Copy', iconPosition: 'start', title: 'Copy Shader URL', tooltip: true } );
+                LX.addClass( copyButtonComponent.root.querySelector( '.swap-on svg' ), 'text-success' );
             }
 
             p.addSeparator();
 
             // iframe code
             {
-                p.addTextArea( null, `iFrame - Copy the code below to embed this shader in your website or blog:`, null, { inputClass: "text-card-foreground", disabled: true, fitHeight: true } );
-                p.addCheckbox( "Show UI", showUI, ( v ) => {
+                p.addTextArea( null, `iFrame - Copy the code below to embed this shader in your website or blog:`, null, { inputClass: 'text-card-foreground', disabled: true, fitHeight: true } );
+                p.addCheckbox( 'Show UI', showUI, ( v ) => {
                     showUI = v;
-                    const newUrl = `<iframe src="${ window.location.origin }${ window.location.pathname }embed/?shader=${ r[ "$id" ] }${ showUI ? "" : "&ui=false" }" frameborder="0" width="640" height="405" class="rounded-lg" allowfullscreen></iframe>`;
+                    const newUrl = `<iframe src="${window.location.origin}${window.location.pathname}embed/?shader=${r['$id']}${
+                        showUI ? '' : '&ui=false'
+                    }" frameborder="0" width="640" height="405" class="rounded-lg" allowfullscreen></iframe>`;
                     iframeText.set( newUrl );
-                }, { className: "primary" } );
+                }, { className: 'primary' } );
 
-                const iframeUrl = `<iframe src="${ window.location.origin }${ window.location.pathname }embed/?shader=${ r[ "$id" ] }${ showUI ? "" : "&ui=false" }" frameborder="0" width="640" height="405" class="rounded-lg" allowfullscreen></iframe>`;
+                const iframeUrl = `<iframe src="${window.location.origin}${window.location.pathname}embed/?shader=${r['$id']}${
+                    showUI ? '' : '&ui=false'
+                }" frameborder="0" width="640" height="405" class="rounded-lg" allowfullscreen></iframe>`;
 
-                const iframeText = p.addTextArea( null, iframeUrl, null,
-                    { disabled: true, fitHeight: true } );
-                const copyButtonComponent = p.addButton(null, "Copy iFrame html",  async () => {
+                const iframeText = p.addTextArea( null, iframeUrl, null, { disabled: true, fitHeight: true } );
+                const copyButtonComponent = p.addButton( null, 'Copy iFrame html', async () => {
                     navigator.clipboard.writeText( iframeText.value() );
-                    copyButtonComponent.root.querySelector( "input[type='checkbox']" ).style.pointerEvents = "none";
+                    copyButtonComponent.root.querySelector( "input[type='checkbox']" ).style.pointerEvents = 'none';
                     LX.doAsync( () => {
                         copyButtonComponent.swap( true );
-                        copyButtonComponent.root.querySelector( "input[type='checkbox']" ).style.pointerEvents = "auto";
+                        copyButtonComponent.root.querySelector( "input[type='checkbox']" ).style.pointerEvents = 'auto';
                     }, 3000 );
-                }, { swap: "Check", icon: "Copy", iconPosition: "start", title: "Copy iFrame html", tooltip: true } );
-                LX.addClass( copyButtonComponent.root.querySelector( ".swap-on svg" ), "text-success" );
+                }, { swap: 'Check', icon: 'Copy', iconPosition: 'start', title: 'Copy iFrame html', tooltip: true } );
+                LX.addClass( copyButtonComponent.root.querySelector( '.swap-on svg' ), 'text-success' );
             }
         }, { modal: false } );
 
@@ -3048,87 +3062,88 @@ export const ui = {
     openUniformsDialog()
     {
         const pass = ShaderHub.currentPass;
-        if( pass?.name === "Common" )
+        if ( pass?.name === 'Common' )
         {
             return;
         }
 
-        if( this._lastOpenedDialog )
+        if ( this._lastOpenedDialog )
         {
             this._lastOpenedDialog.close();
         }
 
-        const dialog = new LX.Dialog( `Uniforms [${ pass.uniforms.length }]`, null, {
-            modal: false, draggable: true, size: [ Math.min( 800, window.innerWidth - 64 ), "auto" ]
+        const dialog = new LX.Dialog( `Uniforms [${pass.uniforms.length}]`, null, {
+            modal: false,
+            draggable: true,
+            size: [ Math.min( 800, window.innerWidth - 64 ), 'auto' ]
         } );
 
         // Put all the stuff in the dialog panel
         this.customParametersPanel.refresh( dialog.panel );
 
-        const uniformsHeader = LX.makeContainer( ["auto", "auto"], "flex flex-row items-center", "", dialog.title );
-        const addUniformButton = new LX.Button( null, "AddNewCustomUniform", () => {
+        const uniformsHeader = LX.makeContainer( [ 'auto', 'auto' ], 'flex flex-row items-center', '', dialog.title );
+        const addUniformButton = new LX.Button( null, 'AddNewCustomUniform', () => {
             ShaderHub.addUniform();
-            this.customParametersPanel.refresh( dialog.panel, () => dialog.title.childNodes[ 0 ].textContent = `Uniforms [${ pass.uniforms.length }]` );
-        }, { icon: "Plus", className: "ml-auto self-center", buttonClass: "bg-none", title: "Add New Uniform", width: "38px" } );
+            this.customParametersPanel.refresh( dialog.panel, () => dialog.title.childNodes[0].textContent = `Uniforms [${pass.uniforms.length}]` );
+        }, { icon: 'Plus', className: 'ml-auto self-center', buttonClass: 'bg-none', title: 'Add New Uniform', width: '38px' } );
         uniformsHeader.appendChild( addUniformButton.root );
-        LX.makeContainer( [`auto`, "0.75rem"], "ml-2 mr-4 border-right border-colored text-muted-foreground self-center items-center", "", uniformsHeader );
-        const closerButton = dialog.title.querySelector( "a" );
+        LX.makeContainer( [ `auto`, '0.75rem' ], 'ml-2 mr-4 border-right border-colored text-muted-foreground self-center items-center', '', uniformsHeader );
+        const closerButton = dialog.title.querySelector( 'a' );
         uniformsHeader.appendChild( closerButton );
         // Re-add listener since it lost it changing the parent
-        closerButton.addEventListener( "click", dialog.close );
+        closerButton.addEventListener( 'click', dialog.close );
 
         this._lastOpenedDialog = dialog;
     },
 
     async openAvailableChannels( pass, channelIndex )
     {
-        if( this._lastOpenedDialog )
+        if ( this._lastOpenedDialog )
         {
             this._lastOpenedDialog.close();
         }
 
-        if( !this._dbAssets )
+        if ( !this._dbAssets )
         {
             this._dbAssets = await this.fs.listDocuments( FS.ASSETS_COLLECTION_ID, [
                 // Query.equal( "category", category )
             ] );
         }
 
-        if( this._dbAssets.total === 0 )
+        if ( this._dbAssets.total === 0 )
         {
-            LX.makeContainer( ["100%", "auto"], "mt-8 text-2xl font-medium justify-center text-center", "No data found.", container );
+            LX.makeContainer( [ '100%', 'auto' ], 'mt-8 text-2xl font-medium justify-center text-center', 'No data found.', container );
             return;
         }
 
         const _createChannelItems = async ( category, container ) => {
+            const assets = this._dbAssets.documents.filter( ( a ) => a.category === category );
+            const usedMiscChannels = [ 'Keyboard', ...( ShaderHub.shader?.passes.map( ( p ) => p.name ) ?? [] ) ];
 
-            const assets = this._dbAssets.documents.filter( a => a.category === category );
-            const usedMiscChannels = [ "Keyboard", ...( ShaderHub.shader?.passes.map( p => p.name ) ?? [] ) ];
-
-            for( const document of assets )
+            for ( const document of assets )
             {
-                if( category === "misc" && !usedMiscChannels.includes( document.name ) )
+                if ( category === 'misc' && !usedMiscChannels.includes( document.name ) )
                 {
                     continue;
                 }
 
-                const channelItem = LX.makeElement( "li", "relative flex rounded-lg bg-card box-border hover:bg-accent overflow-hidden", "", container );
-                channelItem.style.maxHeight = "200px";
-                const channelPreview = LX.makeElement( "img", "w-full h-full rounded-t-lg bg-card hover:scale-105 transition-transform ease-out border-none cursor-pointer", "", channelItem );
-                channelPreview.crossOrigin = "anonymous";
-                const fileId = document[ "file_id" ];
-                if( fileId && this._dbAssetsCache.has( fileId ) )
+                const channelItem = LX.makeElement( 'li', 'relative flex rounded-lg bg-card box-border hover:bg-accent overflow-hidden', '', container );
+                channelItem.style.maxHeight = '200px';
+                const channelPreview = LX.makeElement( 'img', 'w-full h-full rounded-t-lg bg-card hover:scale-105 transition-transform ease-out border-none cursor-pointer', '', channelItem );
+                channelPreview.crossOrigin = 'anonymous';
+                const fileId = document['file_id'];
+                if ( fileId && this._dbAssetsCache.has( fileId ) )
                 {
                     channelPreview.src = this._dbAssetsCache.get( fileId );
                 }
                 else
                 {
-                    const localUrl = document[ "local_url" ];
-                    const preview = document[ "preview" ];
+                    const localUrl = document['local_url'];
+                    const preview = document['preview'];
                     const url = localUrl ?? ( preview ? await this.fs.getFileUrl( preview ) : ( fileId ? await this.fs.getFileUrl( fileId ) : ShaderHub.shaderPreviewPath ) );
 
                     const img = new Image();
-                    img.crossOrigin = "anonymous";
+                    img.crossOrigin = 'anonymous';
                     img.src = url;
                     img.onload = async () => {
                         const objectUrl = localUrl ?? URL.createObjectURL( await ( await fetch( url ) ).blob() );
@@ -3137,75 +3152,76 @@ export const ui = {
                     };
                 }
 
-                const shaderDesc = LX.makeContainer( ["100%", "auto"], "absolute text-xs top-0 p-2 w-full rounded-t-lg bg-background-blur backdrop-blur-xs items-center select-none font-semibold keep-all", `
-                    ${ document.name } (uint8)
+                const shaderDesc = LX.makeContainer( [ '100%', 'auto' ],
+                    'absolute text-xs top-0 p-2 w-full rounded-t-lg bg-background-blur backdrop-blur-xs items-center select-none font-semibold keep-all', `
+                    ${document.name} (uint8)
                 `, channelItem );
-                channelItem.addEventListener( "click", async ( e ) => {
+                channelItem.addEventListener( 'click', async ( e ) => {
                     e.preventDefault();
-                    ShaderHub.addUniformChannel( pass, this._currentChannelIndex, { id: fileId ?? document.name, category } )
+                    ShaderHub.addUniformChannel( pass, this._currentChannelIndex, { id: fileId ?? document.name, category } );
                     await this.updateShaderChannelsView( pass, this._currentChannelIndex );
                     dialog.close();
                 } );
             }
-        }
+        };
 
         const area = new LX.Area( { skipAppend: true } );
-        const tabs = area.addTabs( { parentClass: "bg-card p-4", sizes: [ "auto", "auto" ], contentClass: "bg-card p-4 pt-0" } );
+        const tabs = area.addTabs( { parentClass: 'bg-card p-4', sizes: [ 'auto', 'auto' ], contentClass: 'bg-card p-4 pt-0' } );
 
         {
-            if( !this.texturesContainer )
+            if ( !this.texturesContainer )
             {
-                this.texturesContainer = LX.makeContainer( [ "100%", "100%" ], "grid channel-server-list gap-3 p-2 rounded-lg justify-center overflow-scroll" );
+                this.texturesContainer = LX.makeContainer( [ '100%', '100%' ], 'grid channel-server-list gap-3 p-2 rounded-lg justify-center overflow-scroll' );
             }
 
-            this.texturesContainer.innerHTML = "";
-            await _createChannelItems( "texture", this.texturesContainer );
-            this.texturesContainer.style.display = "grid";
-            tabs.add( "Textures", this.texturesContainer, { selected: true } );
+            this.texturesContainer.innerHTML = '';
+            await _createChannelItems( 'texture', this.texturesContainer );
+            this.texturesContainer.style.display = 'grid';
+            tabs.add( 'Textures', this.texturesContainer, { selected: true } );
         }
 
         {
-            if( !this.miscContainer )
+            if ( !this.miscContainer )
             {
-                this.miscContainer = LX.makeContainer( [ "100%", "100%" ], "grid channel-server-list gap-3 p-2 rounded-lg justify-center overflow-scroll" );
+                this.miscContainer = LX.makeContainer( [ '100%', '100%' ], 'grid channel-server-list gap-3 p-2 rounded-lg justify-center overflow-scroll' );
             }
 
-            this.miscContainer.innerHTML = "";
-            await _createChannelItems( "misc", this.miscContainer );
-            this.miscContainer.style.display = "grid";
-            tabs.add( "Misc", this.miscContainer );
+            this.miscContainer.innerHTML = '';
+            await _createChannelItems( 'misc', this.miscContainer );
+            this.miscContainer.style.display = 'grid';
+            tabs.add( 'Misc', this.miscContainer );
         }
 
         {
-            if( !this.cubemapsContainer )
+            if ( !this.cubemapsContainer )
             {
-                this.cubemapsContainer = LX.makeContainer( [ "100%", "100%" ], "grid channel-server-list gap-3 p-2 rounded-lg justify-center overflow-scroll" );
+                this.cubemapsContainer = LX.makeContainer( [ '100%', '100%' ], 'grid channel-server-list gap-3 p-2 rounded-lg justify-center overflow-scroll' );
             }
 
-            this.cubemapsContainer.innerHTML = "";
-            await _createChannelItems( "cubemap", this.cubemapsContainer );
-            this.cubemapsContainer.style.display = "grid";
-            tabs.add( "Cubemaps", this.cubemapsContainer );
+            this.cubemapsContainer.innerHTML = '';
+            await _createChannelItems( 'cubemap', this.cubemapsContainer );
+            this.cubemapsContainer.style.display = 'grid';
+            tabs.add( 'Cubemaps', this.cubemapsContainer );
         }
 
         {
-            if( !this.soundsContainer )
+            if ( !this.soundsContainer )
             {
-                this.soundsContainer = LX.makeContainer( [ "100%", "100%" ], "grid channel-server-list gap-3 p-2 rounded-lg justify-center overflow-scroll" );
+                this.soundsContainer = LX.makeContainer( [ '100%', '100%' ], 'grid channel-server-list gap-3 p-2 rounded-lg justify-center overflow-scroll' );
             }
 
-            this.soundsContainer.innerHTML = "";
-            await _createChannelItems( "sound", this.soundsContainer );
-            this.soundsContainer.style.display = "grid";
-            tabs.add( "Sound", this.soundsContainer );
+            this.soundsContainer.innerHTML = '';
+            await _createChannelItems( 'sound', this.soundsContainer );
+            this.soundsContainer.style.display = 'grid';
+            tabs.add( 'Sound', this.soundsContainer );
         }
 
         this._currentChannelIndex = channelIndex;
 
-        let dialog = new LX.Dialog( `[${ pass.name }] Channel${ channelIndex }`, (p) => {
-            p.root.classList.remove( "break-all" );
+        let dialog = new LX.Dialog( `[${pass.name}] Channel${channelIndex}`, ( p ) => {
+            p.root.classList.remove( 'break-all' );
             p.attach( area );
-        }, { modal: false, close: true, minimize: false, size: [`${ Math.min( 1280, window.innerWidth - 64 ) }px`, "530px"], draggable: true });
+        }, { modal: false, close: true, minimize: false, size: [ `${Math.min( 1280, window.innerWidth - 64 )}px`, '530px' ], draggable: true } );
 
         this._lastOpenedDialog = dialog;
     },
@@ -3214,32 +3230,32 @@ export const ui = {
     {
         pass = pass ?? ShaderHub.currentPass;
 
-        this.toggleShaderChannelsView( pass.type === "common" );
+        this.toggleShaderChannelsView( pass.type === 'common' );
 
         const iUpdateChannel = async ( channelIndex ) => {
+            const channel = pass.channels[channelIndex];
+            const child = this.channelsContainer.children[channelIndex];
+            if ( child ) this.channelsContainer.removeChild( child );
 
-            const channel = pass.channels[ channelIndex ];
-            const child = this.channelsContainer.children[ channelIndex ];
-            if( child ) this.channelsContainer.removeChild( child );
-
-            const channelContainer = LX.makeContainer( ["100%", "100%"], "relative text-center content-center box-shadow box-border rounded-lg bg-card hover:bg-accent cursor-pointer overflow-hidden", "" );
-            channelContainer.style.minHeight = "100px";
+            const channelContainer = LX.makeContainer( [ '100%', '100%' ],
+                'relative text-center content-center box-shadow box-border rounded-lg bg-card hover:bg-accent cursor-pointer overflow-hidden', '' );
+            channelContainer.style.minHeight = '100px';
             LX.insertChildAtIndex( this.channelsContainer, channelContainer, channelIndex );
 
-            const channelImage = LX.makeElement( "img", "w-full rounded-lg bg-card hover:bg-accent hover:scale-105 transition-transform ease-out border-none", "", channelContainer );
+            const channelImage = LX.makeElement( 'img', 'w-full rounded-lg bg-card hover:bg-accent hover:scale-105 transition-transform ease-out border-none', '', channelContainer );
             channelImage.src = Constants.IMAGE_EMPTY_SRC;
             const metadata = await ShaderHub.getChannelMetadata( pass, channelIndex );
-            const fileId = pass?.channels?.[ channelIndex ]?.id;
-            if( fileId && !metadata?.url.includes( 'base64' ) )
+            const fileId = pass?.channels?.[channelIndex]?.id;
+            if ( fileId && !metadata?.url.includes( 'base64' ) )
             {
-                if( this._dbAssetsCache.has( fileId ) )
+                if ( this._dbAssetsCache.has( fileId ) )
                 {
                     channelImage.src = this._dbAssetsCache.get( fileId );
                 }
                 else
                 {
                     const img = new Image();
-                    img.crossOrigin = "anonymous";
+                    img.crossOrigin = 'anonymous';
                     img.src = metadata?.url;
                     img.onload = async () => {
                         const objectUrl = URL.createObjectURL( await ( await fetch( metadata?.url ) ).blob() );
@@ -3250,30 +3266,31 @@ export const ui = {
             }
 
             // Channel Title
-            LX.makeContainer( ["100%", "auto"], "p-2 absolute bg-background-blur backdrop-blur-xs text-xs text-center content-center top-0 rounded-t-lg pointer-events-none",
-                metadata?.name ? `<span class="font-semibold">${ metadata.name }</span> (iChannel${ channelIndex })` : `iChannel${ channelIndex }`, channelContainer );
+            LX.makeContainer( [ '100%', 'auto' ], 'p-2 absolute bg-background-blur backdrop-blur-xs text-xs text-center content-center top-0 rounded-t-lg pointer-events-none',
+                metadata?.name ? `<span class="font-semibold">${metadata.name}</span> (iChannel${channelIndex})` : `iChannel${channelIndex}`, channelContainer );
 
-            if( !!channel )
+            if ( !!channel )
             {
                 // Channel Options
-                const channelOptions = LX.makeContainer( ["100%", "auto"], "flex flex-row absolute bg-background-blur backdrop-blur-xs text-xs text-center content-center justify-end bottom-0 rounded-b-lg", "", channelContainer );
-                const panel = new LX.Panel({ className: "w-fit m-0 p-0" });
+                const channelOptions = LX.makeContainer( [ '100%', 'auto' ],
+                    'flex flex-row absolute bg-background-blur backdrop-blur-xs text-xs text-center content-center justify-end bottom-0 rounded-b-lg', '', channelContainer );
+                const panel = new LX.Panel( { className: 'w-fit m-0 p-0' } );
                 channelOptions.appendChild( panel.root );
                 panel.sameLine();
 
-                if( channel.category === "sound" )
+                if ( channel.category === 'sound' )
                 {
-                    panel.addButton( null, "PlayButton", ( name, e ) => ShaderHub.playSoundUniformChannel( channelIndex ),
-                        { icon: "Pause", swap: "Play", title: "Play/Pause Channel", tooltip: true, className: "p-0", buttonClass: "sm ghost" } );
+                    panel.addButton( null, 'PlayButton', ( name, e ) => ShaderHub.playSoundUniformChannel( channelIndex ), { icon: 'Pause', swap: 'Play', title: 'Play/Pause Channel', tooltip: true,
+                        className: 'p-0', buttonClass: 'sm ghost' } );
 
-                    panel.addButton( null, "RewindButton", ( name, e ) => ShaderHub.rewindSoundUniformChannel( channelIndex ),
-                        { icon: "Rewind", title: "Rewind Channel", tooltip: true, className: "p-0", buttonClass: "sm ghost" } );
+                    panel.addButton( null, 'RewindButton', ( name, e ) => ShaderHub.rewindSoundUniformChannel( channelIndex ), { icon: 'Rewind', title: 'Rewind Channel', tooltip: true,
+                        className: 'p-0', buttonClass: 'sm ghost' } );
 
-                    panel.addButton( null, "MuteButton", ( name, e ) => ShaderHub.muteSoundUniformChannel( channelIndex ),
-                        { icon: "Volume2", swap: "VolumeOff", title: "Mute Channel", tooltip: true, className: "p-0", buttonClass: "sm ghost" } );
+                    panel.addButton( null, 'MuteButton', ( name, e ) => ShaderHub.muteSoundUniformChannel( channelIndex ), { icon: 'Volume2', swap: 'VolumeOff', title: 'Mute Channel', tooltip: true,
+                        className: 'p-0', buttonClass: 'sm ghost' } );
                 }
 
-                panel.addButton( null, "ChannelOptionsButton", async ( name, e ) => {
+                panel.addButton( null, 'ChannelOptionsButton', async ( name, e ) => {
                     e.preventDefault();
                     e.stopPropagation();
                     // const svgClass = "2xs fill-current inline-flex! mr-2";
@@ -3288,40 +3305,40 @@ export const ui = {
                         //     { name: `${ channel.wrap === "repeat" ? LX.makeIcon( "Circle", { svgClass } ).innerHTML : "" }Repeat`, callback: async () => ShaderHub.updateUniformChannelWrap( pass, channelIndex, "repeat" ) },
                         // ] },
                         // null,
-                        { name: "Remove", className: "destructive", callback: async () => await ShaderHub.removeUniformChannel( channelIndex ) },
-                    ], { side: "top", align: "end" });
-                }, { icon: "Settings", title: "Channel Options", tooltip: true, className: "p-0", buttonClass: "pointer-events-auto sm ghost" } );
+                        { name: 'Remove', className: 'destructive', callback: async () => await ShaderHub.removeUniformChannel( channelIndex ) }
+                    ], { side: 'top', align: 'end' } );
+                }, { icon: 'Settings', title: 'Channel Options', tooltip: true, className: 'p-0', buttonClass: 'pointer-events-auto sm ghost' } );
 
-                panel.endLine( "justify-end" );
+                panel.endLine( 'justify-end' );
             }
 
-            channelImage.addEventListener( "click", async ( e ) => {
+            channelImage.addEventListener( 'click', async ( e ) => {
                 e.preventDefault();
                 await this.openAvailableChannels( pass, channelIndex );
             } );
-        }
+        };
 
-        if( channel !== undefined )
+        if ( channel !== undefined )
         {
             await iUpdateChannel( channel );
             return;
         }
 
-        for( let i = 0; i < Constants.UNIFORM_CHANNELS_COUNT; i++ )
+        for ( let i = 0; i < Constants.UNIFORM_CHANNELS_COUNT; i++ )
         {
             await iUpdateChannel( i );
         }
 
-        console.log( "Channels view updated." );
+        console.log( 'Channels view updated.' );
     },
 
     toggleShaderChannelsView( force )
     {
-        this.channelsContainer.parentElement.classList.toggle( "hidden", force );
+        this.channelsContainer.parentElement.classList.toggle( 'hidden', force );
     },
 
     toggleCustomUniformsButton( force )
     {
-        this.openCustomParamsButton.root.classList.toggle( "hidden", force );
+        this.openCustomParamsButton.root.classList.toggle( 'hidden', force );
     }
 };
