@@ -1369,7 +1369,7 @@ const ShaderHub = {
         await this.compileShader( true, pass );
     },
 
-    async addUniform( name, value, min, max )
+    async addUniform( name, value, min, max, step )
     {
         const pass = this.currentPass;
         if ( pass.name === 'Common' )
@@ -1378,7 +1378,7 @@ const ShaderHub = {
         }
 
         const uName = name ?? `iUniform${pass.uniforms.length + 1}`;
-        pass.uniforms.push( { name: uName, type: 'f32', value: value ?? 0, min: min ?? 0, max: max ?? 1 } );
+        pass.uniforms.push( { name: uName, type: 'f32', value: value ?? 0, min: min ?? 0, max: max ?? 1, step: step ?? 0.1 } );
         const allCode = pass.getShaderCode( false ).code;
         if ( allCode.match( new RegExp( `\\b${uName}\\b` ) ) )
         {
@@ -1413,6 +1413,7 @@ const ShaderHub = {
 
         if ( typeName.startsWith( 'vec' ) )
         {
+            u.step = ( u.type.includes( 'f' ) ) ? 0.01 : 1;
             const size = Shader.GetUniformSize( typeName ) / 4;
             u.value = [].concat( u.value );
             for ( let i = 0; i < size; ++i )
@@ -1423,6 +1424,7 @@ const ShaderHub = {
         // number
         else
         {
+            u.step = ( u.type.includes( 'f' ) ) ? 0.01 : 1;
             u.value = [].concat( u.value )[0];
         }
 

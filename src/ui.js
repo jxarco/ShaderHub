@@ -2434,32 +2434,45 @@ export const ui = {
 
                 for ( let i = 0; i < pass.uniforms.length; ++i )
                 {
+                    if( i !== 0 ) 
+                    {
+                        overridePanel.addSeparator();
+                    }
+
                     const u = pass.uniforms[i];
+                    const min = u.min, max = u.max, step = u.step;
+                    const precision = 6;//step.toString().split('.')[1]?.length ?? 0;
+                    const isScalar = [ 'f32', 'i32', 'u32' ].includes( u.type );
 
                     overridePanel.sameLine();
                     overridePanel.addText( null, u.name, ( v ) => {
                         u.name = v;
                         ShaderHub.compileShader( true, pass );
-                    }, { width: '25%', skipReset: true, pattern: '\\b(?!(' + Constants.DEFAULT_UNIFORM_NAMES.join( '|' ) + ')\\b)(i[A-Z]\\w*)\\b' } );
+                    }, { className: 'flex-auto-keep', inputClass: 'w-auto! field-sizing-content', skipReset: true, pattern: '\\b(?!(' + Constants.DEFAULT_UNIFORM_NAMES.join( '|' ) + ')\\b)(i[A-Z]\\w*)\\b' } );
 
-                    const step = ( u.type.includes( 'f' ) ) ? 0.01 : 1;
-
-                    if ( [ 'f32', 'i32', 'u32' ].includes( u.type ) )
+                    if( isScalar )
                     {
-                        overridePanel.addNumber( 'Min', u.min, ( v ) => {
+                        const limitsComponents = [];
+
+                        limitsComponents.push( overridePanel.addNumber( 'Min', u.min, ( v ) => {
                             u.min = v;
-                            uRangeComponent.setLimits( u.min, u.max );
+                            limitsComponents.forEach( c => c.setLimits( u.min, u.max, u.step ) );
                             pass.uniformsDirty = true;
-                        }, { nameWidth: '40%', width: '17%', skipReset: true, step } );
-                        const uRangeComponent = overridePanel.addRange( null, u.value, ( v ) => {
+                        }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, max, step, precision } ) );
+                        limitsComponents.push( overridePanel.addRange( null, u.value, ( v ) => {
                             u.value = v;
                             pass.uniformsDirty = true;
-                        }, { className: 'primary', width: '35%', skipReset: true, min: u.min, max: u.max, step } );
-                        overridePanel.addNumber( 'Max', u.max, ( v ) => {
+                        }, { className: 'primary flex-auto-fill', skipReset: true, min, max, step, precision } ) );
+                        limitsComponents.push( overridePanel.addNumber( 'Max', u.max, ( v ) => {
                             u.max = v;
-                            uRangeComponent.setLimits( u.min, u.max );
+                            limitsComponents.forEach( c => c.setLimits( u.min, u.max, u.step ) );
                             pass.uniformsDirty = true;
-                        }, { nameWidth: '40%', width: '17%', skipReset: true, step } );
+                        }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, min, step, precision } ) );
+                        limitsComponents.push( overridePanel.addNumber( 'Step', u.step, ( v ) => {
+                            u.step = v;
+                            limitsComponents.forEach( c => c.setLimits( u.min, u.max, u.step ) );
+                            pass.uniformsDirty = true;
+                        }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, step, precision } ) );
                     }
                     else if ( u.isColor )
                     {
@@ -2473,7 +2486,7 @@ export const ui = {
                             u.value = [ v.r, v.g, v.b ];
                             if ( hasAlpha ) u.value[3] = v.a;
                             pass.uniformsDirty = true;
-                        }, { width: '69%', skipReset: true, useRGB: true } );
+                        }, { className: 'flex-auto-fill', skipReset: true, useRGB: true } );
                     }
                     else
                     {
@@ -2481,7 +2494,7 @@ export const ui = {
                         overridePanel[vecFuncName]( null, u.value, ( v ) => {
                             u.value = v;
                             pass.uniformsDirty = true;
-                        }, { width: '69%', skipReset: true, step } );
+                        }, { className: 'flex-auto-fill', skipReset: true, step: u.step } );
                     }
 
                     const optionsButton = overridePanel.addButton( null, 'UniformOptionsButton', ( v ) => {
@@ -2523,7 +2536,7 @@ export const ui = {
                         ], { side: 'top', align: 'end' } );
 
                         menu.root.skipFocus = true;
-                    }, { width: '6%', icon: 'Menu', buttonClass: 'bg-none' } );
+                    }, { className: 'flex-auto-keep', icon: 'Menu', buttonClass: 'bg-none' } );
 
                     overridePanel.endLine();
                 }
