@@ -1504,12 +1504,13 @@ export const ui = {
                             {
                                 editor.loadTab( pass.name );
                                 const code = pass.codeLines.join( '\n' );
-                                editor.setText( code, null, true );
+                                editor.setText( code, ShaderHub.renderer.lang );
                             }
-
-                            window.__currentSheet = new LX.Sheet( '80%', [ sheetArea ], { side: 'bottom' } );
                         }
                     } );
+
+                    window.__currentSheet = new LX.Sheet( '80%', [ sheetArea ], { side: 'bottom' } );
+
                 }, { icon: 'Code', iconPosition: 'end', className: 'absolute bottom-0 mb-6 self-center mx-auto', buttonClass: 'outline' } ).root );
             }
         };
