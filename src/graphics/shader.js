@@ -1458,6 +1458,7 @@ $vs_flip_y
 }
 
 $wgsl_utils
+// Common pass code
 $common
 $main_entry
 
@@ -1507,6 +1508,7 @@ $output_binding
 //     return textureLoad(pass_in, coord, pass_index, lod);
 // }
 
+// Common pass code
 $common
 $main_entry
 

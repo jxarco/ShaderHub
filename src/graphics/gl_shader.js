@@ -553,6 +553,7 @@ in vec2 v_uv;
 out vec4 fragColor;
 
 $glsl_utils
+// Common pass code
 $common
 $main_entry
 

@@ -250,27 +250,6 @@ const ShaderHub = {
 
         await this.initGraphics( canvas );
 
-        const closeFn = async ( name, e ) => {
-            e.preventDefault();
-            e.stopPropagation();
-            ui.editor.tabs.delete( name );
-            document.body.querySelectorAll( '.lextooltip' ).forEach( ( e ) => e.remove() );
-
-            // Destroy pass
-            {
-                const passIndex = this.shader.passes.findIndex( ( p ) => p.name === name );
-                const pass = this.shader.passes[passIndex];
-                if ( pass.type === 'buffer' )
-                {
-                    delete this.renderer.gpuTextures[pass.name];
-                }
-
-                this.shader.passes.splice( passIndex, 1 );
-
-                await this.compileShader();
-            }
-        };
-
         const ShaderPassClass = this.backend === 'webgpu' ? ShaderPass : GLShaderPass;
         const ShaderClass = this.backend === 'webgpu' ? Shader : GLShader;
 
@@ -323,7 +302,7 @@ const ShaderHub = {
                 {
                     const closeIcon = LX.makeIcon( 'X', { iconClass: 'ml-2' } );
                     LX.asTooltip( closeIcon, 'Delete file' );
-                    closeIcon.addEventListener( 'click', closeFn.bind( this, pass.name ) );
+                    closeIcon.addEventListener( 'click', this.onShaderPassDeleted.bind( this, pass.name ) );
                     ui.editor.tabs.tabDOMs[pass.name].appendChild( closeIcon );
                 }
             }
@@ -344,6 +323,100 @@ const ShaderHub = {
 
         ui.editor.loadTab( this.currentPass.name );
         ui.editor._changeLanguage( this.renderer.lang );
+    },
+
+    onShaderPassCreated( passType, passName )
+    {
+        let indexOffset = -1;
+
+        const ShaderPassClass = this.backend === 'webgpu' ? ShaderPass : GLShaderPass;
+        const shaderPass = new ShaderPassClass( this.shader, this.renderer, {
+            name: passName,
+            type: passType,
+            resolutionX: this.resolutionX,
+            resolutionY: this.resolutionY
+        } );
+
+        const getNextBufferName = () => {
+            const usedNames = this.shader.passes.filter( ( p ) => ( p.type === 'buffer' ) || ( p.type === 'compute' ) ).map( ( p ) => p.name );
+            const possibleNames = [ 'BufferA', 'BufferB', 'BufferC', 'BufferD' ];
+
+            // Find the first unused name
+            for ( const name of possibleNames )
+            {
+                if ( !usedNames.includes( name ) ) return name;
+            }
+
+            // All used, should not happen due to prev checks
+            return null;
+        };
+
+        if ( passType === 'buffer' || passType === 'compute' )
+        {
+            indexOffset = -2;
+            passName = shaderPass.name = getNextBufferName();
+            this.shader.passes.splice( this.shader.passes.length - 1, 0, shaderPass ); // Add before MainImage
+
+            console.assert( shaderPass.textures, 'Buffer/Compute pass does not have render target textures' );
+            this.renderer.gpuTextures[passName] = shaderPass.textures;
+        }
+        else if ( passType === 'common' )
+        {
+            indexOffset = -( this.shader.passes.length + 1 );
+            this.shader.passes.splice( 0, 0, shaderPass ); // Add at the start
+        }
+
+        ui.editor.addTab( passName, true, passName, {
+            indexOffset,
+            language: 'WGSL',
+            codeLines: shaderPass.codeLines
+        } );
+
+        // Wait for the tab to be created
+        LX.doAsync( async () => {
+            const closeIcon = LX.makeIcon( 'X', { iconClass: 'ml-2' } );
+            LX.asTooltip( closeIcon, 'Delete file' );
+            closeIcon.addEventListener( 'click', this.onShaderPassDeleted.bind( this, passName ) );
+            ui.editor.tabs.tabDOMs[passName].appendChild( closeIcon );
+
+            this.onShaderPassSelected( passName );
+
+            await this.compileShader( false, shaderPass );
+        }, 10 );
+    },
+
+    async onShaderPassSelected( passName )
+    {
+        this.currentPass = this.shader.passes.find( ( p ) => p.name === passName );
+        console.assert( this.currentPass, `Cannot find pass ${passName}` );
+
+        await ui.updateShaderChannelsView();
+
+        ui.toggleCustomUniformsButton( this.currentPass.type === 'common' );
+
+        ui.editor.setCustomSuggestions( this.getCurrentSuggestions() );
+    },
+
+    async onShaderPassDeleted( name, e )
+    {
+        e.preventDefault();
+        e.stopPropagation();
+        ui.editor.tabs.delete( name );
+        document.body.querySelectorAll( '.lextooltip' ).forEach( ( e ) => e.remove() );
+
+        // Destroy pass
+        {
+            const passIndex = this.shader.passes.findIndex( ( p ) => p.name === name );
+            const pass = this.shader.passes[passIndex];
+            if ( pass.type === 'buffer' )
+            {
+                delete this.renderer.gpuTextures[pass.name];
+            }
+
+            this.shader.passes.splice( passIndex, 1 );
+
+            await this.compileShader();
+        }
     },
 
     async onShaderLike()
@@ -408,84 +481,6 @@ const ShaderHub = {
         } );
 
         LX.emitSignal( '@on_like_changed', [ shaderLikes.total, !wasLiked ] );
-    },
-
-    onShaderPassCreated( passType, passName )
-    {
-        let indexOffset = -1;
-
-        const ShaderPassClass = this.backend === 'webgpu' ? ShaderPass : GLShaderPass;
-        const shaderPass = new ShaderPassClass( this.shader, this.renderer, {
-            name: passName,
-            type: passType,
-            resolutionX: this.resolutionX,
-            resolutionY: this.resolutionY
-        } );
-
-        const getNextBufferName = () => {
-            const usedNames = this.shader.passes.filter( ( p ) => ( p.type === 'buffer' ) || ( p.type === 'compute' ) ).map( ( p ) => p.name );
-            const possibleNames = [ 'BufferA', 'BufferB', 'BufferC', 'BufferD' ];
-
-            // Find the first unused name
-            for ( const name of possibleNames )
-            {
-                if ( !usedNames.includes( name ) ) return name;
-            }
-
-            // All used, should not happen due to prev checks
-            return null;
-        };
-
-        if ( passType === 'buffer' || passType === 'compute' )
-        {
-            indexOffset = -2;
-            passName = shaderPass.name = getNextBufferName();
-            this.shader.passes.splice( this.shader.passes.length - 1, 0, shaderPass ); // Add before MainImage
-
-            console.assert( shaderPass.textures, 'Buffer/Compute pass does not have render target textures' );
-            this.renderer.gpuTextures[passName] = shaderPass.textures;
-        }
-        else if ( passType === 'common' )
-        {
-            indexOffset = -( this.shader.passes.length + 1 );
-            this.shader.passes.splice( 0, 0, shaderPass ); // Add at the start
-        }
-
-        ui.editor.addTab( passName, true, passName, {
-            indexOffset,
-            language: 'WGSL',
-            codeLines: shaderPass.codeLines
-        } );
-
-        // Wait for the tab to be created
-        LX.doAsync( async () => {
-            const closeIcon = LX.makeIcon( 'X', { iconClass: 'ml-2' } );
-            LX.asTooltip( closeIcon, 'Delete file' );
-            closeIcon.addEventListener( 'click', ( e ) => {
-                e.preventDefault();
-                e.stopPropagation();
-                editor.tabs.delete( passName );
-                document.body.querySelectorAll( '.lextooltip' ).forEach( ( e ) => e.remove() );
-            } );
-
-            ui.editor.tabs.tabDOMs[passName].appendChild( closeIcon );
-
-            this.onShaderPassSelected( passName );
-
-            await this.compileShader( false, shaderPass );
-        }, 10 );
-    },
-
-    async onShaderPassSelected( passName )
-    {
-        this.currentPass = this.shader.passes.find( ( p ) => p.name === passName );
-        console.assert( this.currentPass, `Cannot find pass ${passName}` );
-
-        await ui.updateShaderChannelsView();
-
-        ui.toggleCustomUniformsButton( this.currentPass.type === 'common' );
-
-        ui.editor.setCustomSuggestions( this.getCurrentSuggestions() );
     },
 
     onShaderTimePaused()
@@ -1204,6 +1199,7 @@ const ShaderHub = {
 
         const tabs = ui.editor.tabs.tabs;
         const compilePasses = pass ? [ pass ] : this.shader.passes;
+        const inCommonPass = this.currentPass.type === 'common';
 
         for ( let i = 0; i < compilePasses.length; ++i )
         {
@@ -1214,9 +1210,14 @@ const ShaderHub = {
             if ( pass.type === 'common' ) continue;
 
             const result = await pass.compile( this.renderer );
+            // error object
             if ( result !== Constants.WEBGPU_OK )
-            { // error object
-                ui.editor.loadTab( pass.name ); // Open the tab with the error
+            {
+                // Open the tab with the error if not in common tab (it would never be that tab, since its not compiled)
+                if ( !inCommonPass )
+                {
+                    ui.editor.loadTab( pass.name );
+                }
 
                 // Make async so the tab is opened before adding the error feedback
                 LX.doAsync( () => {
@@ -1225,7 +1226,18 @@ const ShaderHub = {
 
                     for ( const msg of result.messages )
                     {
-                        const fragLineNumber = msg.lineNum - mainImageLineOffset;
+                        let fragLineNumber = 0;
+
+                        if ( inCommonPass )
+                        {
+                            const commonPassLineOffset = result.code.split( '\n' ).indexOf( '// Common pass code' );
+                            fragLineNumber = msg.lineNum - commonPassLineOffset - 1;
+                            // const commonPassLineOffsetLength = this.shader.passes.find( p => p.type === 'common' )?.codeLines?.length ?? 0;
+                        }
+                        else
+                        {
+                            fragLineNumber = msg.lineNum - mainImageLineOffset;
+                        }
 
                         if ( showFeedback )
                         {
