@@ -384,7 +384,7 @@ class GLRenderer extends Renderer
 
         for ( const pass of shader.passes )
         {
-            pass.setUniform( gl, "iMouse", mouseData );
+            pass.setUniform( gl, 'iMouse', mouseData );
         }
     }
 

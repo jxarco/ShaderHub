@@ -99,6 +99,10 @@
 	transition: background-color 0.15s ease-out;
 }
 
+.shader-item:hover {
+	border: 1px solid light-dark(#1f1f1f3b, #ffffff4d);
+}
+
 .shader-item > div {
     z-index: 1;
 }
@@ -108,7 +112,7 @@
 }
 
 .shader-item:hover img {
-    scale: 1.025;
+    scale: 0.99;
 }
 
 .shader-item.featured {

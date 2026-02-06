@@ -821,7 +821,10 @@ export const ui = {
                 shaderPreview.src = shader.preview ?? ShaderHub.shaderPreviewPath;
                 shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
                 shaderItem.querySelector( 'div' ).remove();
-                if ( shader.backend === 'webgl' ) LX.makeElement( 'span', 'absolute m-4 bg-background-blur border-color text-sm p-1 rounded-lg select-none', 'WebGL', shaderItem );
+                if ( shader.backend === 'webgl' )
+                {
+                    LX.makeElement( 'span', 'absolute m-4 bg-background-blur border-color text-xs px-2 py-1 rounded-xl select-none pointer-events-none', 'WebGL', shaderItem );
+                }
                 LX.makeContainer( [ '100%', 'auto' ], 'flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none', `
                     <div class="flex flex-row w-full items-center gap-2">
                         <span class="text-sm font-medium text-nowrap truncate">${shader.name}</span>
