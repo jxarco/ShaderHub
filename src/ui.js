@@ -1664,11 +1664,11 @@ export const ui = {
                 document.title = `${ userName } - ShaderHub`;
             } } );
 
-            const listHeader = LX.makeContainer( [ "100%", 'auto' ], 'flex flex-row', '', shadersContainer );
+            const listHeader = LX.makeContainer( [ "100%", 'auto' ], 'flex flex-col sm:flex-row', '', shadersContainer );
 
             const searchShaderInput = new LX.TextInput(null, '', v => {
                 this._refreshOwnShaders( v );
-            }, { placeholder: "Filter shaders...", width: "256px" });
+            }, { placeholder: "Filter shaders...", className: "w-full flex-auto-fill sm:max-w-[25%]" });
             listHeader.appendChild( searchShaderInput.root );
 
             // Profile Shader Order
@@ -1896,11 +1896,11 @@ export const ui = {
 
                 likesOpened = true;
 
-                const listHeader = LX.makeContainer( [ "100%", 'auto' ], 'flex flex-row', '', likesContainer );
+                const listHeader = LX.makeContainer( [ "100%", 'auto' ], 'flex flex-col sm:flex-row', '', likesContainer );
 
                 const searchShaderInput = new LX.TextInput(null, '', v => {
                     this._refreshLikedShaders( v );
-                }, { placeholder: "Filter shaders...", width: "256px" });
+                }, { placeholder: "Filter shaders...", className: "w-full flex-auto-fill sm:max-w-[25%]" });
                 listHeader.appendChild( searchShaderInput.root );
 
                 const paginator = new LX.Pagination({
