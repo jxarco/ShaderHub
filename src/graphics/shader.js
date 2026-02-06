@@ -653,20 +653,18 @@ class ShaderPass
         return results;
     }
 
-    /*
-        This will detect bindings used in the code, discarding only the ones that are inside
-        single line comments.
-        TODO: Discard bindings used in BLOCK comments
-    */
     isBindingUsed( binding, entryCode )
     {
         const templateCodeLines = [ ...( this.type === 'compute' ) ? Shader.COMPUTER_SHADER_TEMPLATE : Shader.RENDER_SHADER_TEMPLATE ];
-        const lines = [ ...templateCodeLines, ...entryCode.split( '\n' ) ].map( ( line ) => {
-            const lineCommentIndex = line.indexOf( '//' );
-            return line.substring( 0, lineCommentIndex === -1 ? undefined : lineCommentIndex );
-        } );
+        let code = [ ...templateCodeLines, ...entryCode.split( '\n' ) ].join( '\n' );
+
+        // Remove single-line and block comments /* ... */ (including multiline)
+        code = code.replace( /\/\*[\s\S]*?\*\//g, '' );
+        code = code.replace( /\/\/.*$/gm, '' );
+
+        // Check if binding is used (word boundary ensures exact match)
         const regex = new RegExp( `\\b${binding}\\b` );
-        return lines.some( ( l ) => regex.test( l ) );
+        return regex.test( code );
     }
 
     getShaderCode( includeBindings = true, entryName, entryCode )
