@@ -1319,6 +1319,7 @@ class Shader {
         this.passes = data.passes ?? [];
         this.type = "render";
         this.tags = data.tags ?? [];
+        this.backend = data.backend;
 
         this.author = data.author ?? "anonymous";
         this.authorId = data.authorId;

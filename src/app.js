@@ -574,6 +574,7 @@ const ShaderHub =
                 creationDate: Utils.toESDate( result[ "$createdAt" ] ),
                 originalId: result[ "original_id" ],
                 tags: result[ "tags" ],
+                backend: result[ "backend" ]
             };
 
             const authorId = result[ "author_id" ];
@@ -804,7 +805,8 @@ const ShaderHub =
                     "features": this.shader.getFeatures(),
                     "remixable": isShaderRemixable,
                     "public": isShaderPublic,
-                    "tags": this.shader.tags
+                    "tags": this.shader.tags,
+                    "backend": this.backend
                 } );
 
                 this.shader.uid = result[ "$id" ];
@@ -1544,8 +1546,10 @@ const ShaderHub =
     {
         const width = outWidth ?? 640;
         const height = outHeight ?? 360;
-        const blob = await (() => {return new Promise( resolve =>
-            this.renderer.canvas.toBlob( blob => resolve( blob ), "image/png" )
+        const blob = await (() => {return new Promise( resolve => {
+            this.onFrame();
+            return this.renderer.canvas.toBlob( blob => resolve( blob ), "image/png" );
+        }
         )})();
         const bitmap = await createImageBitmap( blob );
 

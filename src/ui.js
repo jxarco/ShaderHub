@@ -848,6 +848,13 @@ export const ui = {
         const shader = await ShaderHub.getShaderById( shaderUid );
         if( !shader ) return;
 
+        // force backend to load shader
+        if( shader.backend !== undefined )
+        {
+            LX.doAsync( () => Utils.toast( 'Warning', `⚠️ GLSL Shader. Fallback to WebGL mode.`, -1 ), 50 );
+            ShaderHub.backend = shader.backend;
+        }
+
         this.shader = shader;
 
         let [ leftArea, rightArea ] = this.area.split({ sizes: ["50%", "50%"] });
@@ -2282,16 +2289,23 @@ export const ui = {
 
         const moreButton = customTabInfoButtonsPanel.addButton( null, "MoreButton", async () => {
             
-            LX.addDropdownMenu( moreButton.root, [
-                {
+            const isNewShader = ( this.shader.uid === "EMPTY_ID" );
+            const options = [];
+
+            if( isNewShader )
+            {
+                options.push( {
                     name: "Graphics",
                     icon: 'Sparkle',
                     submenu: [
-                        { name: "WebGPU", callback: () => {} },
-                        { name: "WebGL", callback: () => {} }
+                        { name: "WebGPU", callback: () => window.location.href = `${window.location.origin}/create` },
+                        { name: "WebGL", callback: () => window.location.search = "?r=gl" }
                     ]
-                },
-                null,
+                }, null );
+            }
+
+            LX.addDropdownMenu( moreButton.root, [
+                ...options,
                 {
                     name: "Templates",
                     icon: 'FolderCode',
