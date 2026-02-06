@@ -1330,50 +1330,45 @@ class Shader {
         this.hasPreview = data.hasPreview ?? false;
     }
 
-    static GetUniformSize = function( type ) {
-        switch( type )
-        {
-            case "f32":
-            case "i32":
-            case "u32":
-            return 4;
-            case "vec2f":
-            case "vec2i":
-            case "vec2u":
-            return 8;
-            case "vec3f":
-            case "vec3i":
-            case "vec3u":
-            return 12;
-            case "vec4f":
-            case "vec4i":
-            case "vec4u":
-            return 16;
-            case "mat4x4f":
-            return 64;
+    static GetUniformSize = function( type )
+    {
+        // 16-bit float
+        if (type === "f16") return 2;
+
+        if (type === "f32" || type === "i32" || type === "u32" ||
+            type === "atomic<i32>" || type === "atomic<u32>") return 4;
+
+        const is16bit = type.includes("f16") || type.includes("h>");
+        const elementSize = is16bit ? 2 : 4;
+
+        if (type.startsWith("vec2")) return 2 * elementSize;
+        if (type.startsWith("vec3")) return 3 * elementSize;
+        if (type.startsWith("vec4")) return 4 * elementSize;
+
+        // matCxR
+        if (type.startsWith("mat")) {
+            const match = type.match(/mat(\d)x(\d)/);
+            if (match) {
+                const cols = parseInt(match[1]);
+                const rows = parseInt(match[2]);
+                return cols * rows * elementSize;
+            }
         }
+
         return 0;
     }
 
-    static GetUniformAlign = function( type ) {
-        switch( type )
-        {
-            case "f32":
-            case "i32":
-            case "u32":
-            return 4;
-            case "vec2f":
-            case "vec2i":
-            case "vec2u":
-            return 8;
-            case "vec3f":
-            case "vec3i":
-            case "vec3u":
-            case "vec4f":
-            case "vec4i":
-            case "vec4u":
-            return 16;
-        }
+    static GetUniformAlign = function( type )
+    {
+        // 16-bit float
+        if (type === "f16") return 2;
+
+        if (type === "f32" || type === "i32" || type === "u32" ||
+            type === "atomic<i32>" || type === "atomic<u32>") return 4;
+
+        if (type.startsWith("vec2")) return 8;
+        if (type.startsWith("vec3") || type.startsWith("vec4") || type.startsWith("mat")) return 16;
+
         return 0;
     }
 

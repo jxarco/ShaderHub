@@ -1,49 +1,6 @@
 import * as Constants from "../constants.js";
 import { Shader, ShaderPass } from "./shader.js";
 
-const WGSL_TO_GLSL = {
-    // Scalars
-    f32: "float",
-    i32: "int",
-    u32: "uint",
-
-    // Vectors (float)
-    vec2f: "vec2",
-    vec3f: "vec3",
-    vec4f: "vec4",
-
-    // Vectors (int)
-    vec2i: "ivec2",
-    vec3i: "ivec3",
-    vec4i: "ivec4",
-
-    // Vectors (uint)
-    vec2u: "uvec2",
-    vec3u: "uvec3",
-    vec4u: "uvec4",
-
-    // Matrices (float only in WGSL)
-    mat2x2f: "mat2",
-    mat2x3f: "mat2x3",
-    mat2x4f: "mat2x4",
-
-    mat3x2f: "mat3x2",
-    mat3x3f: "mat3",
-    mat3x4f: "mat3x4",
-
-    mat4x2f: "mat4x2",
-    mat4x3f: "mat4x3",
-    mat4x4f: "mat4",
-
-    // Samplers & textures (handled separately, but listed for completeness)
-    sampler: "sampler",
-    sampler_comparison: "samplerShadow",
-
-    texture_2d: "sampler2D",
-    texture_2d_array: "sampler2DArray",
-    texture_cube: "samplerCube",
-};
-
 class GLShaderPass extends ShaderPass
 {
     constructor( shader, renderer, data )
@@ -395,7 +352,7 @@ class GLShaderPass extends ShaderPass
                     if( !this.isBindingUsed( u.name, noBindingsShaderCode ) ) return;
                     const binding = bindingIndex++;
                     customBindings[ u.name ] = binding;
-                    const type = WGSL_TO_GLSL[u.type[ this.renderer.backend ] ?? "f32"];
+                    const type = Constants.WGSL_TO_GLSL[u.type[ this.renderer.backend ] ?? "f32"];
                     return `uniform ${ type } ${ u.name };`;
                 } ).filter( u => u !== undefined ) );
             }
@@ -474,50 +431,35 @@ class GLShader extends Shader
         super( data );
     }
 
-    static GetUniformSize = function( type ) {
-        switch( type )
-        {
-            case "f32":
-            case "i32":
-            case "u32":
-            return 4;
-            case "vec2f":
-            case "vec2i":
-            case "vec2u":
-            return 8;
-            case "vec3f":
-            case "vec3i":
-            case "vec3u":
-            return 12;
-            case "vec4f":
-            case "vec4i":
-            case "vec4u":
-            return 16;
-            case "mat4x4f":
-            return 64;
+    static GetUniformSize = function( type )
+    {
+        if (type === "float" || type === "int" || type === "uint" || type === "bool" || type.startsWith("sampler")) return 4;
+
+        if (type.includes("vec2")) return 8;
+        if (type.includes("vec3")) return 12;
+        if (type.includes("vec4")) return 16;
+
+        // matCxR
+        if (type.startsWith("mat")) {
+            const match = type.match(/mat(\d)(?:x(\d))?/);
+            if (match) {
+                const cols = parseInt(match[1]);
+                const rows = match[2] ? parseInt(match[2]) : cols; // mat3 = mat3x3
+                // In std140: vec2 columns = 8 bytes, vec3/vec4 columns = 16 bytes (padded)
+                const colSize = rows === 2 ? 8 : 16;
+                return cols * colSize;
+            }
         }
+
         return 0;
     }
 
-    static GetUniformAlign = function( type ) {
-        switch( type )
-        {
-            case "f32":
-            case "i32":
-            case "u32":
-            return 4;
-            case "vec2f":
-            case "vec2i":
-            case "vec2u":
-            return 8;
-            case "vec3f":
-            case "vec3i":
-            case "vec3u":
-            case "vec4f":
-            case "vec4i":
-            case "vec4u":
-            return 16;
-        }
+    static GetUniformAlign = function( type )
+    {
+        if (type === "float" || type === "int" || type === "uint" || type === "bool") return 4;
+        if (type.startsWith("sampler")) return 4;
+        if (type.includes("vec2")) return 8;
+        if (type.includes("vec3") || type.includes("vec4") || type.startsWith("mat")) return 16;
         return 0;
     }
 
