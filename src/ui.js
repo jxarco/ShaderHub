@@ -815,7 +815,7 @@ export const ui = {
                 shaderPreview.src = shader.preview ?? ShaderHub.shaderPreviewPath;
                 shaderPreview.onload = () => shaderPreview.classList.remove( "opacity-0" );
                 shaderItem.querySelector( "div" ).remove();
-                if( shader.backend === 'webgl' ) LX.makeElement( 'span', 'absolute m-4 bg-background-blur border-color text-sm p-1 rounded-lg', 'WebGL', shaderItem );
+                if( shader.backend === 'webgl' ) LX.makeElement( 'span', 'absolute m-4 bg-background-blur border-color text-sm p-1 rounded-lg select-none', 'WebGL', shaderItem );
                 LX.makeContainer( ["100%", "auto"], "flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none", `
                     <div class="flex flex-row w-full items-center gap-2">
                         <span class="text-sm font-medium text-nowrap truncate">${ shader.name }</span>
@@ -948,8 +948,8 @@ export const ui = {
                 const dmOptions = [
                     { name: "Common", icon: "FileText", disabled: !canCreateCommon, callback: ( v ) => ShaderHub.onShaderPassCreated( "common", v ) },
                     { name: "Buffer", icon: "Image", disabled: !canCreateBufferOrCompute, callback: ( v ) => ShaderHub.onShaderPassCreated( "buffer", v ) },
-                    { name: "Compute", icon: "Binary", disabled: !canCreateBufferOrCompute, callback: ( v ) => ShaderHub.onShaderPassCreated( "compute", v ) },
-                ];
+                    ShaderHub.backend === 'webgpu' ? { name: "Compute", icon: "Binary", disabled: !canCreateBufferOrCompute, callback: ( v ) => ShaderHub.onShaderPassCreated( "compute", v ) } : false,
+                ].filter( Boolean );
                 new LX.DropdownMenu( e.target, dmOptions, { side: "bottom", align: "start" });
             },
             onSelectTab: async ( name, editor ) => {

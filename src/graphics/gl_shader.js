@@ -88,9 +88,13 @@ class GLShaderPass extends ShaderPass
                 const channel = this.channels[i];
                 if( !channel ) continue;
                 const name = channel.id;
-                const tex = this.channelTextures[i];
+                let texture = this.channelTextures[i];
+                if( texture.constructor === Array )
+                {
+                    texture = texture[this.frameCount % 2].texture;
+                }
                 gl.activeTexture( gl.TEXTURE0 + i );
-                gl.bindTexture( channel.category === 'cubemap' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D, tex );
+                gl.bindTexture( channel.category === 'cubemap' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D, texture );
                 gl.uniform1i( this.uniformLocations[name], i );
             }
 
@@ -107,46 +111,55 @@ class GLShaderPass extends ShaderPass
 
             gl.drawArrays( gl.TRIANGLES, 0, 3 );
 
+            this.frameCount++;
         }
-        // else if( this.type === "buffer" )
-        // {
-        //     if( !this.textures[ 0 ] || !this.textures[ 1 ] )
-        //     {
-        //         return;
-        //     }
+        else if( this.type === "buffer" )
+        {
+            if( !this.textures[ 0 ] || !this.textures[ 1 ] )
+            {
+                return;
+            }
 
-        //     const commandEncoder = this.device.createCommandEncoder();
-        //     const renderTarget = this.textures[( this.frameCount + 1 ) % 2];
-        //     const textureView = renderTarget.createView();
+            const renderTarget = this.textures[( this.frameCount + 1 ) % 2];
+            gl.bindFramebuffer( gl.FRAMEBUFFER, renderTarget.framebuffer );
 
-        //     const renderPassDescriptor = {
-        //         colorAttachments: [
-        //             {
-        //                 view: textureView,
-        //                 clearValue: [0, 0, 0, 1],
-        //                 loadOp: 'clear',
-        //                 // loadOp: 'load',
-        //                 storeOp: 'store'
-        //             },
-        //         ],
-        //     };
+            gl.viewport( 0, 0, renderer.canvas.width, renderer.canvas.height );
+            gl.clearColor( 0.0, 0.0, 0.0, 1.0 );
+            gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
 
-        //     const passEncoder = commandEncoder.beginRenderPass( renderPassDescriptor );
-        //     passEncoder.setPipeline( this.pipeline );
+            gl.useProgram( this.program );
 
-        //     const bindGroup = ( this.frameCount % 2 === 0 ) ? this.bindGroup : this.bindGroupB;
-        //     if( bindGroup )
-        //     {
-        //         passEncoder.setBindGroup( 0, bindGroup );
-        //     }
+            // bind textures
+            for ( let i = 0; i < this.channelTextures.length; i++ )
+            {
+                const channel = this.channels[i];
+                if( !channel ) continue;
+                const name = channel.id;
+                let texture = this.channelTextures[i];
+                if( texture.constructor === Array )
+                {
+                    texture = texture[this.frameCount % 2].texture;
+                }
+                gl.activeTexture( gl.TEXTURE0 + i );
+                gl.bindTexture( channel.category === 'cubemap' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D, texture );
+                gl.uniform1i( this.uniformLocations[name], i );
+            }
 
-        //     passEncoder.draw( 6 );
-        //     passEncoder.end();
+            gl.bindBuffer( gl.ARRAY_BUFFER, renderer.fullscreenVBO );
+            gl.enableVertexAttribArray( 0 );
+            gl.vertexAttribPointer(
+                0,          // location
+                2,          // vec2
+                gl.FLOAT,
+                false,
+                0,
+                0
+            );
 
-        //     this.device.queue.submit( [ commandEncoder.finish() ] );
+            gl.drawArrays( gl.TRIANGLES, 0, 3 );
 
-        //     this.frameCount++;
-        // }
+            this.frameCount++;
+        }
     }
 
     compileShaderCode( gl, type, source )
@@ -592,9 +605,9 @@ GLShader.RENDER_COMMON_TEMPLATE = `float someFunc(float a, float b) {
     return a + b;
 }`.split( "\n" );
 
-GLShader.RENDER_BUFFER_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+GLShader.RENDER_BUFFER_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
     // Output to screen
-    return vec4f(0.0, 0.0, 1.0, 1.0);
+    return vec4(0.0, 0.0, 1.0, 1.0);
 }`.split( "\n" );
 
 /*
