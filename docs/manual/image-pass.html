@@ -9,15 +9,19 @@
     docMaker.header("Image Pass", "h1", "image-pass");
 
     docMaker.paragraph(`
-An Image Pass is a rendering stage that outputs pixel color data.
-Most image passes render to an offscreen texture, while the main image pass
-renders directly to the screen.
+An Image Pass is a rendering stage that outputs pixel color data using a fragment shader.
+Fragment shaders execute once per pixel on the GPU, making them ideal for visual effects and rendering.
 `);
 
     docMaker.paragraph(`
-The main image pass is mandatory and represents the final visual output of the shader.
-All other image passes act as intermediate render targets that can be reused by
-subsequent passes.
+<span class='font-bold'>Main Image Pass:</span> Every shader has exactly one Main Image Pass, which renders the final output directly to the canvas.
+This pass is mandatory and cannot be deleted.
+`);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Intermediate Image Passes:</span> Additional image passes render to offscreen textures.
+These textures can be used as inputs to later passes through channels, enabling multi-stage effects like blur pipelines,
+feedback loops, or layered compositing.
 `);
 
     docMaker.paragraph(`
@@ -60,6 +64,73 @@ Image passes receive two coordinate inputs:
 The coordinate origin is located at the top-left corner of the image.
 `);
 
+    docMaker.paragraph(`
+<span class='font-bold'>Practical example:</span> Creating a radial gradient from the center:
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Center coordinates (0.5, 0.5)
+    let center = vec2f(0.5, 0.5);
+
+    // Distance from center
+    let dist = distance(fragUV, center);
+
+    // Create gradient based on distance
+    let color = vec3f(dist);
+
+    return vec4f(color, 1.0);
+}`, "wgsl");
+
+//     docMaker.header("Using Uniforms and Channels", "h2", "uniforms-channels");
+
+//     docMaker.paragraph(`
+// Image passes have automatic access to default uniforms and channels:
+// `);
+
+//     docMaker.paragraph(`
+// <span class='font-bold'>Sampling a texture from iChannel0:</span>
+// `);
+
+//     docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+//     // Sample texture from channel 0 using bilinear filtering
+//     let texColor = textureSample(iChannel0, bilinearSampler, fragUV);
+
+//     // Apply a tint
+//     let tinted = texColor * vec4f(1.0, 0.8, 0.6, 1.0);
+
+//     return tinted;
+// }`, "wgsl");
+
+//     docMaker.paragraph(`
+// <span class='font-bold'>Using time for animation:</span>
+// `);
+
+//     docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+//     // Animate color over time using iTime
+//     let r = sin(iTime) * 0.5 + 0.5;
+//     let g = cos(iTime * 0.7) * 0.5 + 0.5;
+//     let b = sin(iTime * 1.3) * 0.5 + 0.5;
+
+//     return vec4f(r, g, b, 1.0);
+// }`, "wgsl");
+
+//     docMaker.paragraph(`
+// <span class='font-bold'>Interactive with mouse:</span>
+// `);
+
+//     docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+//     // Get mouse position (normalized)
+//     let mousePos = iMouse.pos / iResolution;
+
+//     // Distance from mouse
+//     let dist = distance(fragUV, mousePos);
+
+//     // Highlight area near mouse
+//     let intensity = 1.0 - smoothstep(0.0, 0.2, dist);
+
+//     return vec4f(vec3f(intensity), 1.0);
+// }`, "wgsl");
+
     docMaker.header("Chaining Image Passes", "h2", "chaining-image-passes");
 
     docMaker.paragraph(`
@@ -72,6 +143,20 @@ This technique is commonly used to build multi-stage effects such as feedback lo
 blur pipelines, or layered compositing.
 `);
 
+    docMaker.paragraph(`
+<span class='font-bold'>Example workflow:</span> Two-pass blur effect:
+`);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Pass 1 (Image)</span>: Render your effect to a texture",
+        "<span class='font-bold'>Pass 2 (Image)</span>: Assign Pass 1's output to iChannel0, apply horizontal blur",
+        "<span class='font-bold'>Pass 3 (Main Image)</span>: Assign Pass 2's output to iChannel0, apply vertical blur for final result"
+    ]);
+
+    docMaker.paragraph(`
+Each pass builds on the previous one, with data flowing through channels.
+`);
+
     docMaker.header("When to Use an Image Pass", "h2", "when-to-use-image-pass");
 
     docMaker.paragraph(`
@@ -79,10 +164,51 @@ Use image passes when you need to render visual output or perform pixel-based op
 `);
 
     docMaker.bulletList([
-        "Drawing full-screen effects",
-        "Post-processing and color grading",
-        "Compositing multiple render targets",
-        "Using intermediate textures between passes"
+        "Drawing full-screen effects (gradients, patterns, procedural textures)",
+        "Post-processing and color grading (bloom, vignette, tone mapping)",
+        "Compositing multiple render targets (layering effects)",
+        "Feedback effects (previous frame as input for motion blur, trails)",
+        "Texture-based effects (distortion, displacement mapping)"
     ]);
+
+    docMaker.header("Best Practices and Tips", "h2", "image-pass-tips");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Performance</span>: Avoid expensive operations in inner loops. Fragment shaders run for every pixel—optimize carefully for high resolutions.",
+        "<span class='font-bold'>Coordinates</span>: Use <span class='font-code'>fragUV</span> for normalized operations (0-1 range), <span class='font-code'>fragCoord</span> for pixel-precise work.",
+        "<span class='font-bold'>Color Range</span>: Return colors in the range [0, 1]. Values outside this range will be clamped.",
+        "<span class='font-bold'>Alpha Channel</span>: The fourth component (alpha) controls transparency. Use 1.0 for fully opaque pixels.",
+        "<span class='font-bold'>Texture Sampling</span>: Choose appropriate samplers—use bilinear for smooth interpolation, nearest for pixel-art styles.",
+        "<span class='font-bold'>Debugging</span>: Visualize intermediate values by outputting them as colors (e.g., <span class='font-code'>return vec4f(vec3f(someValue), 1.0)</span>)."
+    ]);
+
+    docMaker.header("Common Patterns", "h2", "common-patterns");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Aspect Ratio Correction:</span> Prevent distortion on non-square canvases:
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Correct aspect ratio
+    let aspect = iResolution.x / iResolution.y;
+    var uv = fragUV;
+    uv.x *= aspect;
+
+    // Now circles appear as circles, not ellipses
+    let dist = length(uv - vec2f(aspect * 0.5, 0.5));
+    return vec4f(vec3f(step(dist, 0.2)), 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Screen-Space Effects:</span> Use fragCoord for pixel-exact operations:
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Checkerboard pattern using pixel coordinates
+    let checker = (i32(fragCoord.x) + i32(fragCoord.y)) % 2;
+    let color = vec3f(f32(checker));
+
+    return vec4f(color, 1.0);
+}`, "wgsl");
 
 </script>

@@ -9,9 +9,8 @@
     docMaker.header("Channels", "h1", "channels");
 
     docMaker.paragraph(`
-Channels are input slots that allow shaders to read external data.
-They are commonly used to connect textures and sounds from the ShaderHub asset library, or the outputs of other passes
-to image or compute shaders.
+Channels are input slots that allow shaders to read external data such as textures, audio, keyboard input, and outputs from other passes.
+They provide the primary mechanism for passing data between shader stages and connecting external resources to your shader.
 `);
 
     docMaker.paragraph(`
@@ -47,12 +46,72 @@ ShaderHub currently supports the following channel types:
 `);
 
     docMaker.bulletList([
-        `<span class="font-bold underline underline-offset-4">Image Textures</span>`,
-        `<span class="font-bold underline underline-offset-4">Cubemap Textures</span>`,
-        `<span class="font-bold underline underline-offset-4">Keyboard Input</span>`,
-        `<span class="font-bold underline underline-offset-4">Sound</span>`,
-        `<span class="font-bold underline underline-offset-4">Pass Buffers</span>`
+        `<span class="font-bold underline underline-offset-4">Image Textures (2D)</span>: Standard textures from the asset library or external images. Use <span class='font-code'>textureSample()</span> for filtered access.`,
+        `<span class="font-bold underline underline-offset-4">Cubemap Textures</span>: Environment maps for reflections and skyboxes. Sample using 3D direction vectors.`,
+        `<span class="font-bold underline underline-offset-4">Pass Buffers</span>: Outputs from other Image or Compute passes in your shader. Enables multi-stage rendering and feedback loops.`,
+        `<span class="font-bold underline underline-offset-4">Keyboard Input</span>: Real-time keyboard state stored as a texture. Query key presses to make interactive shaders.`,
+        `<span class="font-bold underline underline-offset-4">Sound</span>: Audio analysis data (FFT and waveform) for creating audio-reactive visual effects.`
     ]);
+
+    docMaker.header("Channel Workflow Examples", "h2", "channel-workflows");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Basic Texture Sampling:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Sample a texture from iChannel0
+    let texColor = textureSample(iChannel0, bilinearSampler, fragUV);
+    return texColor;
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Multi-Pass Effect (Blur):</span>
+`);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Pass 1</span>: Render your scene to a texture",
+        "<span class='font-bold'>Pass 2</span>: Assign Pass 1 output to iChannel0, apply horizontal blur, output to texture",
+        "<span class='font-bold'>Main Pass</span>: Assign Pass 2 output to iChannel0, apply vertical blur"
+    ]);
+
+    docMaker.code(`// In Pass 2 or Main Pass:
+fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Sample previous pass output
+    let sourceColor = textureSample(iChannel0, bilinearSampler, fragUV);
+
+    // Apply blur using the previous pass as input
+    var blurred = vec4f(0.0);
+    let offset = 1.0 / iResolution.x;
+
+    for (var i = -2; i <= 2; i++) {
+        let uv = fragUV + vec2f(f32(i) * offset, 0.0);
+        blurred += textureSample(iChannel0, bilinearSampler, uv);
+    }
+
+    return blurred / 5.0;
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Combining Multiple Inputs:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // iChannel0: Background texture
+    // iChannel1: Overlay texture
+    // iChannel2: Noise texture for displacement
+
+    // Sample noise for distortion
+    let noise = textureSample(iChannel2, bilinearRepeatSampler, fragUV * 4.0).r;
+    let distortedUV = fragUV + vec2f(noise * 0.1);
+
+    // Sample textures
+    let background = textureSample(iChannel0, bilinearSampler, distortedUV);
+    let overlay = textureSample(iChannel1, bilinearSampler, fragUV);
+
+    // Blend
+    return mix(background, overlay, overlay.a);
+}`, "wgsl");
 
     docMaker.header("Channel Limitations", "h2", "channel-limitations");
 
@@ -74,6 +133,27 @@ or explicitly storing values in compute passes.
 Use channels whenever your shader needs external or intermediate data.
 They are the main way to structure complex shaders and enable reuse between passes.
 `);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Texturing</span>: Apply images to your shader for realistic materials, backgrounds, or detail",
+        "<span class='font-bold'>Post-Processing</span>: Chain passes together for blur, bloom, color grading, or other effects",
+        "<span class='font-bold'>Feedback Effects</span>: Use the previous frame as input for motion trails, recursive patterns, or temporal effects",
+        "<span class='font-bold'>Data Flow</span>: Pass computation results from Compute passes to Image passes for visualization",
+        "<span class='font-bold'>Interactivity</span>: Connect keyboard or mouse input to control shader behavior",
+        "<span class='font-bold'>Audio Visualization</span>: React to music or sound using FFT and waveform data",
+        "<span class='font-bold'>Environment Mapping</span>: Use cubemaps for reflections and lighting"
+    ]);
+
+    docMaker.header("Best Practices", "h2", "channel-best-practices");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Naming</span>: Remember which channel contains what—consider adding comments in your code",
+        "<span class='font-bold'>Sampler Choice</span>: Use bilinear for smooth textures, nearest for pixel art or data lookups",
+        "<span class='font-bold'>Pass Order</span>: A pass can only use outputs from passes that execute before it",
+        "<span class='font-bold'>Texture Coordinates</span>: Ensure UVs are in the correct range [0,1] for clamped samplers",
+        "<span class='font-bold'>Performance</span>: Each texture sample has a cost—minimize samples in performance-critical shaders",
+        "<span class='font-bold'>Repeat vs Clamp</span>: Use repeat samplers for tiling patterns, clamp for single images"
+    ]);
 
 
 </script>

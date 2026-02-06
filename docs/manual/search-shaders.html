@@ -20,15 +20,85 @@ The search bar is located at the top of the ShaderHub interface.
 Type in keywords, shader names, or tags (starting with '#') to filter the results.
 `);
 
+    docMaker.paragraph(`
+<span class='font-bold'>Search Capabilities:</span>
+`);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Shader Names</span>: Search by the shader's title (e.g., \"Plasma\", \"Galaxy\")",
+        "<span class='font-bold'>Tags</span>: Use # prefix to search by tags (e.g., \"#raymarching\", \"#fractal\")",
+        "<span class='font-bold'>Authors</span>: Find shaders by a specific creator's username",
+        "<span class='font-bold'>Descriptions</span>: Keywords from shader descriptions are also searchable",
+        "<span class='font-bold'>Scoring System</span>: Results are ranked by relevance using a scoring algorithm"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Search Examples:</span>
+`);
+
+    docMaker.bulletList([
+        "<span class='font-code'>ocean</span> - Find shaders with \"ocean\" in name or description",
+        "<span class='font-code'>#audio-reactive</span> - Find all shaders tagged with audio-reactive",
+        "<span class='font-code'>particles</span> - Find particle system shaders",
+        "<span class='font-code'>#tutorial</span> - Find educational/tutorial shaders"
+    ]);
+
     docMaker.header("Filter and Sort", "h2", "search-shaders-filter");
 
     docMaker.paragraph(`
-You can refine your search using feature filters such as Multipass, Compute, Keyboard, Sound.
+You can refine your search using feature filters to narrow down results to specific shader types or capabilities.
 `);
 
     docMaker.paragraph(`
-You can also explore sorting shaders by Recent (posted date, desc), Popular (number of likes, desc), and Name (asc).
+<span class='font-bold'>Available Filters:</span>
 `);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Multipass</span>: Shaders using multiple rendering passes for complex effects",
+        "<span class='font-bold'>Compute</span>: Shaders utilizing compute passes for GPU computation",
+        "<span class='font-bold'>Keyboard</span>: Interactive shaders that respond to keyboard input",
+        "<span class='font-bold'>Sound</span>: Audio-reactive shaders that visualize music or sound"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Sorting Options:</span>
+`);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Recent</span>: Shows newest shaders first (sorted by posted date, descending)",
+        "<span class='font-bold'>Popular</span>: Shows most-liked shaders first (sorted by number of likes, descending)",
+        "<span class='font-bold'>Name</span>: Shows shaders alphabetically (ascending order)"
+    ]);
+
+    docMaker.paragraph(`
+Combining filters and sort options helps you discover exactly what you're looking for—whether it's the latest community creations, popular classics, or specific technical implementations.
+`);
+
+    docMaker.header("Discovering Shaders", "h2", "search-shaders-discovery");
+
+    docMaker.paragraph(`
+Beyond direct searching, ShaderHub offers ways to explore and discover new shaders:
+`);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Browse All</span>: Clear the search bar to see all public shaders",
+        "<span class='font-bold'>Tag Exploration</span>: Click tags on shader pages to find similar content",
+        "<span class='font-bold'>Author Pages</span>: View all shaders by a specific creator",
+        "<span class='font-bold'>Remixes</span>: Explore variations and remixes of interesting shaders",
+        "<span class='font-bold'>Popular Section</span>: Sort by Popular to see community favorites"
+    ]);
+
+    docMaker.header("Tips for Effective Searching", "h2", "search-shaders-tips");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Use Specific Terms</span>: \"raymarching\" is more specific than \"3D\"",
+        "<span class='font-bold'>Combine Filters</span>: Use filters with search terms to narrow results (e.g., search \"particles\" + Sound filter)",
+        "<span class='font-bold'>Try Different Keywords</span>: If you don't find what you need, try synonyms (e.g., \"space\" vs \"galaxy\" vs \"nebula\")",
+        "<span class='font-bold'>Explore Tags</span>: Tags are curated by creators—they're often the best way to find specific techniques",
+        "<span class='font-bold'>Check Recent First</span>: New shaders may use the latest techniques and features",
+        "<span class='font-bold'>Study Popular Shaders</span>: High-quality examples are great for learning",
+        "<span class='font-bold'>Follow Creators</span>: If you like someone's work, explore their other shaders"
+    ]);
 
 //     docMaker.header("Previewing Shaders", "h2", "search-shaders-preview");
 

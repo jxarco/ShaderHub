@@ -150,14 +150,15 @@ const sidebarCallback = m => {
     m.add( "Shader Passes", entryOptions );
     m.add( "Shader Passes/Image Pass", entryOptions );
     m.add( "Shader Passes/Compute Pass", entryOptions );
-    m.add( "Preprocessor", entryOptions );
     m.add( "Channels", entryOptions );
     m.add( "Channels/Image Channel", entryOptions );
     m.add( "Channels/Keyboard Channel", entryOptions );
     m.add( "Channels/Sound Channel", entryOptions );
     m.add( "Default Uniforms", entryOptions );
     m.add( "Custom Uniforms", entryOptions );
+    m.add( "Preprocessor", entryOptions );
     m.separator();
+    m.group("Community");
     m.add( "Share and Export", entryOptions );
     m.add( "Remix", entryOptions );
     m.add( "Search Shaders", entryOptions );

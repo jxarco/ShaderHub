@@ -3,9 +3,9 @@ import 'lexgui/extensions/CodeEditor.js';
 import { ShaderHub } from './app.js';
 import * as Constants from './constants.js';
 import { FS } from './fs.js';
-import * as Utils from './utils.js';
-import { Shader } from './graphics/shader.js';
 import { GLShader } from './graphics/gl_shader.js';
+import { Shader } from './graphics/shader.js';
+import * as Utils from './utils.js';
 
 const Query = Appwrite.Query;
 const mobile = Utils.isMobile();
@@ -2402,10 +2402,10 @@ export const ui = {
                     name: 'Templates',
                     icon: 'FolderCode',
                     submenu: [
-                        { name: 'Main', callback: v => iSetLines(v) },
-                        { name: 'Texture', callback: v => iSetLines(v) },
-                        { name: 'Mouse', callback: v => iSetLines(v) },
-                        { name: 'Animated', callback: v => iSetLines(v) },
+                        { name: 'Main', callback: ( v ) => iSetLines( v ) },
+                        { name: 'Texture', callback: ( v ) => iSetLines( v ) },
+                        { name: 'Mouse', callback: ( v ) => iSetLines( v ) },
+                        { name: 'Animated', callback: ( v ) => iSetLines( v ) }
                     ]
                 },
                 {
@@ -2453,29 +2453,30 @@ export const ui = {
 
                 for ( let i = 0; i < pass.uniforms.length; ++i )
                 {
-                    if( i !== 0 ) 
+                    if ( i !== 0 )
                     {
                         overridePanel.addSeparator();
                     }
 
                     const u = pass.uniforms[i];
                     const min = u.min, max = u.max, step = u.step;
-                    const precision = 6;//step.toString().split('.')[1]?.length ?? 0;
+                    const precision = 6; // step.toString().split('.')[1]?.length ?? 0;
                     const isScalar = [ 'f32', 'i32', 'u32' ].includes( u.type );
 
                     overridePanel.sameLine();
                     overridePanel.addText( null, u.name, ( v ) => {
                         u.name = v;
                         ShaderHub.compileShader( true, pass );
-                    }, { className: 'flex-auto-keep', inputClass: 'w-auto! field-sizing-content', skipReset: true, pattern: '\\b(?!(' + Constants.DEFAULT_UNIFORM_NAMES.join( '|' ) + ')\\b)(i[A-Z]\\w*)\\b' } );
+                    }, { className: 'flex-auto-keep', inputClass: 'w-auto! field-sizing-content', skipReset: true,
+                        pattern: '\\b(?!(' + Constants.DEFAULT_UNIFORM_NAMES.join( '|' ) + ')\\b)(i[A-Z]\\w*)\\b' } );
 
-                    if( isScalar )
+                    if ( isScalar )
                     {
                         const limitsComponents = [];
 
                         limitsComponents.push( overridePanel.addNumber( 'Min', u.min, ( v ) => {
                             u.min = v;
-                            limitsComponents.forEach( c => c.setLimits( u.min, u.max, u.step ) );
+                            limitsComponents.forEach( ( c ) => c.setLimits( u.min, u.max, u.step ) );
                             pass.uniformsDirty = true;
                         }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, max, step, precision } ) );
                         limitsComponents.push( overridePanel.addRange( null, u.value, ( v ) => {
@@ -2484,12 +2485,12 @@ export const ui = {
                         }, { className: 'primary flex-auto-fill', skipReset: true, min, max, step, precision } ) );
                         limitsComponents.push( overridePanel.addNumber( 'Max', u.max, ( v ) => {
                             u.max = v;
-                            limitsComponents.forEach( c => c.setLimits( u.min, u.max, u.step ) );
+                            limitsComponents.forEach( ( c ) => c.setLimits( u.min, u.max, u.step ) );
                             pass.uniformsDirty = true;
                         }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, min, step, precision } ) );
                         limitsComponents.push( overridePanel.addNumber( 'Step', u.step, ( v ) => {
                             u.step = v;
-                            limitsComponents.forEach( c => c.setLimits( u.min, u.max, u.step ) );
+                            limitsComponents.forEach( ( c ) => c.setLimits( u.min, u.max, u.step ) );
                             pass.uniformsDirty = true;
                         }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, step, precision } ) );
                     }

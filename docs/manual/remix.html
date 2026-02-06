@@ -22,6 +22,19 @@ You can then modify, add new passes, change uniforms, or experiment freely witho
 `);
 
     docMaker.paragraph(`
+<span class='font-bold'>Remix Workflow:</span>
+`);
+
+    docMaker.bulletList([
+        "Find a shader you'd like to modify (must have remix enabled)",
+        "Click the \"Remix\" button in the shader viewer",
+        "A copy is created in your account with all passes, uniforms, and settings",
+        "Make your modifications—change code, add passes, adjust uniforms",
+        "Save your remixed version to your account",
+        "Share, embed, or export your remix like any other shader"
+    ]);
+
+    docMaker.paragraph(`
 Once you have modified a remixed shader, you can save it to your account, share it using a direct link or iFrame, and even export it as a WGSL file just like any other shader.
 `);
 
@@ -30,6 +43,37 @@ Once you have modified a remixed shader, you can save it to your account, share 
     docMaker.paragraph(`
 All remixed shaders automatically keep a reference to the original author.
 The original author receives credit for the base shader, ensuring proper recognition while still allowing creative freedom.
+`);
+
+    docMaker.paragraph(`
+<span class='font-bold'>How Attribution Works:</span>
+`);
+
+    docMaker.bulletList([
+        "Remixed shaders display a \"Remixed from\" link to the original",
+        "Original authors can see remixes of their work",
+        "Attribution is preserved even if you remix a remix",
+        "The remix chain is transparent, showing the full lineage"
+    ]);
+
+    docMaker.paragraph(`
+This system encourages sharing and collaboration while ensuring creators get recognition for their contributions.
+`);
+
+    docMaker.header("Best Practices for Remixing", "h2", "remix-shaders-best-practices");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Respect Original Work</span>: Give proper credit and don't claim original work as entirely your own",
+        "<span class='font-bold'>Make Meaningful Changes</span>: Add value through modifications rather than just copying",
+        "<span class='font-bold'>Document Changes</span>: Add comments explaining what you modified or added",
+        "<span class='font-bold'>Learn and Understand</span>: Study the original code to understand how it works before modifying",
+        "<span class='font-bold'>Enable Remix on Your Work</span>: Allow others to build upon your creations to foster community growth",
+        "<span class='font-bold'>Test Thoroughly</span>: Ensure your modifications work correctly before sharing",
+        "<span class='font-bold'>Share Your Remixes</span>: Contribute back to the community by making your remixes public"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Note:</span> Not all shaders allow remixing. Respect the original author's choice if remix is disabled for their shader.
 `);
 
 </script>

@@ -9,16 +9,25 @@
     docMaker.header("Compute Pass", "h1", "compute-pass");
 
     docMaker.paragraph(`
-A Compute Pass executes general-purpose GPU computations using a compute shader.
-Its output is basically a texture, which can be used in the same way as the result of an image pass,
-including being connected to channels in subsequent passes.
+A Compute Pass executes general-purpose parallel computations on the GPU using compute shaders.
+Unlike Image passes that render pixels, Compute passes focus on data processing and can write to textures, storage buffers, or both.
+`);
+
+    docMaker.paragraph(`
+Compute passes are ideal for operations that don't map naturally to pixel-based rendering,
+such as physics simulations, particle systems, procedural generation, or any task requiring parallel processing of large datasets.
+`);
+
+    docMaker.paragraph(`
+The output textures from Compute passes can be used exactly like Image pass outputs—they can be connected to channels
+in subsequent Image or Compute passes.
 `);
 
     docMaker.header("Shader Entry Point", "h2", "compute-pass-entry-point");
 
     docMaker.paragraph(`
-Compute passes define one or more compute entry points.
-Each invocation receives a global invocation ID that identifies the current thread.
+Compute passes define one or more entry point functions decorated with <span class='font-code'>@compute</span>.
+Each invocation receives a global invocation ID (<span class='font-code'>id</span>) that uniquely identifies the current thread in 3D space.
 `);
 
     docMaker.paragraph(`
@@ -59,6 +68,43 @@ These directives allow compute passes to be used both for per-frame execution
 and one-time initialization tasks.
 `);
 
+    docMaker.header("Workgroups and Thread Organization", "h2", "workgroups");
+
+    docMaker.paragraph(`
+Compute shaders execute in parallel using a grid of workgroups.
+Each workgroup contains multiple threads (invocations) that can share data through local memory.
+`);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Workgroup Size:</span> Defined in the shader using <span class='font-code'>@workgroup_size(X, Y, Z)</span>.
+Common sizes are (8, 8, 1) or (16, 16, 1) for 2D operations.
+`);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Dispatch Count:</span> Specified with <span class='font-code'>#workgroup_count</span> preprocessor directive.
+This determines how many workgroups are launched.
+`);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example:</span> For a 512×512 texture with workgroup size (8, 8, 1):
+`);
+
+    docMaker.code(`@compute @workgroup_size(8, 8, 1)
+fn mainCompute(
+    @builtin(global_invocation_id) id: vec3u
+) {
+    // Each thread processes one pixel
+    // ...
+}
+
+// Dispatch: 512/8 = 64 workgroups in each dimension
+#workgroup_count mainCompute 64 64 1`, "wgsl");
+
+    docMaker.paragraph(`
+Threads within a workgroup can synchronize and share data, making them ideal for operations
+that require local communication (like convolution filters).
+`);
+
     docMaker.header("Storage Buffers", "h2", "compute-storage-buffers");
 
     docMaker.paragraph(`
@@ -83,11 +129,99 @@ or when you need fine-grained control over execution and memory access.
 `);
 
     docMaker.bulletList([
-        "Simulations and state updates",
-        "Particle systems",
-        "Procedural data generation",
-        "Precomputing textures or lookup tables",
-        "Initialization steps for complex shaders"
+        "Physics simulations (particles, fluids, cloth)",
+        "Particle systems with state persistence across frames",
+        "Procedural texture generation (noise, patterns)",
+        "Precomputing lookup tables (color gradients, mathematical functions)",
+        "Image processing (convolution, histogram computation)",
+        "Initialization steps for complex shaders (one-time setup)",
+        "Data transformations that don't fit the pixel-rendering model"
+    ]);
+
+    docMaker.header("Practical Examples", "h2", "practical-examples");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Simple Pattern Generation:</span>
+`);
+
+    docMaker.code(`@compute @workgroup_size(8, 8, 1)
+fn mainCompute(@builtin(global_invocation_id) id: vec3u) {
+    let screen_size = textureDimensions(screen);
+    if (id.x >= screen_size.x || id.y >= screen_size.y) { return; }
+
+    // Generate a checkerboard pattern
+    let checker = (id.x + id.y) % 2u;
+    let color = vec4f(f32(checker));
+
+    textureStore(screen, id.xy, color);
+}
+
+#workgroup_count mainCompute 64 64 1`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Particle Simulation with Storage Buffer:</span>
+`);
+
+    docMaker.code(`// Define particle structure
+struct Particle {
+    position: vec2f,
+    velocity: vec2f,
+}
+
+// Storage buffer for particle data
+#storage particles array<Particle>
+
+#workgroup_count updateParticles 256 1 1
+@compute @workgroup_size(64, 1, 1)
+fn updateParticles(@builtin(global_invocation_id) id: vec3u) {
+    let idx = id.x;
+
+    // Update particle physics
+    var p = particles[idx];
+    p.velocity.y += -9.8 * iTimeDelta; // Gravity
+    p.position += p.velocity * iTimeDelta;
+
+    // Bounce off boundaries
+    if (p.position.y < 0.0) {
+        p.position.y = 0.0;
+        p.velocity.y = -p.velocity.y * 0.8; // Energy loss
+    }
+
+    particles[idx] = p;
+}`, "wgsl");
+
+    docMaker.header("Compute vs Image Passes", "h2", "compute-vs-image");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Use Compute passes when:</span>
+`);
+
+    docMaker.bulletList([
+        "You need persistent state across frames (storage buffers)",
+        "The computation doesn't naturally map to pixels (particle updates, physics)",
+        "You need fine control over thread organization and synchronization",
+        "Processing non-image data (arrays, structured buffers)"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Use Image passes when:</span>
+`);
+
+    docMaker.bulletList([
+        "Rendering visual output directly",
+        "Pixel-based effects (post-processing, filters)",
+        "Sampling textures with interpolation",
+        "Simpler, more straightforward pixel operations"
+    ]);
+
+    docMaker.header("Performance Considerations", "h2", "performance");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Workgroup Size</span>: Powers of 2 (8, 16, 32) often perform better. Total threads per workgroup typically shouldn't exceed 256.",
+        "<span class='font-bold'>Memory Access</span>: Coalesced memory access (adjacent threads accessing adjacent memory) improves performance.",
+        "<span class='font-bold'>Storage Buffers</span>: Great for persistent state but can be slower than texture access. Use textures when possible.",
+        "<span class='font-bold'>Synchronization</span>: Use workgroup barriers sparingly—they can limit parallelism.",
+        "<span class='font-bold'>Dispatch Once</span>: Use <span class='font-code'>#dispatch_once</span> for initialization to avoid redundant computation."
     ]);
 
 </script>

@@ -580,7 +580,7 @@ GLShader.RENDER_TEXTURE_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) 
     // Normalized pixel coordinates (from 0 to 1)
     vec2 uv = fragUV; // The same as: fragCoord/iResolution.xy;
 
-    // Time varying pixel color
+    // Sample from texture channel 0
     vec4 color = texture(iChannel0, uv);
 
     // Output to screen

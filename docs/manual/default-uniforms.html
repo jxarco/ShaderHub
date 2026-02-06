@@ -9,9 +9,8 @@
     docMaker.header("Default Uniforms", "h1", "default-uniforms");
 
     docMaker.paragraph(`
-ShaderHub provides a set of default inputs that are automatically available in your shaders.
-These include mouse input, screen information, time data, and selectable channel textures.
-Custom values controlled by sliders can also be added as needed.
+ShaderHub provides a comprehensive set of default uniforms that are automatically available in all shader passes.
+These built-in inputs give you access to time, mouse position, screen resolution, frame count, and more—no setup required.
 `);
 
     docMaker.header("Mouse Input", "h2", "default-uniforms-mouse");
@@ -21,12 +20,54 @@ Mouse input is accessible through the <span class="font-bold">iMouse</span> stru
 `);
 
     docMaker.codeBulletList([
-        ["iMouse.pos", "vec2f", "Current mouse position while pressed"],
-        ["iMouse.start", "vec2f", "Mouse down position"],
-        ["iMouse.delta", "vec2f", "Delta since the last mouse move"],
-        ["iMouse.press", "f32", "Mouse button currently pressed (none = -1, left = 0, middle = 1, right = 2)"],
-        ["iMouse.click", "f32", "Mouse button clicked (none = -1, left = 0, middle = 1, right = 2)"],
+        ["iMouse.pos", "vec2f", "Current mouse position in pixels (while any button is pressed)"],
+        ["iMouse.start", "vec2f", "Position where mouse button was first pressed"],
+        ["iMouse.delta", "vec2f", "Change in position since last frame (useful for drag calculations)"],
+        ["iMouse.press", "f32", "Currently pressed button: -1=none, 0=left, 1=middle, 2=right"],
+        ["iMouse.click", "f32", "Last clicked button: -1=none, 0=left, 1=middle, 2=right"],
     ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Coordinate System:</span> Mouse coordinates are in pixel space, with origin (0,0) at the top-left corner of the canvas.
+To normalize: <span class='font-code'>let mouseUV = iMouse.pos / iResolution;</span>
+`);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Follow Mouse:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Normalize mouse position to [0, 1]
+    let mouseUV = iMouse.pos / iResolution;
+
+    // Calculate distance from mouse
+    let dist = distance(fragUV, mouseUV);
+
+    // Create a circle that follows the mouse
+    let circle = smoothstep(0.1, 0.09, dist);
+
+    return vec4f(vec3f(circle), 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Mouse Drag Effect:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Check if left mouse button is pressed
+    let isPressed = iMouse.press == 0.0;
+
+    // Calculate drag distance
+    let dragDist = distance(iMouse.pos, iMouse.start);
+
+    // Visualize drag
+    var color = vec3f(0.2);
+    if (isPressed) {
+        color = vec3f(dragDist / 100.0, 0.5, 1.0);
+    }
+
+    return vec4f(color, 1.0);
+}`, "wgsl");
 
     docMaker.header("Screen Information", "h2", "default-uniforms-screen");
 
@@ -35,8 +76,45 @@ Screen-related information is provided through the <span class="font-bold">iReso
 `);
 
     docMaker.codeBulletList([
-        ["iResolution", "vec2f", "Viewport resolution"],
+        ["iResolution", "vec2f", "Viewport resolution in pixels (width, height)"],
     ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Aspect Ratio Correction:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Calculate aspect ratio
+    let aspect = iResolution.x / iResolution.y;
+
+    // Correct UVs to maintain square aspect
+    var uv = fragUV * 2.0 - 1.0; // Center at origin
+    uv.x *= aspect; // Apply aspect correction
+
+    // Draw a perfect circle (not ellipse)
+    let dist = length(uv);
+    let circle = smoothstep(0.5, 0.49, dist);
+
+    return vec4f(vec3f(circle), 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Responsive Pixel Grid:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Create a grid that adapts to resolution
+    let gridSize = 20.0; // Grid cells
+    let gridUV = fragUV * gridSize;
+
+    // Pixel-perfect grid lines (1 pixel width)
+    let pixelSize = 1.0 / iResolution;
+    let gridX = step(fract(gridUV.x), pixelSize.x * gridSize);
+    let gridY = step(fract(gridUV.y), pixelSize.y * gridSize);
+
+    let grid = max(gridX, gridY);
+    return vec4f(vec3f(grid), 1.0);
+}`, "wgsl");
 
     docMaker.header("Time Information", "h2", "default-uniforms-time");
 
@@ -45,16 +123,78 @@ Time-related uniforms provide the current time and frame information:
 `);
 
     docMaker.codeBulletList([
-        ["iTime", "f32", "Elapsed time since shader start"],
-        ["iTimeDelta", "f32", "Delta time between frames"],
-        ["iFrame", "f32", "Current frame number"],
+        ["iTime", "f32", "Elapsed time in seconds since shader start"],
+        ["iTimeDelta", "f32", "Time in seconds between current and previous frame"],
+        ["iFrame", "f32", "Current frame number (increments each frame)"],
     ]);
 
-    docMaker.header("Channel Textures", "h2", "default-uniforms-channels");
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Simple Animation:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Animate color over time
+    let r = sin(iTime) * 0.5 + 0.5;
+    let g = sin(iTime + 2.0) * 0.5 + 0.5;
+    let b = sin(iTime + 4.0) * 0.5 + 0.5;
+
+    return vec4f(r, g, b, 1.0);
+}`, "wgsl");
 
     docMaker.paragraph(`
-Selectable channel textures are available via <span class="font-bold font-code">iChannel0</span> through <span class="font-bold font-code">iChannel3</span>.
-These textures can be sampled in your shader using one of the default samplers seen before.
+<span class='font-bold'>Example - Rotating Pattern:</span>
 `);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Center UVs
+    let uv = fragUV * 2.0 - 1.0;
+
+    // Rotate UVs over time
+    let angle = iTime;
+    let s = sin(angle);
+    let c = cos(angle);
+    let rotatedUV = vec2f(
+        uv.x * c - uv.y * s,
+        uv.x * s + uv.y * c
+    );
+
+    // Create a pattern
+    let pattern = sin(rotatedUV.x * 10.0) * sin(rotatedUV.y * 10.0);
+    return vec4f(vec3f(pattern), 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Frame-Independent Motion:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Use iTimeDelta for frame-rate independent motion
+    // This ensures consistent speed regardless of FPS
+
+    // Oscillate position using time
+    let speed = 2.0;
+    let offset = sin(iTime * speed) * 0.3;
+
+    // Sample texture with animated offset
+    let animatedUV = fragUV + vec2f(offset, 0.0);
+    let color = vec3f(fract(animatedUV.x * 5.0));
+
+    return vec4f(color, 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Frame Counter Effect:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Create effect that changes every N frames
+    let cycleFrames = 60.0;
+    let cycle = floor(iFrame / cycleFrames);
+
+    // Use frame count for discrete animations
+    let intensity = fract(cycle * 0.1);
+
+    return vec4f(vec3f(intensity), 1.0);
+}`, "wgsl");
 
 </script>

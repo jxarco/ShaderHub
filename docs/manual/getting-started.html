@@ -21,9 +21,9 @@
     docMaker.header("Getting Started", "h1", "getting-started");
 
     docMaker.paragraph(`
-ShaderHub lets you create, run, and share shaders directly in your browser using WebGPU.
-You write shader code, connect textures, uniforms, or audio, and instantly see the result on the canvas.
-No setup, no downloads, just real-time shaders running on the web.
+ShaderHub is a WebGPU-based shader playground that lets you create, run, and share shaders directly in your browser.
+You write WGSL shader code, connect textures, uniforms, or audio, and instantly see the result on the canvas.
+No setup, no downloads, no installations—just real-time GPU-accelerated shaders running on the web.
 `);
 
     docMaker.header("Creating a Shader", "h2", "creating-a-shader");
@@ -39,22 +39,67 @@ Each pass runs on the GPU and contributes to the final result shown on the canva
 You can start with a single pass and build complexity as you go.
 `);
 
-    docMaker.header("Running Your Shader", "h2", "running-your-shader");
+    docMaker.header("Understanding the Editor Interface", "h2", "editor-interface");
 
     docMaker.paragraph(`
-Once you have written or modified your shader code, you can compile and run it at any time.
-Click the <span class="font-bold">Compile</span> button in the editor, or use one of the keyboard shortcuts below:
+When you open the shader editor, you'll see several key components:
 `);
 
     docMaker.bulletList([
-        `${LX.makeKbd(["Ctrl", "S"], false, "text-base inline-block border-color px-1 rounded").innerHTML}`,
-        `${LX.makeKbd(["Ctrl", "Enter"], false, "text-base inline-block border-color px-1 rounded").innerHTML}`,
-        `${LX.makeKbd(["Ctrl", "Space"], false, "text-base inline-block border-color px-1 rounded").innerHTML}`,
+        "<span class='font-bold'>Code Editor</span>: The main area where you write your WGSL shader code. It features syntax highlighting, error detection, and autocomplete.",
+        "<span class='font-bold'>Canvas Preview</span>: The right panel displays your shader's output in real time. You can resize it or toggle fullscreen.",
+        "<span class='font-bold'>Pass Tabs</span>: At the top of the code editor, tabs allow you to switch between different shader passes (Image, Compute, or Common).",
+        "<span class='font-bold'>Channels Area</span>: At the bottom, you'll find channel inputs (iChannel0–iChannel3).",
+    ]);
+
+    docMaker.header("Your First Shader", "h2", "first-shader");
+
+    docMaker.paragraph(`
+The default shader creates a simple gradient. Here's what a minimal shader looks like:
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // fragUV contains normalized coordinates (0.0 to 1.0)
+    // fragCoord contains pixel coordinates
+
+    // Create a horizontal gradient using the UV x-coordinate
+    let color = vec3f(fragUV.x, 0.0, 0.5);
+
+    // Return the final color with full opacity
+    return vec4f(color, 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+This shader uses <span class='font-code'>fragUV</span> (normalized coordinates from 0 to 1) to create a color gradient.
+Try modifying the values to see how the output changes!
+`);
+
+    docMaker.header("Running Your Shader", "h2", "running-your-shader");
+
+    docMaker.paragraph(`
+After writing or modifying your shader code, you need to compile it before seeing the results.
+ShaderHub compiles your WGSL code into GPU-executable instructions and immediately runs it on the canvas.
+`);
+
+    docMaker.paragraph(`
+To compile and run your shader, use any of these methods:
+`);
+
+    docMaker.bulletList([
+        `Click the <span class="font-bold">Compile</span> button in the editor toolbar`,
+        `Press ${LX.makeKbd(["Ctrl", "S"], false, "text-base inline-block border-color px-1 rounded").innerHTML} (Save and compile)`,
+        `Press ${LX.makeKbd(["Ctrl", "Enter"], false, "text-base inline-block border-color px-1 rounded").innerHTML}`,
+        `Press ${LX.makeKbd(["Ctrl", "Space"], false, "text-base inline-block border-color px-1 rounded").innerHTML}`,
     ]);
 
     docMaker.paragraph(`
-If the shader compiles successfully, the output will update immediately on the canvas.
-Errors and warnings are displayed directly in the editor to help you debug faster.
+<span class='font-bold underline underline-offset-4'>On successful compilation:</span> The canvas updates immediately, showing your shader's output.
+The code area displays a green border.
+`);
+
+    docMaker.paragraph(`
+<span class='font-bold underline underline-offset-4'>On compilation errors:</span> Error messages appear directly in the code editor,
+highlighting the problematic lines in red. The error description helps you identify and fix the issue quickly. The code area displays a red border.
 `);
 
     docMaker.header("Live Preview", "h2", "live-preview");
@@ -69,18 +114,68 @@ You can interact with your shader using inputs like time, mouse position, screen
 These inputs are exposed to your shader through uniforms and channels, which are covered in later sections.
 `);
 
-    docMaker.header("Next Steps", "h2", "next-steps");
+    docMaker.header("Interacting with the Canvas", "h2", "canvas-interaction");
 
     docMaker.paragraph(`
-Now that you have a shader running, you can explore more advanced features:
+The canvas is interactive and responds to your actions:
 `);
 
     docMaker.bulletList([
-        "Learn how shader passes work and how to combine them",
-        "Use channels to plug textures or sounds into your shader",
-        "Work with default and custom uniforms",
-        "Share your shader or remix others from the community"
+        "<span class='font-bold'>Mouse Input</span>: Move your mouse over the canvas to see how shaders respond to mouse position. Click and drag to interact further.",
+        "<span class='font-bold'>Resize</span>: Drag the divider between the code editor and canvas to adjust the preview size.",
+        "<span class='font-bold'>Fullscreen</span>: Toggle fullscreen mode to view your shader at full resolution.",
+        "<span class='font-bold'>Pause/Play</span>: Control shader animation using the play/pause controls in the status bar."
     ]);
+
+    docMaker.header("Saving Your Work", "h2", "saving-work");
+
+    docMaker.paragraph(`
+To save your shader, you'll need to create a ShaderHub account or sign in.
+Once logged in, click the <span class="font-bold">Save</span> button in the top menu bar to store your shader.
+`);
+
+    docMaker.paragraph(`
+Your saved shaders are stored in your profile and can be accessed anytime.
+You can make them public to share with the community, or keep them private for personal projects.
+`);
+
+    docMaker.note(`
+If you're not logged in, your work is stored temporarily in your browser.
+Make sure to sign in and save before closing the tab to avoid losing your progress!
+`, true);
+
+    docMaker.header("Next Steps", "h2", "next-steps");
+
+    docMaker.paragraph(`
+Now that you have a shader running, here's what to explore next:
+`);
+
+    docMaker.bulletList([
+        "Learn about <span class='font-bold'>Shader Passes</span> and how to combine Image, Compute, and Common passes for complex effects",
+        "Discover <span class='font-bold'>Channels</span> to connect textures, sounds, and pass outputs to your shader",
+        "Master <span class='font-bold'>Default Uniforms</span> like iTime, iMouse, and iResolution to add interactivity",
+        "Create <span class='font-bold'>Custom Uniforms</span> with sliders and color pickers to control your shader parameters",
+        "Use the <span class='font-bold'>Preprocessor</span> to define constants and conditional compilation",
+        "Explore the <span class='font-bold'>Community</span>: search, like, comment on, and remix shaders from other users"
+    ]);
+
+    docMaker.header("Troubleshooting", "h2", "troubleshooting");
+
+    docMaker.paragraph(`
+If your shader doesn't compile or behaves unexpectedly, check the following:
+`);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Compilation Errors</span>: Error messages appear directly in the code editor with line numbers. Read them carefully—they often point to the exact issue.",
+        "<span class='font-bold'>Browser Compatibility</span>: ShaderHub requires WebGPU support. Use a recent version of Chrome, Edge, or another WebGPU-compatible browser.",
+        "<span class='font-bold'>Syntax Issues</span>: WGSL syntax is strict. Common mistakes include missing semicolons, incorrect type declarations, or undefined variables.",
+        "<span class='font-bold'>Performance</span>: Complex shaders can slow down the canvas. Try reducing iterations, simplifying calculations, or using lower resolutions while testing."
+    ]);
+
+    docMaker.note(`
+WebGPU is still evolving. If you encounter bugs or unexpected behavior, please report them on the
+<a class='underline underline-offset-4' href="https://github.com/jxarco/ShaderHub/issues">GitHub repository</a>.
+`);
 
     docMaker.header("Source Code", "h1", "source-code");
 

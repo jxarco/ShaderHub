@@ -9,15 +9,15 @@
     docMaker.header("Preprocessor", "h1", "preprocessor");
 
     docMaker.paragraph(`
-ShaderHub includes a lightweight preprocessor that runs before shader compilation.
-It allows you to define constants, enable or disable code paths, and control
-certain aspects of shader execution.
+ShaderHub includes a lightweight preprocessor that runs before WGSL shader compilation.
+It allows you to define constants, enable or disable code paths conditionally, control compute dispatch behavior,
+and declare storage buffers—all at compile time.
 `);
 
     docMaker.paragraph(`
-The preprocessor operates purely at compile time.
-It performs textual substitution and conditional inclusion of code,
-and does not introduce runtime overhead.
+The preprocessor operates purely at compile time through textual substitution and conditional code inclusion.
+Since preprocessing happens before GPU execution, it introduces zero runtime overhead.
+This makes it ideal for configuration, feature toggling, and compile-time optimizations.
 `);
 
     docMaker.header("Macro Definitions", "h2", "preprocessor-define");
@@ -28,14 +28,25 @@ Macros are replaced with their corresponding values during preprocessing.
 `);
 
     docMaker.paragraph(`
-Only simple value substitution is supported.
-Function-like macros are not supported.
+Macros perform simple textual replacement before compilation.
+Only value substitution is supported—function-like macros are not available.
 `);
 
     docMaker.code(`#define PI 3.14159265
+#define TAU 6.28318530
 #define ITERATIONS 64
+#define MAX_STEPS 100
 
-let angle = PI * 0.5;`, "wgsl");
+// Macros are replaced with their values
+let angle = PI * 0.5;
+for (var i = 0; i < ITERATIONS; i++) {
+    // Loop runs 64 times
+}`, "wgsl");
+
+    docMaker.paragraph(`
+Macros are case-sensitive and typically written in UPPERCASE for clarity.
+They can be redefined later in the code by using <span class='font-code'>#define</span> again with the same name.
+`);
 
     docMaker.header("Conditional Compilation", "h2", "preprocessor-conditional");
 
@@ -64,6 +75,44 @@ or writing shader variants without duplicating code.
     color *= 1.0;
 #endif`, "wgsl");
 
+    docMaker.paragraph(`
+Conditional expressions support comparison operators and logical operations:
+`);
+
+    docMaker.code(`#define QUALITY_LEVEL 2
+
+#if QUALITY_LEVEL == 0
+    #define SAMPLES 4
+#elseif QUALITY_LEVEL == 1
+    #define SAMPLES 8
+#elseif QUALITY_LEVEL >= 2
+    #define SAMPLES 16
+#else
+    #define SAMPLES 4
+#endif`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Supported operators in conditionals:</span>
+`);
+
+    docMaker.bulletList([
+        "<span class='font-code'>==</span>, <span class='font-code'>!=</span> - Equality comparison",
+        "<span class='font-code'>&lt;</span>, <span class='font-code'>&gt;</span>, <span class='font-code'>&lt;=</span>, <span class='font-code'>&gt;=</span> - Numeric comparison",
+        "<span class='font-code'>&&</span>, <span class='font-code'>||</span>, <span class='font-code'>!</span> - Logical AND, OR, NOT"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Resolution-based conditionals:</span>
+`);
+
+    docMaker.code(`#if SCREEN_WIDTH > 1920
+    // High-resolution rendering
+    #define USE_HIGH_QUALITY 1
+#else
+    // Standard quality for smaller screens
+    #define USE_HIGH_QUALITY 0
+#endif`, "wgsl");
+
     docMaker.header("Predefined Variables", "h2", "preprocessor-predefined");
 
     docMaker.paragraph(`
@@ -81,6 +130,92 @@ These values can be used in macro definitions or conditional expressions
 to adapt shader code to the current canvas size.
 `);
 
+    docMaker.code(`#define TILE_SIZE 16
+
+// Calculate workgroup count based on screen size
+#workgroup_count myCompute (SCREEN_WIDTH / TILE_SIZE) (SCREEN_HEIGHT / TILE_SIZE) 1`, "wgsl");
+
+    docMaker.header("Compute-Specific Directives", "h2", "compute-directives");
+
+    docMaker.paragraph(`
+The preprocessor provides special directives for controlling compute shader behavior.
+These directives are only valid in Compute passes.
+`);
+
+    docMaker.header("#workgroup_count", "h3", "workgroup-count-directive");
+
+    docMaker.paragraph(`
+Specifies how many workgroups to dispatch for a compute shader entry point.
+This determines the total number of parallel executions.
+`);
+
+    docMaker.code(`@compute @workgroup_size(8, 8, 1)
+fn myCompute(@builtin(global_invocation_id) id: vec3u) {
+    // Compute logic here
+}
+
+// Dispatch 64x64x1 workgroups
+#workgroup_count myCompute 64 64 1`, "wgsl");
+
+    docMaker.paragraph(`
+You can use macros and predefined variables in workgroup counts:
+`);
+
+    docMaker.code(`#define WORKGROUP_SIZE 16
+
+// Calculate based on screen dimensions
+#workgroup_count myCompute (SCREEN_WIDTH / WORKGROUP_SIZE) (SCREEN_HEIGHT / WORKGROUP_SIZE) 1`, "wgsl");
+
+    docMaker.header("#dispatch_once", "h3", "dispatch-once-directive");
+
+    docMaker.paragraph(`
+Ensures a compute entry point runs only once, on the first frame.
+Useful for initialization or one-time setup computations.
+`);
+
+    docMaker.code(`@compute @workgroup_size(64, 1, 1)
+fn initParticles(@builtin(global_invocation_id) id: vec3u) {
+    // Initialize particle data
+    particles[id.x].position = randomPosition();
+    particles[id.x].velocity = vec2f(0.0);
+}
+
+// Only dispatch on the first frame
+#dispatch_once initParticles`, "wgsl");
+
+    docMaker.paragraph(`
+After the first frame, this entry point will not execute again unless the shader is recompiled.
+`);
+
+    docMaker.header("#storage", "h3", "storage-directive");
+
+    docMaker.paragraph(`
+Declares a storage buffer that persists across frames.
+Storage buffers allow compute shaders to maintain state and share data between dispatches.
+`);
+
+    docMaker.code(`// Define particle structure
+struct Particle {
+    position: vec2f,
+    velocity: vec2f,
+}
+
+// Declare storage buffer with 1024 particles
+#storage particles array<Particle, 1024>
+
+@compute @workgroup_size(64, 1, 1)
+fn updateParticles(@builtin(global_invocation_id) id: vec3u) {
+    // Read and write to persistent storage
+    var p = particles[id.x];
+    p.position += p.velocity;
+    particles[id.x] = p;
+}`, "wgsl");
+
+    docMaker.paragraph(`
+Storage buffers are read-write and maintain their values between frames,
+making them essential for simulations and stateful computations.
+`);
+
     docMaker.header("When to Use the Preprocessor", "h2", "when-to-use-preprocessor");
 
     docMaker.paragraph(`
@@ -88,10 +223,106 @@ The preprocessor is useful when you need compile-time control over your shader c
 `);
 
     docMaker.bulletList([
-        "Defining constants shared across passes",
-        "Enabling or disabling features without runtime branching",
-        "Adapting code to different resolutions",
-        "Controlling compute dispatch behavior"
+        "Defining mathematical and configuration constants (PI, MAX_ITERATIONS, etc.)",
+        "Enabling or disabling features without runtime branching (fog, shadows, reflections)",
+        "Adapting code to different screen resolutions",
+        "Controlling compute shader dispatch counts and workgroup organization",
+        "Creating shader quality presets (low/medium/high)",
+        "Declaring persistent storage buffers for simulations",
+        "Toggling debug visualizations"
     ]);
+
+    docMaker.header("Practical Use Cases", "h2", "practical-use-cases");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Quality Presets:</span>
+`);
+
+    docMaker.code(`// Set quality level (0 = low, 1 = medium, 2 = high)
+#define QUALITY 1
+
+#if QUALITY == 0
+    #define RAY_STEPS 32
+    #define SHADOW_SAMPLES 1
+#elseif QUALITY == 1
+    #define RAY_STEPS 64
+    #define SHADOW_SAMPLES 4
+#else
+    #define RAY_STEPS 128
+    #define SHADOW_SAMPLES 8
+#endif`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Feature Toggles:</span>
+`);
+
+    docMaker.code(`#define ENABLE_SHADOWS 1
+#define ENABLE_REFLECTIONS 0
+#define DEBUG_NORMALS 0
+
+fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    var color = baseColor;
+
+    #if ENABLE_SHADOWS
+        color *= calculateShadows(fragCoord);
+    #endif
+
+    #if ENABLE_REFLECTIONS
+        color += calculateReflections(fragUV);
+    #endif
+
+    #if DEBUG_NORMALS
+        return vec4f(normal * 0.5 + 0.5, 1.0);
+    #endif
+
+    return vec4f(color, 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Resolution-Adaptive Code:</span>
+`);
+
+    docMaker.code(`// Reduce quality on smaller screens
+#if SCREEN_WIDTH < 800
+    #define USE_FAST_APPROXIMATION 1
+#else
+    #define USE_FAST_APPROXIMATION 0
+#endif
+
+#if USE_FAST_APPROXIMATION
+    fn expensiveOperation() -> f32 {
+        return fastApproximation();
+    }
+#else
+    fn expensiveOperation() -> f32 {
+        return preciseCalculation();
+    }
+#endif`, "wgsl");
+
+    docMaker.header("Best Practices", "h2", "best-practices");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Naming</span>: Use UPPERCASE for macro names to distinguish them from variables and functions",
+        "<span class='font-bold'>Organization</span>: Group related defines at the top of your shader or in a Common pass",
+        "<span class='font-bold'>Documentation</span>: Add comments explaining what each macro controls",
+        "<span class='font-bold'>Defaults</span>: Always provide sensible default values for conditional features",
+        "<span class='font-bold'>Avoid Overuse</span>: Too many preprocessor conditionals can make code hard to read—use judiciously",
+        "<span class='font-bold'>Zero Cost</span>: Use preprocessor instead of runtime if/else when conditions are known at compile time"
+    ]);
+
+    docMaker.header("Common Pitfalls", "h2", "pitfalls");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Undefined Macros</span>: Using an undefined macro in an expression will cause compilation errors. Always define before use.",
+        "<span class='font-bold'>Integer Division</span>: <span class='font-code'>#workgroup_count</span> expressions use integer division—ensure results are whole numbers.",
+        "<span class='font-bold'>No Recursion</span>: Macros cannot reference themselves or create circular dependencies.",
+        "<span class='font-bold'>Case Sensitivity</span>: <span class='font-code'>#define PI</span> and <span class='font-code'>#define pi</span> are different macros.",
+        "<span class='font-bold'>Scope</span>: Preprocessor directives are global within a pass—redefinitions affect all subsequent code."
+    ]);
+
+    docMaker.note(`
+Preprocessor changes require recompilation to take effect.
+Modifying a <span class='font-code'>#define</span> value and recompiling will generate a completely new shader variant.
+`);
 
 </script>

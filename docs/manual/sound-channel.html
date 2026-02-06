@@ -7,16 +7,163 @@
     docMaker.header("Sound", "h1", "channels-sound");
 
     docMaker.paragraph(`
-Sound channels provide access to audio assets assigned to a shader.
-The sound data is uploaded as a 512×2 texture where the first row contains the frequency spectrum, obtained from an FFT analysis,
-and the second row contains the waveform of the audio signal.
-driving visual effects directly from audio input
+Sound channels provide real-time audio analysis data, allowing you to create audio-reactive visual effects.
+The audio is analyzed and uploaded to the GPU as a 512×2 texture containing both frequency and waveform information.
 `);
 
-    docMaker.header("Sampling Example", "h2", "sound-sample");
+    docMaker.paragraph(`
+The sound texture structure:
+`);
 
-    docMaker.code(`let tx: i32 = i32(uv.x * 512.0);
-let fft : f32 = textureLoad( iChannel0, vec2i(tx,0), 0 ).x; 
-let wave : f32 = textureLoad( iChannel0, vec2i(tx,1), 0 ).x;`, "wgsl");
+    docMaker.bulletList([
+        "<span class='font-bold'>Row 0 (Y=0)</span>: Frequency spectrum from FFT (Fast Fourier Transform). Low frequencies on the left, high frequencies on the right.",
+        "<span class='font-bold'>Row 1 (Y=1)</span>: Audio waveform (amplitude over time). Represents the raw audio signal."
+    ]);
+
+    docMaker.paragraph(`
+Each row contains 512 samples. Values range from 0.0 to 1.0 (or higher for loud sounds).
+Use <span class='font-code'>textureLoad()</span> to sample specific frequency bins or waveform positions.
+`);
+
+    docMaker.header("Understanding FFT Data", "h2", "fft-explanation");
+
+    docMaker.paragraph(`
+The FFT (Fast Fourier Transform) converts audio from the time domain into the frequency domain.
+Each position in the FFT texture represents a frequency band:
+`);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>X = 0-128</span>: Bass frequencies (low, deep sounds)",
+        "<span class='font-bold'>X = 128-256</span>: Mid frequencies (vocals, instruments)",
+        "<span class='font-bold'>X = 256-512</span>: Treble frequencies (high, sharp sounds)"
+    ]);
+
+    docMaker.paragraph(`
+Higher values indicate stronger presence of that frequency in the current audio.
+`);
+
+    docMaker.header("Basic Sampling", "h2", "sound-sample");
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Sample frequency spectrum
+    let tx = i32(fragUV.x * 512.0);
+    let fft = textureLoad(iChannel0, vec2i(tx, 0), 0).x;
+
+    // Sample waveform
+    let wave = textureLoad(iChannel0, vec2i(tx, 1), 0).x;
+
+    // Visualize both
+    var color = vec3f(0.0);
+    if (fragUV.y < 0.5) {
+        color = vec3f(fft); // Show FFT in bottom half
+    } else {
+        color = vec3f(wave); // Show waveform in top half
+    }
+
+    return vec4f(color, 1.0);
+}`, "wgsl");
+
+    docMaker.header("Audio-Reactive Effects", "h2", "audio-reactive");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Bass-Driven Scale:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Sample bass frequencies (0-128)
+    var bassIntensity = 0.0;
+    for (var i = 0; i < 32; i++) {
+        bassIntensity += textureLoad(iChannel0, vec2i(i, 0), 0).x;
+    }
+    bassIntensity /= 32.0; // Average
+
+    // Scale effect based on bass
+    let center = vec2f(0.5);
+    let scaledUV = (fragUV - center) / (1.0 + bassIntensity * 0.5) + center;
+
+    // Apply to some visual
+    let dist = distance(scaledUV, center);
+    let circle = smoothstep(0.3, 0.29, dist);
+
+    return vec4f(vec3f(circle), 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Frequency Spectrum Visualizer:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Get frequency for this column
+    let freqIndex = i32(fragUV.x * 512.0);
+    let freqValue = textureLoad(iChannel0, vec2i(freqIndex, 0), 0).x;
+
+    // Create bar visualization
+    var color = vec3f(0.0);
+    if (fragUV.y < freqValue) {
+        // Color bars based on frequency range
+        if (fragUV.x < 0.33) {
+            color = vec3f(1.0, 0.0, 0.0); // Red for bass
+        } else if (fragUV.x < 0.66) {
+            color = vec3f(0.0, 1.0, 0.0); // Green for mids
+        } else {
+            color = vec3f(0.0, 0.0, 1.0); // Blue for treble
+        }
+    }
+
+    return vec4f(color, 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Waveform-Driven Animation:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Sample waveform at multiple points
+    let sample1 = textureLoad(iChannel0, vec2i(100, 1), 0).x;
+    let sample2 = textureLoad(iChannel0, vec2i(200, 1), 0).x;
+    let sample3 = textureLoad(iChannel0, vec2i(300, 1), 0).x;
+
+    // Use waveform to drive color
+    let r = sample1;
+    let g = sample2;
+    let b = sample3;
+
+    return vec4f(r, g, b, 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Reactive Particle System:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Sample overall sound intensity
+    var totalEnergy = 0.0;
+    for (var i = 0; i < 512; i += 16) {
+        totalEnergy += textureLoad(iChannel0, vec2i(i, 0), 0).x;
+    }
+    totalEnergy /= 32.0;
+
+    // Create pulsing effect
+    let pulsate = 1.0 + totalEnergy * 0.5;
+    let center = vec2f(0.5);
+    let dist = distance(fragUV, center) * pulsate;
+
+    // Rings that expand with audio
+    let rings = fract(dist * 5.0 - iTime * 2.0);
+    let pattern = smoothstep(0.1, 0.0, rings);
+
+    return vec4f(vec3f(pattern) * totalEnergy, 1.0);
+}`, "wgsl");
+
+    docMaker.header("Best Practices", "h2", "sound-tips");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Frequency Ranges</span>: Bass (0-128), Mids (128-384), Treble (384-512). Sample the range that fits your visual",
+        "<span class='font-bold'>Smoothing</span>: Average multiple samples to avoid jittery visuals from noisy audio",
+        "<span class='font-bold'>Scaling</span>: FFT values can exceed 1.0 for loud sounds—clamp or scale as needed",
+        "<span class='font-bold'>Waveform</span>: Raw waveform oscillates around 0.5. Subtract 0.5 for centered values",
+        "<span class='font-bold'>Performance</span>: Sampling many frequencies in tight loops can be expensive—optimize when possible",
+        "<span class='font-bold'>Visual Design</span>: Match the visual intensity to audio intensity for cohesive effects"
+    ]);
 
 </script>

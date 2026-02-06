@@ -7,24 +7,155 @@
     docMaker.header("Keyboard", "h1", "channels-keyboard");
 
     docMaker.paragraph(`
-Keyboard channels provide real-time input from the user.
-They are read-only and give the current state of keys, which can be used to trigger actions or drive shader effects.
-`);
-
-docMaker.paragraph(`
-The keyboard data is provided as a texture: the first row of texels contains the current state of all 256 keys,
-the second row contains a toggle for every key, and the third row contains keypress events.
-Texel positions correspond to ASCII codes.
+Keyboard channels provide real-time keyboard input from the user, allowing you to create interactive shaders.
+The keyboard state is encoded as a texture where each pixel represents a key's state.
 `);
 
     docMaker.paragraph(`
-All key states are automatically available in the shader. You can query individual keys or check for modifiers like Shift, Ctrl, or Alt.
+The keyboard data is structured as a 256×3 texture:
 `);
 
-    docMaker.header("Sampling Example", "h2", "keyboard-sample");
+    docMaker.bulletList([
+        "<span class='font-bold'>Row 0 (Y=0)</span>: Current key state (1.0 if pressed, 0.0 if released)",
+        "<span class='font-bold'>Row 1 (Y=1)</span>: Was pressed (1.0 if key was pressed since last frame)",
+        "<span class='font-bold'>Row 2 (Y=2)</span>: Toggle state (flips between 0.0 and 1.0 on each press)"
+    ]);
 
-    docMaker.code(`let isPressed : f32 = textureLoad(iChannel0, vec2i(KEY_LEFT, 0), 0).x;
-let wasPressed : f32 = textureLoad(iChannel0, vec2i(KEY_LEFT, 1), 0).x;
-let isToggled : f32 = textureLoad(iChannel0, vec2i(KEY_LEFT, 2), 0).x;`, "wgsl");
+    docMaker.paragraph(`
+The X coordinate corresponds to the key's ASCII code.
+Use <span class='font-code'>textureLoad()</span> to read key states directly without filtering.
+`);
+
+    docMaker.header("Common Key Codes", "h2", "key-codes");
+
+    docMaker.paragraph(`
+Key codes correspond to ASCII values. Here are commonly used keys:
+`);
+
+    docMaker.codeBulletList([
+        ["Spacebar", "32", ""],
+        ["Arrow Keys", "37-40", "Left=37, Up=38, Right=39, Down=40"],
+        ["Letters", "65-90", "A=65, B=66, ... Z=90 (uppercase)"],
+        ["Numbers", "48-57", "0=48, 1=49, ... 9=57"],
+        ["Enter", "13", ""],
+        ["Shift", "16", ""],
+        ["Ctrl", "17", ""],
+        ["Alt", "18", ""]
+    ]);
+
+    docMaker.header("Reading Key State", "h2", "keyboard-sample");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Basic Key Check:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Check if spacebar (32) is currently pressed
+    let spacePressed = textureLoad(iChannel0, vec2i(32, 0), 0).x;
+
+    // Change color based on key state
+    var color = vec3f(0.2);
+    if (spacePressed > 0.5) {
+        color = vec3f(1.0, 0.5, 0.0); // Orange when pressed
+    }
+
+    return vec4f(color, 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Arrow Key Movement:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Check arrow keys
+    let leftPressed = textureLoad(iChannel0, vec2i(37, 0), 0).x;
+    let upPressed = textureLoad(iChannel0, vec2i(38, 0), 0).x;
+    let rightPressed = textureLoad(iChannel0, vec2i(39, 0), 0).x;
+    let downPressed = textureLoad(iChannel0, vec2i(40, 0), 0).x;
+
+    // Calculate direction
+    var direction = vec2f(0.0);
+    direction.x += rightPressed - leftPressed;
+    direction.y += upPressed - downPressed;
+
+    // Use direction to move an object or effect
+    let center = vec2f(0.5) + direction * 0.3;
+    let dist = distance(fragUV, center);
+
+    return vec4f(vec3f(smoothstep(0.2, 0.19, dist)), 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Toggle State (On/Off):</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Use toggle state (row 2) for on/off behavior
+    // Press 'T' (84) to toggle
+    let toggleState = textureLoad(iChannel0, vec2i(84, 2), 0).x;
+
+    var color = vec3f(0.2, 0.2, 0.8); // Blue when off
+    if (toggleState > 0.5) {
+        color = vec3f(0.8, 0.2, 0.2); // Red when on
+    }
+
+    return vec4f(color, 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Key Press Detection (Edge Trigger):</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Row 1 detects key press events (triggers once per press)
+    let keyPressed = textureLoad(iChannel0, vec2i(32, 1), 0).x;
+
+    // This will be 1.0 for one frame when space is pressed
+    // Use for actions that should happen once per press
+    var flash = 0.0;
+    if (keyPressed > 0.5) {
+        flash = 1.0; // Flash effect on press
+    }
+
+    return vec4f(vec3f(flash), 1.0);
+}`, "wgsl");
+
+    docMaker.header("Practical Examples", "h2", "keyboard-practical");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Interactive Camera Control:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // WASD camera movement
+    let wPressed = textureLoad(iChannel0, vec2i(87, 0), 0).x;
+    let aPressed = textureLoad(iChannel0, vec2i(65, 0), 0).x;
+    let sPressed = textureLoad(iChannel0, vec2i(83, 0), 0).x;
+    let dPressed = textureLoad(iChannel0, vec2i(68, 0), 0).x;
+
+    // Calculate camera offset
+    var offset = vec2f(0.0);
+    offset.x += dPressed - aPressed;
+    offset.y += wPressed - sPressed;
+    offset *= iTime * 0.1;
+
+    // Apply to UV
+    let adjustedUV = fragUV + offset;
+
+    // Sample texture with camera movement
+    let color = textureSample(iChannel1, bilinearRepeatSampler, adjustedUV);
+    return color;
+}`, "wgsl");
+
+    docMaker.header("Best Practices", "h2", "keyboard-tips");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Use Row 0</span> for continuous input (holding keys, movement)",
+        "<span class='font-bold'>Use Row 1</span> for single-press actions (firing, jumping, toggling)",
+        "<span class='font-bold'>Use Row 2</span> for toggle switches (on/off states)",
+        "<span class='font-bold'>Key Codes</span>: Use ASCII values directly or define constants for readability",
+        "<span class='font-bold'>Multiple Keys</span>: Combine key states for complex interactions (Shift+Key, Ctrl+Key)",
+        "<span class='font-bold'>Fallback</span>: Consider providing mouse-based alternatives for accessibility"
+    ]);
 
 </script>

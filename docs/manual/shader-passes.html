@@ -26,9 +26,32 @@ from one stage to the next.
 `);
 
     docMaker.paragraph(`
-Passes are executed in a defined order.
-This makes it possible to build effects incrementally, where earlier passes compute
-or store intermediate results that later passes reuse.
+Passes are executed in a specific order, determined by their position in the pass list.
+The order matters when passes depend on each other's outputs.
+Earlier passes compute or store intermediate results that later passes can reference through channels.
+`);
+
+    docMaker.paragraph(`
+For example, a common workflow might look like this:
+`);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Pass 1 (Common)</span>: Define utility functions and constants shared across all passes",
+        "<span class='font-bold'>Pass 2 (Compute)</span>: Run a simulation or generate procedural data, output to a texture",
+        "<span class='font-bold'>Pass 3 (Image)</span>: Apply a blur effect using the compute pass output via iChannel0",
+        "<span class='font-bold'>Pass 4 (Image - Main)</span>: Composite the blurred result with additional effects for final output"
+    ]);
+
+    docMaker.header("Pass Execution Order", "h2", "execution-order");
+
+    docMaker.paragraph(`
+Passes execute from top to bottom in the pass tab list.
+The <span class='font-bold'>Main Image Pass</span> always executes last, as it represents the final visual output to the canvas.
+`);
+
+    docMaker.paragraph(`
+Common passes don't execute on their own—they only provide code that other passes can include.
+All Image and Compute passes automatically have access to Common pass code without needing to explicitly import it.
 `);
 
     docMaker.header("Pass Types", "h2", "pass-types");
@@ -39,10 +62,41 @@ Each type serves a different purpose in the rendering pipeline.
 `);
 
     docMaker.bulletList([
-        `<span class="font-bold underline underline-offset-4">Image Pass</span>: Renders visual output to a texture or directly to the screen. Image passes are commonly used for drawing full-screen effects and post-processing.`,
-        `<span class="font-bold underline underline-offset-4">Compute Pass</span>: Executes general-purpose GPU computations without rendering to the screen. Compute passes are useful for simulations, particle updates, procedural data generation, or precomputing values.`,
-        `<span class="font-bold underline underline-offset-4">Common Pass</span>: Contains shared code that can be included in other passes. This is useful for defining functions, constants, or utilities reused across multiple passes.`
+        `<span class="font-bold underline underline-offset-4">Image Pass</span>: Renders visual output to a texture or directly to the screen.
+        Image passes execute a fragment shader once per pixel and are used for drawing full-screen effects, post-processing, color grading, and visual rendering.`,
+        `<span class="font-bold underline underline-offset-4">Compute Pass</span>: Executes general-purpose GPU computations using compute shaders.
+        Compute passes don't render pixels directly but can write to textures and storage buffers.
+        Ideal for simulations, particle systems, procedural generation, and parallel data processing.`,
+        `<span class="font-bold underline underline-offset-4">Common Pass</span>: A code library shared across all other passes in the shader.
+        Common passes don't execute—they define reusable functions, structs, constants, and utilities that Image and Compute passes can access.
+        This helps keep code DRY (Don't Repeat Yourself) and organized.`
     ]);
+
+    docMaker.header("Common Pass Example", "h3", "common-pass-example");
+
+    docMaker.paragraph(`
+A Common pass might define utility functions like this:
+`);
+
+    docMaker.code(`// Noise function used by multiple passes
+fn hash(p: vec2f) -> f32 {
+    var p3 = fract(vec3f(p.xyx) * 0.13);
+    p3 += dot(p3, p3.yzx + 3.333);
+    return fract((p3.x + p3.y) * p3.z);
+}
+
+// Color conversion utilities
+fn srgbToLinear(c: vec3f) -> vec3f {
+    return pow(c, vec3f(2.2));
+}
+
+// Shared constants
+const PI: f32 = 3.14159265359;
+const TAU: f32 = 6.28318530718;`, "wgsl");
+
+    docMaker.paragraph(`
+These functions and constants are then automatically available in all Image and Compute passes without needing to copy the code.
+`);
 
     docMaker.header("Creating and Managing Passes", "h2", "creating-and-managing-passes");
 
@@ -62,5 +116,40 @@ and select the type of pass you want to add. Each pass appears as a separate tab
 For simple shaders, a single image pass may be enough.
 As your shader grows in complexity, multiple passes help keep things structured and efficient.
 `);
+
+//     docMaker.header("Organizing Multiple Passes", "h2", "organizing-passes");
+
+//     docMaker.paragraph(`
+// When working with multiple passes, good organization helps maintain clarity:
+// `);
+
+//     docMaker.bulletList([
+//         "<span class='font-bold'>Naming</span>: Give passes descriptive names (e.g., 'Simulation', 'Blur', 'Composite') instead of 'Image1', 'Image2'",
+//         "<span class='font-bold'>Order</span>: Arrange passes in execution order—dependencies first, final output last",
+//         "<span class='font-bold'>Common First</span>: Place Common passes at the top since they don't execute but provide shared code",
+//         "<span class='font-bold'>Modularity</span>: Keep each pass focused on a single responsibility (simulation, blur, composite, etc.)"
+//     ]);
+
+    docMaker.header("Pass Dependencies and Channels", "h2", "pass-dependencies");
+
+    docMaker.paragraph(`
+Passes communicate through channels. A pass can reference outputs from earlier passes by assigning them to channel slots (iChannel0–iChannel3).
+`);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Important:</span> A pass can only reference outputs from passes that execute <em>before</em> it in the pass list.
+Circular dependencies (Pass A uses Pass B's output while Pass B uses Pass A's output) are not possible.
+`);
+
+    docMaker.header("Best Practices", "h2", "best-practices");
+
+    docMaker.bulletList([
+        "Start with a single Image pass and add complexity only when needed",
+        "Use Common passes to avoid duplicating utility functions across multiple passes",
+        "Keep compute-heavy operations in Compute passes to avoid blocking the rendering pipeline",
+        "Use intermediate Image passes for effects that require multi-stage rendering (blur, glow, reflections)",
+        "Profile your shader—too many passes can impact performance, especially at high resolutions",
+        "Document complex pass workflows with comments explaining the data flow"
+    ]);
 
 </script>

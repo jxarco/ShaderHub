@@ -21,12 +21,63 @@ Anyone with this link can view and run your shader in their browser.
 Simply copy the URL from your browser's address bar and share it with others.
 `);
 
+    docMaker.paragraph(`
+The link provides full access to the shader, including:
+`);
+
+    docMaker.bulletList([
+        "Interactive preview with real-time rendering",
+        "Ability to adjust custom uniforms (if any)",
+        "Access to the source code (view-only for viewers)",
+        "Remix functionality (viewers can fork and modify their own copy)"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>URL Format:</span> <span class='font-code'>https://shaderhub.dev/shader/[SHADER_ID]</span>
+`);
+
     docMaker.header("Embedding with iFrame", "h2", "share-export-iframe");
 
     docMaker.paragraph(`
 You can embed your shader in a website or blog using an iFrame.
 Copy the code snippet provided and paste it into your HTML where you want the shader to appear.
 `);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Basic Embed Code:</span>
+`);
+
+    docMaker.code(`<iframe
+    src="https://shaderhub.dev/embed/[SHADER_ID]/"
+    frameborder="0"
+    width="640"
+    height="405"
+    allowfullscreen>
+</iframe>`, "html");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Customization Options:</span>
+`);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Width/Height</span>: Adjust dimensions to fit your layout",
+        "<span class='font-bold'>Responsive</span>: Use CSS to make the iframe responsive (e.g., width=\"100%\")",
+        "<span class='font-bold'>allowfullscreen</span>: Enables fullscreen mode for viewers",
+        "<span class='font-bold'>frameborder</span>: Set to \"0\" for a clean, borderless embed"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Responsive Embed Example:</span>
+`);
+
+    docMaker.code(`<div style="position: relative; padding-bottom: 56.25%; height: 0;">
+    <iframe
+        src="https://shaderhub.dev/embed/[SHADER_ID]/"
+        frameborder="0"
+        allowfullscreen
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+    </iframe>
+</div>`, "html");
 
     docMaker.lineBreak();
 
@@ -40,6 +91,49 @@ In your user profile, you can export your shaders to download them as WGSL files
 This process concatenates all shader passes into a single file, allowing you to use the shader offline
 or in other WebGPU projects.
 `);
+
+    docMaker.paragraph(`
+<span class='font-bold'>What Gets Exported:</span>
+`);
+
+    docMaker.bulletList([
+        "All shader passes (Image, Compute, Common) combined into one WGSL file",
+        "Preprocessor directives are processed and expanded",
+        "Uniform declarations and bindings",
+        "Comments and code structure are preserved"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Export Workflow:</span>
+`);
+
+    docMaker.bulletList([
+        "Navigate to your user profile",
+        "Find the shader you want to export",
+        "Click the export button to download the .wgsl file",
+        "The file is ready to use in other WebGPU projects or for archival"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Using Exported Shaders:</span>
+`);
+
+    docMaker.paragraph(`
+Exported WGSL files can be integrated into WebGPU applications.
+You'll need to set up the appropriate pipeline, bind groups, and uniforms to match the shader's requirements.
+The exported file contains the shader code but not the runtime configuration (textures, uniform values, etc.).
+`);
+
+    docMaker.header("Best Practices", "h2", "share-export-best-practices");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Documentation</span>: Add comments to your shader explaining required uniforms and channels before sharing",
+        "<span class='font-bold'>Dependencies</span>: Note any required textures or assets in your shader description",
+        "<span class='font-bold'>Licensing</span>: Consider adding a license comment if you want to specify usage rights",
+        "<span class='font-bold'>Versioning</span>: Export snapshots of your shader at different stages for version control",
+        "<span class='font-bold'>Testing</span>: Test embedded shaders in different browsers and screen sizes",
+        "<span class='font-bold'>Performance</span>: Be mindful that complex shaders may perform differently on viewers' hardware"
+    ]);
 
 
 </script>

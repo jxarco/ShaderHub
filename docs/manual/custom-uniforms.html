@@ -19,8 +19,29 @@ These uniforms can be connected to sliders or color pickers for interactive cont
     docMaker.paragraph(`
 Custom uniforms can be created directly from the shader code editor.
 Right-click on a variable and select "Create Uniform".
-The variable name must start with <span class="font-bold">i</span> followed by an uppercase letter (e.g., iMyValue) to be detected as a uniform.
+The variable name must start with <span class="font-bold">i</span> followed by an uppercase letter (e.g., iMyValue, iSpeed, iColor) to be detected as a uniform.
 `);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Creation Workflow:</span>
+`);
+
+    docMaker.bulletList([
+        "Declare a variable in your shader starting with <span class='font-code'>i</span> + uppercase letter",
+        "Right-click the variable name in the code editor",
+        "Select \"Create Uniform\" from the context menu",
+        "Configure the uniform type, range (min/max), and initial value",
+        "The uniform appears in the uniforms panel and becomes controllable via UI"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Naming Convention:</span>
+`);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Valid</span>: <span class='font-code'>iScale</span>, <span class='font-code'>iRotation</span>, <span class='font-code'>iColor</span>, <span class='font-code'>iSpeed</span>",
+        "<span class='font-bold'>Invalid</span>: <span class='font-code'>scale</span>, <span class='font-code'>myValue</span>, <span class='font-code'>i_rotation</span> (must be camelCase)"
+    ]);
 
     docMaker.header("Supported Types", "h2", "custom-uniforms-types");
 
@@ -41,6 +62,130 @@ ShaderHub supports the following types for custom uniforms:
     docMaker.paragraph(`
 Once created, custom uniforms are automatically available in your shader code using the variable name you assigned.
 Number and vector types can be controlled via sliders, while color uniforms use a color picker.
+`);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Scalar Uniform (f32):</span>
+`);
+
+    docMaker.code(`// Declare custom uniform (right-click to create)
+var<uniform> iScale: f32;
+
+fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Use the uniform to control zoom
+    let center = vec2f(0.5);
+    let scaledUV = (fragUV - center) / iScale + center;
+
+    // Apply to visual
+    let dist = distance(scaledUV, center);
+    let circle = smoothstep(0.3, 0.29, dist);
+
+    return vec4f(vec3f(circle), 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Vec2 Uniform (Position Control):</span>
+`);
+
+    docMaker.code(`// Declare vec2 uniform for 2D position
+var<uniform> iCenter: vec2f;
+
+fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Use uniform to control circle position
+    let dist = distance(fragUV, iCenter);
+    let circle = smoothstep(0.2, 0.19, dist);
+
+    return vec4f(vec3f(circle), 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Vec3 Color Uniform:</span>
+`);
+
+    docMaker.code(`// Declare color uniform (use color picker in UI)
+var<uniform> iPrimaryColor: vec3f;
+var<uniform> iSecondaryColor: vec3f;
+
+fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Blend between two custom colors
+    let gradient = fragUV.x;
+    let color = mix(iPrimaryColor, iSecondaryColor, gradient);
+
+    return vec4f(color, 1.0);
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Multiple Uniforms (Animation Control):</span>
+`);
+
+    docMaker.code(`// Multiple custom uniforms for complex control
+var<uniform> iSpeed: f32;
+var<uniform> iAmplitude: f32;
+var<uniform> iFrequency: f32;
+
+fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Create controllable wave animation
+    let wave = sin(fragUV.x * iFrequency + iTime * iSpeed) * iAmplitude;
+    let waveUV = fragUV + vec2f(0.0, wave);
+
+    // Visualize
+    let pattern = fract(waveUV.y * 10.0);
+    return vec4f(vec3f(pattern), 1.0);
+}`, "wgsl");
+
+    docMaker.header("Practical Use Cases", "h2", "custom-uniforms-use-cases");
+
+    docMaker.paragraph(`
+Custom uniforms enable interactive parameter tweaking and real-time shader experimentation.
+`);
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Visual Tweaking</span>: Adjust colors, scales, speeds without code changes",
+        "<span class='font-bold'>Animation Control</span>: Fine-tune animation timing, amplitude, frequency",
+        "<span class='font-bold'>Effect Parameters</span>: Control blur radius, distortion strength, glow intensity",
+        "<span class='font-bold'>Camera Settings</span>: Adjust FOV, position, rotation in 3D scenes",
+        "<span class='font-bold'>Color Grading</span>: Interactive color correction, saturation, contrast",
+        "<span class='font-bold'>Procedural Generation</span>: Control noise scale, octaves, persistence for procedural textures"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Example - Post-Process Effect Controls:</span>
+`);
+
+    docMaker.code(`var<uniform> iBlurRadius: f32;
+var<uniform> iVignetteStrength: f32;
+var<uniform> iSaturation: f32;
+
+fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Sample base color
+    var color = textureSample(iChannel0, bilinearSampler, fragUV).rgb;
+
+    // Apply saturation control
+    let luminance = dot(color, vec3f(0.299, 0.587, 0.114));
+    color = mix(vec3f(luminance), color, iSaturation);
+
+    // Apply vignette
+    let dist = distance(fragUV, vec2f(0.5));
+    let vignette = 1.0 - smoothstep(0.3, 0.8, dist) * iVignetteStrength;
+    color *= vignette;
+
+    return vec4f(color, 1.0);
+}`, "wgsl");
+
+    docMaker.header("Best Practices", "h2", "custom-uniforms-best-practices");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Naming</span>: Use descriptive names that indicate purpose (iBlurRadius vs iValue1)",
+        "<span class='font-bold'>Ranges</span>: Set appropriate min/max values to prevent extreme or invalid results",
+        "<span class='font-bold'>Defaults</span>: Choose sensible default values that produce good initial results",
+        "<span class='font-bold'>Organization</span>: Group related uniforms (all color controls together, all animation speeds together)",
+        "<span class='font-bold'>Performance</span>: Custom uniforms have minimal performance cost—use them freely for interactive control",
+        "<span class='font-bold'>Documentation</span>: Add comments in code explaining what each uniform controls",
+        "<span class='font-bold'>Type Selection</span>: Use the simplest type needed (f32 for single values, vec2f for 2D positions, vec3f for colors)"
+    ]);
+
+    docMaker.paragraph(`
+<span class='font-bold'>Tip:</span> Uniforms are shared across all passes in a shader project. Define uniforms once and use them in multiple passes for consistent control.
 `);
 
 

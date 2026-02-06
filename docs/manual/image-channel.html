@@ -7,47 +7,157 @@
     docMaker.header("Image Channel", "h1", "channels-images");
 
     docMaker.paragraph(`
-This group includes 2D textures, cubemaps, and outputs of image or compute passes (buffers).
-All image channels are automatically bound and can be sampled in your shader using one of the default samplers.
+Image channels include 2D textures, cubemaps, and pass buffers (outputs from other Image or Compute passes).
+All image channels are automatically bound as texture resources and can be sampled using one of the six built-in samplers.
 `);
 
-    docMaker.header("nearestSampler", "h3");
     docMaker.paragraph(`
-<span class='text-sm font-code'>minFilter=nearest, magFilter=nearest, mipmapFilter=nearest, addressMode=clamp</span>
-`);
-    docMaker.header("bilinearSampler", "h3");
-    docMaker.paragraph(`
-<span class='text-sm font-code'>minFilter=linear, magFilter=linear, mipmapFilter=nearest, addressMode=clamp</span>
-`);
-    docMaker.header("trilinearSampler", "h3");
-    docMaker.paragraph(`
-<span class='text-sm font-code'>minFilter=linear, magFilter=linear, mipmapFilter=linear, addressMode=clamp</span>
-`);
-    docMaker.header("nearestRepeatSampler", "h3");
-    docMaker.paragraph(`
-<span class='text-sm font-code'>minFilter=nearest, magFilter=nearest, mipmapFilter=nearest, addressMode=repeat</span>
-`);
-    docMaker.header("bilinearRepeatSampler", "h3");
-    docMaker.paragraph(`
-<span class='text-sm font-code'>minFilter=linear, magFilter=linear, mipmapFilter=nearest, addressMode=repeat</span>
-`);
-    docMaker.header("trilinearRepeatSampler", "h3");
-    docMaker.paragraph(`
-<span class='text-sm font-code'>minFilter=linear, magFilter=linear, mipmapFilter=linear, addressMode=repeat</span>
+ShaderHub provides default samplers with different filtering and address modes to suit various use cases.
+Choose the sampler that best matches your needs—smooth interpolation for photos, nearest-neighbor for pixel art, repeat for tiling patterns.
 `);
 
-    docMaker.header("Sampling Example", "h2", "image-sample");
+    docMaker.header("Available Samplers", "h2", "available-samplers");
 
     docMaker.paragraph(`
-Texture 2D:
+<span class='font-bold'>Clamp Samplers</span> (addressMode=clamp): Coordinates outside [0,1] return edge pixels
 `);
 
-    docMaker.code(`let color : vec4f = textureSample(iChannel0, nearestSampler, uv);`, "wgsl");
+    docMaker.codeBulletList([
+        ["nearestSampler", "", "No filtering—blocky, pixel-perfect sampling. Use for pixel art or data textures."],
+        ["bilinearSampler", "", "Smooth linear interpolation. Best for photos and most textures."],
+        ["trilinearSampler", "", "Linear + mipmap filtering. Highest quality, best for detailed textures viewed at distance."]
+    ]);
 
     docMaker.paragraph(`
-Cubemap (where <span class='text-sm font-code'>direction</span> is a 3D direction vector):
+<span class='font-bold'>Repeat Samplers</span> (addressMode=repeat): Texture tiles infinitely
 `);
 
-    docMaker.code(`let color : vec4f = textureSample(iChannel0, bilinearSampler, direction);`, "wgsl");
+    docMaker.codeBulletList([
+        ["nearestRepeatSampler", "", "Tiling with blocky pixels. Use for retro tiling patterns."],
+        ["bilinearRepeatSampler", "", "Smooth tiling. Best for seamless patterns and procedural textures."],
+        ["trilinearRepeatSampler", "", "High-quality tiling with mipmap support."]
+    ]);
+
+    docMaker.header("Sampling Examples", "h2", "image-sample");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Basic 2D Texture Sampling:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Sample texture with smooth filtering
+    let color = textureSample(iChannel0, bilinearSampler, fragUV);
+    return color;
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Tiling Pattern:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Tile the texture 4x4 times using repeat sampler
+    let tiledUV = fragUV * 4.0;
+    let color = textureSample(iChannel0, bilinearRepeatSampler, tiledUV);
+    return color;
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Cubemap Sampling</span> (environment mapping):
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Create a 3D direction vector from UV
+    let uv = fragUV * 2.0 - 1.0; // Convert to [-1, 1]
+    let direction = normalize(vec3f(uv.x, uv.y, 1.0));
+
+    // Sample cubemap using direction
+    let envColor = textureSample(iChannel0, bilinearSampler, direction);
+    return envColor;
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Sampling Pass Buffers:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Sample output from a previous pass (e.g., blur pass)
+    let blurred = textureSample(iChannel0, bilinearSampler, fragUV);
+
+    // Combine with current effect
+    let sharp = textureSample(iChannel1, bilinearSampler, fragUV);
+    return mix(blurred, sharp, 0.5);
+}`, "wgsl");
+
+    docMaker.header("Texture Utilities", "h2", "texture-utilities");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Getting Texture Dimensions:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Get the size of the texture in pixels
+    let size = vec2f(textureDimensions(iChannel0));
+
+    // Convert UV to pixel coordinates
+    let pixelCoord = fragUV * size;
+
+    // Use for pixel-perfect operations
+    let color = textureSample(iChannel0, nearestSampler, fragUV);
+    return color;
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>textureLoad vs textureSample:</span>
+`);
+
+    docMaker.bulletList([
+        "<span class='font-code'>textureSample()</span>: Uses a sampler for filtering. Requires normalized UV coordinates [0,1]. Best for visual sampling.",
+        "<span class='font-code'>textureLoad()</span>: Direct pixel access, no filtering. Requires integer pixel coordinates. Use for data lookups (keyboard, sound)."
+    ]);
+
+    docMaker.header("Common Patterns", "h2", "common-patterns");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Texture Distortion:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // iChannel0: Main texture
+    // iChannel1: Noise/distortion map
+
+    // Sample noise
+    let noise = textureSample(iChannel1, bilinearRepeatSampler, fragUV).rg;
+
+    // Distort UVs
+    let distortedUV = fragUV + (noise - 0.5) * 0.1;
+
+    // Sample with distorted coordinates
+    let color = textureSample(iChannel0, bilinearSampler, distortedUV);
+    return color;
+}`, "wgsl");
+
+    docMaker.paragraph(`
+<span class='font-bold'>Multi-Texture Blending:</span>
+`);
+
+    docMaker.code(`fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    let tex1 = textureSample(iChannel0, bilinearSampler, fragUV);
+    let tex2 = textureSample(iChannel1, bilinearSampler, fragUV);
+    let mask = textureSample(iChannel2, bilinearSampler, fragUV).r;
+
+    // Use mask to blend between textures
+    return mix(tex1, tex2, mask);
+}`, "wgsl");
+
+    docMaker.header("Best Practices", "h2", "image-channel-tips");
+
+    docMaker.bulletList([
+        "<span class='font-bold'>Sampler Selection</span>: Use bilinear for smooth visuals, nearest for crisp pixels/data",
+        "<span class='font-bold'>Tiling</span>: Use repeat samplers only with seamless textures to avoid visible seams",
+        "<span class='font-bold'>Mipmaps</span>: Trilinear samplers use mipmaps—ensure your textures have them for best quality",
+        "<span class='font-bold'>UV Range</span>: With clamp samplers, values outside [0,1] will sample edge pixels",
+        "<span class='font-bold'>Performance</span>: Each texture sample has a cost—minimize in tight loops",
+        "<span class='font-bold'>Pass Buffers</span>: Remember that pass buffers are only available from passes that executed earlier"
+    ]);
 
 </script>
