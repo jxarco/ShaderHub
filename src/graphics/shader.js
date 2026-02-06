@@ -960,7 +960,11 @@ class ShaderPass
     {
         for ( const [ name, value ] of Object.entries( this.defines ) )
         {
-            line = line.replaceAll( name, value );
+            // Use word boundaries to replace only complete identifiers
+            // e.g. avoid replacing define name "N" inside a var name
+            const escapedName = name.replace( /[.*+?^${}()|[\]\\]/g, '\\$&' );
+            const regex = new RegExp( '\\b' + escapedName + '\\b', 'g' );
+            line = line.replace( regex, value );
         }
 
         return line;
