@@ -188,6 +188,26 @@ class GLRenderer extends Renderer
         };
     }
 
+    updateTexture( texture, bitmap )
+    {
+        const gl = this.gl;
+
+        gl.bindTexture( gl.TEXTURE_2D, texture );
+
+        gl.texImage2D(
+            gl.TEXTURE_2D,
+            0,
+            gl.RGBA,
+            gl.RGBA,
+            gl.UNSIGNED_BYTE,
+            bitmap
+        );
+
+        gl.bindTexture( gl.TEXTURE_2D, null );
+
+        return texture;
+    }
+
     async createTextureFromImage( data, id, label = "", options = {} )
     {
         options.flipY = options.flipY ?? true;

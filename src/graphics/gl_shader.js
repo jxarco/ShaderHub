@@ -90,7 +90,7 @@ class GLShaderPass extends ShaderPass
                 const name = channel.id;
                 const tex = this.channelTextures[i];
                 gl.activeTexture( gl.TEXTURE0 + i );
-                gl.bindTexture( channel.category === 'texture' ? gl.TEXTURE_2D : gl.TEXTURE_CUBE_MAP, tex );
+                gl.bindTexture( channel.category === 'cubemap' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D, tex );
                 gl.uniform1i( this.uniformLocations[name], i );
             }
 

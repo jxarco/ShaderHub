@@ -88,7 +88,29 @@ class GPURenderer extends Renderer
 
     createTexture( desc = {} )
     {
-        return this.device.createTexture( desc );
+        const texture = this.device.createTexture( desc );
+
+        if( desc.bitmap )
+        {
+            this.device.queue.copyExternalImageToTexture(
+                { source: desc.bitmap },
+                { texture },
+                [ desc.bitmap.width, desc.bitmap.height ]
+            );
+        }
+
+        return texture;
+    }
+
+    updateTexture( texture, bitmap )
+    {
+        this.device.queue.copyExternalImageToTexture(
+            { source: bitmap },
+            { texture },
+            [ bitmap.width, bitmap.height ]
+        );
+
+        return texture;
     }
 
     async createTextureFromImage( data, id, label = "", options = {} )

@@ -1054,25 +1054,20 @@ const ShaderHub =
         const imageName = "Keyboard";
         const imageData = new ImageData( new Uint8ClampedArray( data ), dimensions[ 0 ], dimensions[ 1 ] );
         const imageBitmap = await createImageBitmap( imageData );
-        const imageTexture = this.renderer.gpuTextures[ imageName ] ?? this.renderer.device.createTexture({
+        const imageTexture = this.renderer.gpuTextures[ imageName ] ?? this.renderer.createTexture({
             label: "KeyboardTexture",
             size: [ imageBitmap.width, imageBitmap.height, 1 ],
             format: 'rgba8unorm',
             usage:
                 GPUTextureUsage.TEXTURE_BINDING |
                 GPUTextureUsage.COPY_DST |
-                GPUTextureUsage.RENDER_ATTACHMENT,
-        });
-
-        this.renderer.device.queue.copyExternalImageToTexture(
-            { source: imageBitmap },
-            { texture: imageTexture },
-            dimensions
-        );
+                GPUTextureUsage.RENDER_ATTACHMENT
+        } );
 
         // Recreate stuff if we update the texture and
         // a shader pass is using it
-        this.renderer.gpuTextures[ imageName ] = imageTexture;
+        this.renderer.gpuTextures[ imageName ] = this.renderer.updateTexture(
+            imageTexture.texture ?? imageTexture, imageBitmap );
 
         const pass = this.currentPass;
         const usedChannel = pass.channels.findIndex( c => c?.id === imageName );
@@ -1162,7 +1157,7 @@ const ShaderHub =
         // TODO: make this r8unorm
         const imageTexture =
             this.renderer.gpuTextures[ imageName ] ??
-            this.renderer.device.createTexture({
+            this.renderer.createTexture({
                 label,
                 size: [ imageBitmap.width, imageBitmap.height, 1 ],
                 format: "rgba8unorm",
@@ -1172,15 +1167,8 @@ const ShaderHub =
                     GPUTextureUsage.RENDER_ATTACHMENT,
             });
 
-        this.renderer.device.queue.copyExternalImageToTexture(
-            { source: imageBitmap },
-            { texture: imageTexture },
-            dimensions
-        );
-
-        // Recreate stuff if we update the texture and
-        // a shader pass is using it
-        this.renderer.gpuTextures[ imageName ] = imageTexture;
+        this.renderer.gpuTextures[ imageName ] = this.renderer.updateTexture(
+            imageTexture.texture ?? imageTexture, imageBitmap );
 
         return imageTexture;
     },

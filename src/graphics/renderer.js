@@ -30,9 +30,11 @@ class Renderer
 
     createBuffer( desc = {} ) {}
     createSampler( desc = {} ) {}
+    createTexture( desc = {} ) {}
     async createTextureFromImage( data, id, label = "", options = {} ) { return null; }
     async createCubemapTextureFromImage( arrayBuffer, id, label = "", options = {} ) { return null; }
 
+    updateTexture( texture, bitmap ) {}
     updateFrame( timeDelta, elapsedTime, frameCount, shader ) {}
     updateResolution( resolutionX, resolutionY, shader ) {}
     updateMouse( data, shader ) {}

@@ -849,7 +849,7 @@ export const ui = {
         if( !shader ) return;
 
         // force backend to load shader
-        if( shader.backend !== undefined )
+        if( shader.backend )
         {
             LX.doAsync( () => Utils.toast( 'Warning', `⚠️ GLSL Shader. Fallback to WebGL mode.`, -1 ), 50 );
             ShaderHub.backend = shader.backend;
