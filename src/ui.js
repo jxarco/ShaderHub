@@ -4,6 +4,8 @@ import { ShaderHub } from './app.js';
 import * as Constants from './constants.js';
 import { FS } from './fs.js';
 import * as Utils from './utils.js';
+import { Shader } from './graphics/shader.js';
+import { GLShader } from './graphics/gl_shader.js';
 
 const Query = Appwrite.Query;
 const mobile = Utils.isMobile();
@@ -2379,14 +2381,31 @@ export const ui = {
                 }, null );
             }
 
+            const iSetLines = ( templateName ) => {
+                const pass = ShaderHub.currentPass;
+                if ( !pass )
+                {
+                    return;
+                }
+
+                const ShaderClass = usingWebGPU ? Shader : GLShader;
+                const templateLines = ShaderClass[`RENDER_${templateName.toUpperCase()}_TEMPLATE`];
+                pass.codeLines = templateLines;
+                editor.setText( templateLines.join( '\n' ) );
+
+                ShaderHub.compileShader( true, pass );
+            };
+
             LX.addDropdownMenu( moreButton.root, [
                 ...options,
                 {
                     name: 'Templates',
                     icon: 'FolderCode',
                     submenu: [
-                        { name: 'Default', callback: () => {} },
-                        { name: 'Texture', callback: () => {} }
+                        { name: 'Main', callback: v => iSetLines(v) },
+                        { name: 'Texture', callback: v => iSetLines(v) },
+                        { name: 'Mouse', callback: v => iSetLines(v) },
+                        { name: 'Animated', callback: v => iSetLines(v) },
                     ]
                 },
                 {

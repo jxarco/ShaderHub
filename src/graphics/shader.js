@@ -1478,6 +1478,83 @@ Shader.RENDER_MAIN_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -
     return vec4f(color, 1.0);
 }`.split( '\n' );
 
+Shader.RENDER_TEXTURE_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Normalized pixel coordinates (from 0 to 1)
+    let uv : vec2f = fragUV; // The same as: fragCoord/iResolution.xy;
+
+    // Sample from texture channel 0
+    let color : vec4f = textureSample(iChannel0, bilinearSampler, uv);
+
+    // Output to screen
+    return vec4f(color.rgb, 1.0);
+}`.split( '\n' );
+
+Shader.RENDER_MOUSE_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Normalized pixel coordinates (from 0 to 1)
+    let uv : vec2f = fragCoord / iResolution.y;
+
+    // Get mouse position in normalized coordinates
+    let mousePos : vec2f = iMouse.pos / iResolution.y;
+
+    // Calculate distance from mouse
+    let dist : f32 = length(uv - mousePos);
+
+    // Create a smooth circle around the mouse
+    let radius : f32 = 0.2;
+    let circle : f32 = smoothstep(radius, radius - 0.05, dist);
+
+    // Add a glow effect
+    let glow : f32 = exp(-dist * 5.0) * 0.5;
+
+    // Color based on mouse click state
+    let color : vec3f = mix(
+        vec3f(0.2, 0.5, 1.0),  // Default blue
+        vec3f(1.0, 0.3, 0.5),  // Pink when clicked
+        iMouse.click
+    );
+
+    // Combine circle and glow
+    let finalColor : vec3f = color * (circle + glow);
+
+    // Output to screen
+    return vec4f(finalColor, 1.0);
+}`.split( '\n' );
+
+Shader.RENDER_ANIMATED_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Centered coordinates (from -0.5 to 0.5)
+    var uv : vec2f = fragUV - 0.5;
+
+    // Make aspect ratio square
+    uv.x *= iResolution.x / iResolution.y;
+
+    // Convert to polar coordinates
+    let angle : f32 = atan2(uv.y, uv.x);
+    let radius : f32 = length(uv);
+
+    // Rotating pattern
+    let pattern : f32 = sin(angle * 6.0 - iTime * 2.0) * 0.5 + 0.5;
+
+    // Pulsing rings
+    let rings : f32 = sin(radius * 20.0 - iTime * 3.0) * 0.5 + 0.5;
+
+    // Combine patterns
+    let combined : f32 = pattern * rings;
+
+    // Create color gradient based on angle and time
+    let color1 : vec3f = vec3f(1.0, 0.3, 0.5);
+    let color2 : vec3f = vec3f(0.2, 0.8, 1.0);
+    var color : vec3f = mix(color1, color2, sin(angle + iTime) * 0.5 + 0.5);
+
+    // Apply pattern
+    color *= combined * 2.0;
+
+    // Add vignette
+    color *= 1.0 - radius * 0.5;
+
+    // Output to screen
+    return vec4f(color, 1.0);
+}`.split( '\n' );
+
 Shader.RENDER_COMMON_TEMPLATE = `fn someFunc(a: f32, b: f32) -> f32 {
     return a + b;
 }`.split( '\n' );

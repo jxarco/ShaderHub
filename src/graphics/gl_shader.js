@@ -576,6 +576,83 @@ GLShader.RENDER_MAIN_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
     return vec4(color, 1.0);
 }`.split( '\n' );
 
+GLShader.RENDER_TEXTURE_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
+    // Normalized pixel coordinates (from 0 to 1)
+    vec2 uv = fragUV; // The same as: fragCoord/iResolution.xy;
+
+    // Time varying pixel color
+    vec4 color = texture(iChannel0, uv);
+
+    // Output to screen
+    return vec4(color.rgb, 1.0);
+}`.split( '\n' );
+
+GLShader.RENDER_MOUSE_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
+    // Normalized pixel coordinates (from 0 to 1)
+    vec2 uv = fragCoord/iResolution.y;
+
+    // Get mouse position in normalized coordinates
+    vec2 mousePos = iMouse.pos / iResolution.y;
+
+    // Calculate distance from mouse
+    float dist = length(uv - mousePos);
+
+    // Create a smooth circle around the mouse
+    float radius = 0.2;
+    float circle = smoothstep(radius, radius - 0.05, dist);
+
+    // Add a glow effect
+    float glow = exp(-dist * 5.0) * 0.5;
+
+    // Color based on mouse click state
+    vec3 color = mix(
+        vec3(0.2, 0.5, 1.0),  // Default blue
+        vec3(1.0, 0.3, 0.5),  // Pink when clicked
+        iMouse.click
+    );
+
+    // Combine circle and glow
+    vec3 finalColor = color * (circle + glow);
+
+    // Output to screen
+    return vec4(finalColor, 1.0);
+}`.split( '\n' );
+
+GLShader.RENDER_ANIMATED_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
+    // Centered coordinates (from -0.5 to 0.5)
+    vec2 uv = fragUV - 0.5;
+
+    // Make aspect ratio square
+    uv.x *= iResolution.x / iResolution.y;
+
+    // Convert to polar coordinates
+    float angle = atan(uv.y, uv.x);
+    float radius = length(uv);
+
+    // Rotating pattern
+    float pattern = sin(angle * 6.0 - iTime * 2.0) * 0.5 + 0.5;
+
+    // Pulsing rings
+    float rings = sin(radius * 20.0 - iTime * 3.0) * 0.5 + 0.5;
+
+    // Combine patterns
+    float combined = pattern * rings;
+
+    // Create color gradient based on angle and time
+    vec3 color1 = vec3(1.0, 0.3, 0.5);
+    vec3 color2 = vec3(0.2, 0.8, 1.0);
+    vec3 color = mix(color1, color2, sin(angle + iTime) * 0.5 + 0.5);
+
+    // Apply pattern
+    color *= combined * 2.0;
+
+    // Add vignette
+    color *= 1.0 - radius * 0.5;
+
+    // Output to screen
+    return vec4(color, 1.0);
+}`.split( '\n' );
+
 GLShader.RENDER_COMMON_TEMPLATE = `float someFunc(float a, float b) {
     return a + b;
 }`.split( '\n' );
