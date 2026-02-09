@@ -253,10 +253,6 @@ class GLShaderPass extends ShaderPass
     async validate( entryName, entryCode )
     {
         const r = this.getShaderCode( true, entryName, entryCode );
-
-        // Close all toasts
-        document.querySelectorAll( '.lextoast' ).forEach( ( t ) => t.close() );
-
         const gl = this.renderer.gl;
         const vs = this.compileShaderCode( gl, gl.VERTEX_SHADER, r.vs_code );
         const fs = this.compileShaderCode( gl, gl.FRAGMENT_SHADER, r.fs_code );

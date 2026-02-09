@@ -556,10 +556,6 @@ class ShaderPass
     async validate( entryName, entryCode )
     {
         const r = this.getShaderCode( true, entryName, entryCode );
-
-        // Close all toasts
-        document.querySelectorAll( '.lextoast' ).forEach( ( t ) => t.close() );
-
         const module = this.device.createShaderModule( { code: r.code } );
         const info = await module.getCompilationInfo();
 

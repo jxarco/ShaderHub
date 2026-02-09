@@ -863,8 +863,8 @@ export const ui = {
         const shader = await ShaderHub.getShaderById( shaderUid );
         if ( !shader ) return;
 
-        // force backend to load shader
-        if ( shader.backend )
+        // force backend to load shader in webgl if necessary
+        if ( shader.backend && shader.backend !== 'webgpu' )
         {
             LX.doAsync( () => Utils.toast( 'Warning', `⚠️ GLSL Shader. Fallback to WebGL mode.`, -1 ), 50 );
             ShaderHub.backend = shader.backend;
@@ -1478,38 +1478,35 @@ export const ui = {
                     if ( window.__currentSheet ) window.__currentSheet.destroy();
 
                     const sheetArea = new LX.Area( { className: 'overflow-scroll' } );
-
-                    const tmpEditor = new LX.CodeEditor( sheetArea, {
-                        disableEdition: true,
-                        allowClosingTabs: false,
-                        allowLoadingFiles: false,
-                        // allowAddScripts: false,
-                        fileExplorer: false,
-                        defaultTab: false,
-                        statusShowEditorIndentation: false,
-                        statusShowEditorLanguage: false,
-                        statusShowEditorFilename: false,
-                        statusShowFontSizeZoom: false,
-                        statusShowEditorSelection: false,
-                        onCreateFile: ( editor ) => null,
-                        // onNewTab: ( e ) => {
-                        //     new LX.DropdownMenu( e.target, [], { side: "bottom", align: "start" });
-                        // },
-                        onSelectTab: async ( name, editor ) => {
-                            ShaderHub.onShaderPassSelected( name );
-                        },
-                        onReady: async ( editor ) => {
-                            const pass = ShaderHub.currentPass;
-                            if ( pass )
-                            {
-                                editor.loadTab( pass.name );
-                                const code = pass.codeLines.join( '\n' );
-                                editor.setText( code, ShaderHub.renderer.lang );
-                            }
-                        }
-                    } );
-
                     window.__currentSheet = new LX.Sheet( '80%', [ sheetArea ], { side: 'bottom' } );
+
+                    LX.doAsync( () => {
+                        const tmpEditor = new LX.CodeEditor( sheetArea, {
+                            disableEdition: true,
+                            allowClosingTabs: false,
+                            allowLoadingFiles: false,
+                            // allowAddScripts: false,
+                            fileExplorer: false,
+                            defaultTab: false,
+                            statusShowEditorIndentation: false,
+                            statusShowEditorLanguage: false,
+                            statusShowEditorFilename: false,
+                            statusShowFontSizeZoom: false,
+                            statusShowEditorSelection: false,
+                            onCreateFile: ( editor ) => null,
+                            // onNewTab: ( e ) => {
+                            //     new LX.DropdownMenu( e.target, [], { side: "bottom", align: "start" });
+                            // },
+                            onSelectTab: async ( name, editor ) => {
+                                ShaderHub.onShaderPassSelected( name );
+                            },
+                            onReady: async ( editor ) => {
+                                this.shader.passes.forEach( ( pass, index ) => {
+                                    editor.addTab( pass.name, true, pass.name, { codeLines: pass.codeLines, language: 'WGSL' } );
+                                } );
+                            }
+                        } );
+                    }, 150 );
 
                 }, { icon: 'Code', iconPosition: 'end', className: 'absolute bottom-0 mb-6 self-center mx-auto', buttonClass: 'outline' } ).root );
             }
@@ -2727,7 +2724,7 @@ export const ui = {
         document.querySelector( '#signupContainer' )?.classList.add( 'hidden' );
 
         // Login feedback
-        document.querySelectorAll( '.lextoast' ).forEach( ( t ) => t.close() );
+        Utils.clearToasts();
         Utils.toast( `✅ Logged in`, `Welcome ${user.email}!` );
 
         const path = window.location.pathname;
@@ -2910,7 +2907,7 @@ export const ui = {
 
                 await this.fs.createAccount( value.email, value.password, value.userName, async ( user ) => {
                     dialog.close();
-                    document.querySelectorAll( '.lextoast' ).forEach( ( t ) => t.close() );
+                    Utils.clearToasts();
                     Utils.toast( `✅ Account created!`, `You can now login with your email: ${value.email}` );
 
                     // Update DB

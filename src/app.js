@@ -1201,6 +1201,8 @@ const ShaderHub = {
         const compilePasses = pass ? [ pass ] : this.shader.passes;
         const inCommonPass = this.currentPass.type === 'common';
 
+        Utils.clearToasts();
+
         for ( let i = 0; i < compilePasses.length; ++i )
         {
             // Buffers and images draw

@@ -85,6 +85,11 @@ export function toast( title, text, timeout )
     LX.toast( title, text, { position: 'top-right', timeout } );
 }
 
+export function clearToasts()
+{
+    document.querySelectorAll( '.lextoast' ).forEach( ( t ) => t.close() );
+}
+
 const BASE62 = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 // Convert hex string to base62
