@@ -283,7 +283,11 @@ const ShaderHub = {
                 pass.resolutionY = this.resolutionY;
 
                 pass.uniforms = pass.uniforms ?? [];
-                pass.uniforms.forEach( ( u ) => u.type = u.type ?? 'f32' );
+                // Make sure it has all new properties..
+                pass.uniforms.forEach( ( u ) => {
+                    u.type = u.type ?? 'f32';
+                    u.step = u.step ?? 0.1;
+                } );
 
                 // Push passes to the shader
                 const shaderPass = new ShaderPassClass( shader, this.renderer, pass );
