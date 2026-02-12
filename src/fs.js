@@ -334,6 +334,119 @@ class FS
             ...data
         );
     }
+
+    async _downloadDatabasesBackup()
+    {
+        const collections = [
+            { id: FS.SHADERS_COLLECTION_ID, name: 'shaders' },
+            { id: FS.USERS_COLLECTION_ID, name: 'users' },
+            { id: FS.ASSETS_COLLECTION_ID, name: 'assets' },
+            { id: FS.INTERACTIONS_COLLECTION_ID, name: 'interactions' },
+        ];
+
+        const backup = {
+            timestamp: new Date().toISOString(),
+            database: FS.DATABASE_ID,
+            collections: {}
+        };
+
+        for ( const col of collections )
+        {
+            console.log( `Backing up ${ col.name }...` );
+            const docs = [];
+            const limit = 100;
+            let offset = 0;
+            let total = Infinity;
+
+            while ( offset < total )
+            {
+                const response = await this.databases.listDocuments( {
+                    databaseId: FS.DATABASE_ID,
+                    collectionId: col.id,
+                    queries: [
+                        Appwrite.Query.limit( limit ),
+                        Appwrite.Query.offset( offset )
+                    ]
+                } );
+                total = response.total;
+                docs.push( ...response.documents );
+                offset += limit;
+            }
+
+            backup.collections[ col.name ] = { total: docs.length, documents: docs };
+            console.log( `  ${ col.name }: ${ docs.length } documents` );
+        }
+
+        const json = JSON.stringify( backup, null, 2 );
+        const blob = new Blob( [ json ], { type: 'application/json' } );
+        const url = URL.createObjectURL( blob );
+        const a = document.createElement( 'a' );
+        a.href = url;
+        a.download = `shaderhub-dbs-${ new Date().toISOString().slice( 0, 10 ) }.json`;
+        a.click();
+        URL.revokeObjectURL( url );
+
+        console.log( 'DB backup downloaded!' );
+    }
+
+    async _downloadFilesBackup()
+    {
+        const zip = new JSZip();
+        const files = [];
+        let fileOffset = 0;
+        let fileTotal = Infinity;
+
+        while ( fileOffset < fileTotal )
+        {
+            const response = await this.storage.listFiles( {
+                bucketId: FS.BUCKET_ID,
+                queries: [
+                    Appwrite.Query.limit( 100 ),
+                    Appwrite.Query.offset( fileOffset )
+                ]
+            } );
+            fileTotal = response.total;
+            files.push( ...response.files );
+            fileOffset += 100;
+        }
+
+        console.log( `  Found ${ files.length } files, downloading...` );
+
+        for ( let i = 0; i < files.length; i++ )
+        {
+            const file = files[ i ];
+            console.log( `  [${ i + 1 }/${ files.length }] ${ file.name }` );
+            try
+            {
+                const data = await this.storage.getFileDownload( {
+                    bucketId: FS.BUCKET_ID,
+                    fileId: file['$id']
+                } );
+                zip.file( file.name, data );
+            }
+            catch ( err )
+            {
+                console.error( `  Failed to download ${ file.name }:`, err.message );
+            }
+        }
+
+        const zipBlob = await zip.generateAsync( { type: 'blob' } );
+        const zipUrl = URL.createObjectURL( zipBlob );
+        const zipLink = document.createElement( 'a' );
+        zipLink.href = zipUrl;
+        zipLink.download = `shaderhub-files-${ new Date().toISOString().slice( 0, 10 ) }.zip`;
+        zipLink.click();
+        URL.revokeObjectURL( zipUrl );
+
+        console.log( 'Storage backup downloaded!' );
+    }
+
+    _downloadBackup()
+    {
+        if ( !this.user || !this.user['$id'] ) return alert( 'You must be logged in to download backups.' );
+        this._downloadDatabasesBackup();
+        this._downloadFilesBackup();
+    }
 }
 
 export { FS };
