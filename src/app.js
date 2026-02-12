@@ -735,7 +735,7 @@ const ShaderHub = {
         return `${this.previewNamePrefix}${uid}.png`;
     },
 
-    async saveShaderFiles( ownShader, isRemix )
+    async saveShaderFiles( ownShader, remixShaderName )
     {
         const passes = ownShader ? this.shader.passes : ( this.shader._json?.passes ?? this.shader.passes );
 
@@ -755,7 +755,7 @@ const ShaderHub = {
 
         const text = JSON.stringify( json );
         const arraybuffer = new TextEncoder().encode( text );
-        const filename = `${LX.toCamelCase( this.shader.name )}.json`;
+        const filename = `${LX.toCamelCase( remixShaderName ?? this.shader.name )}_${LX.guidGenerator()}.json`;
         const file = new File( [ arraybuffer ], filename, { type: 'text/plain' } );
         const result = await fs.createFile( file );
         return result['$id'];
@@ -913,13 +913,13 @@ const ShaderHub = {
         // Create a new col to store original_id so it can be shown in the page
         // Get the new shader id, and reload page in shader view with that id
 
-        const shaderName = this.shader.name;
         const shaderUid = this.shader.uid;
-        const newFileId = await this.saveShaderFiles( false, true );
+        const shaderName = `${this.shader.name}_remix`;
+        const newFileId = await this.saveShaderFiles( false, shaderName );
 
         // Create a new shader in the DB
         const result = await fs.createDocument( FS.SHADERS_COLLECTION_ID, {
-            'name': shaderName,
+            'name': this.shader.name,
             'author_name': fs.user.name,
             'author_id': fs.getUserId(),
             'original_id': shaderUid,
@@ -931,7 +931,7 @@ const ShaderHub = {
         } );
 
         // Upload canvas snapshot
-        await this.updateShaderPreview( shaderUid, false );
+        await this.updateShaderPreview( result['$id'], false );
 
         // Go to shader edit view with the new shader
         ui._openShader( result['$id'] );
