@@ -1145,9 +1145,17 @@ class ShaderPass
         if ( line.startsWith( '#define' ) )
         {
             const defineName = tokens[1];
-            const defineValue = tokens.slice( 2 ).join( ' ' ); // All starting from the 2nd index
-            this.defines[defineName] = defineValue;
+            let defineValue = tokens.slice( 2 ).join( ' ' );
             lines[this._pLine++] = '';
+
+            // multiline defines
+            while ( defineValue.endsWith( '\\' ) && this._pLine < lines.length )
+            {
+                defineValue = defineValue.slice( 0, -1 ) + ' ' + lines[this._pLine].trim();
+                lines[this._pLine++] = '';
+            }
+
+            this.defines[defineName] = defineValue;
             return;
         }
         if ( line.startsWith( '#if' ) || line.startsWith( '#elseif' ) )
