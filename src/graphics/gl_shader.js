@@ -204,7 +204,8 @@ class GLShaderPass extends ShaderPass
 
         for ( const name in bindings )
         {
-            const loc = gl.getUniformLocation( program, name );
+            const texChannelName = bindings[name];
+            const loc = gl.getUniformLocation( program, texChannelName );
             this.uniformLocations[name] = loc;
 
             // For struct bindings, also cache field locations (e.g., iMouse.pos)
@@ -334,8 +335,6 @@ class GLShaderPass extends ShaderPass
 
         if ( includeBindings )
         {
-            let bindingIndex = 0;
-
             // Default Uniform bindings
             {
                 const defaultBindingsIndex = templateCodeLines.indexOf( '$default_bindings' );
@@ -343,8 +342,7 @@ class GLShaderPass extends ShaderPass
                 templateCodeLines.splice( defaultBindingsIndex, 1, ...Constants.DEFAULT_UNIFORMS_LIST.map( ( u, index ) => {
                     if ( u.skipBindings ?? false ) return;
                     if ( !this.isBindingUsed( u.name, noBindingsShaderCode ) ) return;
-                    const binding = bindingIndex++;
-                    defaultBindings[u.name] = binding;
+                    defaultBindings[u.name] = u.name;
                     const type = u.type[this.renderer.backend] ?? 'float';
                     return `uniform ${type} ${u.name};`;
                 } ).filter( ( u ) => u !== undefined ) );
@@ -357,8 +355,7 @@ class GLShaderPass extends ShaderPass
                 templateCodeLines.splice( customBindingsIndex, 1, ...this.uniforms.map( ( u, index ) => {
                     if ( !u ) return;
                     if ( !this.isBindingUsed( u.name, noBindingsShaderCode ) ) return;
-                    const binding = bindingIndex++;
-                    customBindings[u.name] = binding;
+                    customBindings[u.name] = u.name;
                     const type = Constants.WGSL_TO_GLSL[u.type[this.renderer.backend] ?? 'f32'];
                     return `uniform ${type} ${u.name};`;
                 } ).filter( ( u ) => u !== undefined ) );
@@ -372,8 +369,7 @@ class GLShaderPass extends ShaderPass
                     if ( !channel ) return;
                     const channelIndexName = `iChannel${index}`;
                     if ( !this.isBindingUsed( channelIndexName, noBindingsShaderCode ) ) return;
-                    const binding = bindingIndex++;
-                    textureBindings[channel.id] = binding;
+                    textureBindings[channel.id] = channelIndexName; // store channel name instead of binding, for the uniform location
                     const texture = this.channelTextures[index];
                     return `uniform ${texture.depthOrArrayLayers > 1 ? 'samplerCube' : 'sampler2D'} ${channelIndexName};`;
                 } ).filter( ( u ) => u !== undefined );
