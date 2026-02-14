@@ -1080,34 +1080,42 @@ class ShaderPass
         const line = lines[this._pLine];
         const tokens = line.split( ' ' );
 
-        const iContinueUntilTags = ( ...tags ) => {
-            while ( this._pLine < lines.length )
-            {
-                const line = lines[this._pLine];
-                let tagFound = tags.filter( ( t ) => line.startsWith( t ) )[0];
-                if ( tagFound )
-                {
-                    lines[this._pLine++] = '';
-                    return [ tagFound, line ];
-                }
-
-                this._pLine++;
-            }
+        const iDeleteRange = ( from, to ) => {
+            for ( let i = from; i <= to; i++ )
+                lines[i] = '';
         };
-        const iDeleteUntilTags = ( ...tags ) => {
-            while ( this._pLine < lines.length )
-            {
-                const line = lines[this._pLine];
-                let tagFound = tags.filter( ( t ) => line.startsWith( t ) )[0];
-                if ( tagFound )
-                {
-                    lines[this._pLine++] = '';
-                    return [ tagFound, line ];
-                }
 
-                lines[this._pLine++] = '';
+        // Scan forward skipping nested #if blocks until one of 'tags' is found at depth 0.
+        // Returns [index, tag, line]
+        const iFindTag = ( from, ...tags ) => {
+            let i = from;
+            let depth = 0;
+            while ( i < lines.length )
+            {
+                const line = lines[i];
+                if ( line.startsWith( '#if' ) && !tags.some( t => line.startsWith( t ) ) )
+                {
+                    depth++;
+                }
+                else if ( line.startsWith( '#endif' ) )
+                {
+                    if ( depth > 0 ) depth--;
+                    else
+                    {
+                        let tagFound = tags.find( t => line.startsWith( t ) );
+                        if ( tagFound ) return [ i, tagFound, line ];
+                    }
+                }
+                else if ( depth === 0 )
+                {
+                    let tagFound = tags.find( t => line.startsWith( t ) );
+                    if ( tagFound ) return [ i, tagFound, line ];
+                }
+                i++;
             }
+            return [ -1, null, null ];
         };
+
         const iStartIf = ( line ) => {
             lines[this._pLine++] = ''; // remove "if"/"elseif" lines
 
@@ -1115,22 +1123,37 @@ class ShaderPass
             console.assert( p, `No If directive in line: ${line}` );
             if ( this._evaluateParsedCondition( p ) )
             {
-                const [ tag, ln ] = iContinueUntilTags( '#elseif', '#else', '#endif' );
-                if ( tag == '#else' || tag == '#elseif' )
+                const [ idx, tag ] = iFindTag( this._pLine, '#elseif', '#else', '#endif' );
+                if ( tag === '#endif' )
                 {
-                    iDeleteUntilTags( '#endif' );
+                    lines[idx] = '';
+                }
+                else
+                {
+                    // Delete from #elseif/#else to #endif
+                    const [ endIdx ] = iFindTag( idx + 1, '#endif' );
+                    iDeleteRange( idx, endIdx );
                 }
             }
             else
             {
-                const [ tag, ln ] = iDeleteUntilTags( '#elseif', '#else', '#endif' );
-                if ( tag == '#else' )
+                const [ idx, tag, ln ] = iFindTag( this._pLine, '#elseif', '#else', '#endif' );
+                iDeleteRange( this._pLine, idx - 1 );
+                if ( tag === '#endif' )
                 {
-                    iContinueUntilTags( '#endif' );
+                    lines[idx] = '';
+                    this._pLine = idx + 1;
                 }
-                else if ( tag == '#elseif' )
+                else if ( tag === '#else' )
                 {
-                    this._pLine--; // We have to evaluate prev line here
+                    lines[idx] = '';
+                    this._pLine = idx + 1;
+                    const [ endIdx ] = iFindTag( this._pLine, '#endif' );
+                    lines[endIdx] = '';
+                }
+                else if ( tag === '#elseif' )
+                {
+                    this._pLine = idx;
                     iStartIf( ln );
                 }
             }
