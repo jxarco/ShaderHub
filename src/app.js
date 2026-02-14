@@ -395,8 +395,7 @@ const ShaderHub = {
         console.assert( this.currentPass, `Cannot find pass ${passName}` );
 
         await ui.updateShaderChannelsView();
-
-        ui.toggleCustomUniformsButton( this.currentPass.type === 'common' );
+        ui.renderUniformsView( this.currentPass );
 
         ui.editor.setCustomSuggestions( this.getCurrentSuggestions() );
     },
@@ -1251,6 +1250,8 @@ const ShaderHub = {
                             Utils.toast( `❌ ${LX.toTitleCase( msg.type )}: ${fragLineNumber}:${msg.linePos}`, msg.message, -1 );
                             ui.editor.code.childNodes[fragLineNumber - 1]?.classList.add( msg.type === 'error' ? 'removed' : 'debug' );
                         }
+
+                        ui.pushCompilationLog( pass.name, msg.type, msg.message, fragLineNumber, msg.linePos );
                     }
                 }, 10 );
 
@@ -1392,6 +1393,7 @@ const ShaderHub = {
         }
 
         ui.editor.setCustomSuggestions( this.getCurrentSuggestions() );
+        ui.renderUniformsView( pass );
     },
 
     async removeUniform( pass, uniformIdx )
@@ -1406,6 +1408,7 @@ const ShaderHub = {
         }
 
         ui.editor.setCustomSuggestions( this.getCurrentSuggestions() );
+        ui.renderUniformsView( pass );
     },
 
     async updateUniformType( pass, uniformIdx, typeName )
@@ -1443,6 +1446,8 @@ const ShaderHub = {
         {
             this.compileShader( true, pass );
         }
+
+        ui.renderUniformsView( pass );
     },
 
     playSoundUniformChannel( channelIndex )

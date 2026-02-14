@@ -2,10 +2,11 @@ import { LX } from 'lexgui';
 import 'lexgui/extensions/CodeEditor.js';
 import { ShaderHub } from './app.js';
 import * as Constants from './constants.js';
+import * as Utils from './utils.js';
 import { FS } from './fs.js';
 import { GLShader } from './graphics/gl_shader.js';
 import { Shader } from './graphics/shader.js';
-import * as Utils from './utils.js';
+import { GLSL_CODE_LIBRARY } from './graphics/glsl_library.js';
 
 const Query = Appwrite.Query;
 const mobile = Utils.isMobile();
@@ -873,18 +874,58 @@ export const ui = {
         this.shader = shader;
 
         let [ leftArea, rightArea ] = this.area.split( { sizes: [ '50%', '50%' ] } );
-        rightArea.root.className = rightArea.root.className.replace( 'bg-background', 'bg-none p-3 shader-edit-content' );
+        rightArea.root.className = rightArea.root.className.replace( 'bg-background', 'bg-none p-3 shader-edit-content flex flex-col gap-2' );
         leftArea.root.className = leftArea.root.className.replace( 'bg-background', 'bg-none p-3 flex flex-col gap-2' );
 
         // Set background to parent area
         this.area.root.parentElement.className = this.area.root.parentElement.className.replace( 'bg-background', 'hub-background' );
         leftArea.root.parentElement.classList.add( 'hub-background-blur' );
 
-        let [ codeArea, shaderSettingsArea ] = rightArea.split( { type: 'vertical', sizes: [ '80%', '20%' ], resize: false } );
-        codeArea.root.className += ' box-shadow rounded-xl overflow-hidden code-border-default';
-        shaderSettingsArea.root.className += ' bg-none content-center';
+        let codeArea = new LX.Area({ className: 'box-shadow rounded-xl overflow-hidden code-border-default flex-auto-fill h-full', skipAppend: true } );
+        let shaderSettingsArea = new LX.Area({
+            height: 'auto',
+            className: 'max-h-96 flex flex-col box-shadow rounded-xl overflow-hidden pt-2 bg-none content-center flex-auto-keep',
+            skipAppend: true
+        } );
+        rightArea.attach( codeArea );
+        rightArea.attach( shaderSettingsArea );
 
-        this.channelsContainer = LX.makeContainer( [ '100%', '100%' ], 'channel-list grid gap-2 pt-2 items-center justify-center', '', shaderSettingsArea );
+        this._shaderSettingsArea = shaderSettingsArea;
+
+        const shaderToolsTabs = shaderSettingsArea.addTabs({ fit: true });
+        
+        this.channelsContainer = LX.makeContainer( [ '100%', '100%' ], 'channel-list grid p-2 gap-2 items-center justify-center' );
+        shaderToolsTabs.add( 'Channels', this.channelsContainer );
+
+        const uniformsContainer = LX.makeContainer( [ '100%', '100%' ], 'p-2 gap-2 items-center justify-center' );
+        shaderToolsTabs.add( 'Uniforms', uniformsContainer );
+        this.uniformsContainerPanel = new LX.Panel( { className: 'overflow-scroll' } );
+        this.uniformsContainerPanel.root.classList.remove( 'scrollbar-hidden' );
+        uniformsContainer.appendChild( this.uniformsContainerPanel.root );
+
+        const libraryContainer = LX.makeContainer( [ '100%', '100%' ], 'p-2 gap-2 items-center justify-center' );
+        shaderToolsTabs.add( 'Library', libraryContainer );
+        this.libraryContainerPanel = new LX.Panel( { className: 'flex flex-col' } );
+        libraryContainer.appendChild( this.libraryContainerPanel.root );
+        this.renderShaderLibraryView();
+
+        const logContainer = LX.makeContainer( [ '100%', '100%' ], 'p-2 gap-2 items-center justify-center' );
+        shaderToolsTabs.add( 'Log', logContainer );
+        this.compileLogContainerPanel = new LX.Panel( { className: 'flex flex-col' } );
+        logContainer.appendChild( this.compileLogContainerPanel.root );
+
+        {
+            this.compileLogContainerPanel.refresh = () => {
+                this.compileLogContainerPanel.clear();
+                this.compileLogContainerPanel.sameLine();
+                this.compileLogContainerPanel.addLabel( 'Shader compile errors and warnings will appear here.', { className: 'w-full flex-auto-fill' } );
+                this.compileLogContainerPanel.addButton( null, 'Clear Log', () => {
+                    this.compileLogContainerPanel.refresh();
+                }, { icon: 'Trash2', className: 'flex-auto-keep ml-auto self-center', buttonClass: 'outline', title: 'Clear Log', tooltip: true } );
+                this.compileLogContainerPanel.endLine();
+            };
+            this.compileLogContainerPanel.refresh();
+        }
 
         document.title = `${shader.name} (${shader.author}) - ShaderHub`;
 
@@ -972,6 +1013,230 @@ export const ui = {
                 await this.onCodeEditorReady( editor, leftArea );
             }
         } );
+    },
+
+    renderUniformsView( pass )
+    {
+        const p = this.uniformsContainerPanel;
+        if( !p ) return;
+
+        pass = pass ?? ShaderHub.currentPass;
+        if ( !pass || pass.type === 'common' )
+        {
+            return;
+        }
+
+        p.clear();
+
+        p.sameLine();
+
+        p.addLabel( 'Uniform names must start with i + Capital letter (e.g. iTime).', { className: 'w-full flex-auto-fill' } );
+
+        const addUniformButton = p.addButton( null, 'AddNewCustomUniform', () => {
+            ShaderHub.addUniform();
+        }, { icon: 'Plus', className: 'flex-auto-keep ml-auto self-center', buttonClass: 'bg-none', title: 'Add New Uniform', tooltip: true, width: '38px' } );
+
+        p.endLine();
+
+        for ( let i = 0; i < pass.uniforms.length; ++i )
+        {
+            if ( i !== 0 )
+            {
+                p.addSeparator();
+            }
+
+            const u = pass.uniforms[i];
+            const min = u.min, max = u.max, step = u.step;
+            const precision = 6; // step.toString().split('.')[1]?.length ?? 0;
+            const isScalar = [ 'f32', 'i32', 'u32' ].includes( u.type );
+
+            p.sameLine();
+
+            const optionsButton = p.addButton( null, 'UniformOptionsButton', ( v ) => {
+                const iUpdateUniformType = ( v ) => {
+                    ShaderHub.updateUniformType( pass, i, v );
+                };
+
+                const menu = LX.addDropdownMenu( optionsButton.root, [
+                    { name: 'Float', submenu: [
+                        { name: 'f32', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                        { name: 'vec2f', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                        { name: 'vec3f', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                        { name: 'vec4f', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                    ] },
+                    { name: 'Int', submenu: [
+                        { name: 'i32', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                        { name: 'vec2i', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                        { name: 'vec3i', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                        { name: 'vec4i', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                    ] },
+                    { name: 'UnsignedInt', submenu: [
+                        { name: 'u32', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                        { name: 'vec2u', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                        { name: 'vec3u', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                        { name: 'vec4u', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
+                    ] },
+                    { name: 'Color', submenu: [
+                        { name: 'color3', icon: 'Pipette', callback: iUpdateUniformType.bind( this ) },
+                        { name: 'color4', icon: 'Pipette', callback: iUpdateUniformType.bind( this ) }
+                    ] },
+                    null,
+                    { name: 'Delete', icon: 'Trash2', className: 'destructive', callback: () => {
+                        ShaderHub.removeUniform( pass, i );
+                    } }
+                ], { side: 'top', align: 'start' } );
+
+                menu.root.skipFocus = true;
+            }, { className: 'flex-auto-keep', icon: 'Menu', buttonClass: 'bg-none' } );
+
+            p.addText( null, u.name, ( v ) => {
+                u.name = v;
+                ShaderHub.compileShader( true, pass );
+            }, { className: 'flex-auto-keep', inputClass: 'w-auto! field-sizing-content', skipReset: true,
+                pattern: '\\b(?!(' + Constants.DEFAULT_UNIFORM_NAMES.join( '|' ) + ')\\b)(i[A-Z]\\w*)\\b' } );
+
+            if ( isScalar )
+            {
+                const limitsComponents = [];
+
+                limitsComponents.push( p.addNumber( 'Min', u.min, ( v ) => {
+                    u.min = v;
+                    limitsComponents.forEach( ( c ) => c.setLimits( u.min, u.max, u.step ) );
+                    pass.uniformsDirty = true;
+                }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, max, step, precision } ) );
+                limitsComponents.push( p.addRange( null, u.value, ( v ) => {
+                    u.value = v;
+                    pass.uniformsDirty = true;
+                }, { className: 'primary flex-auto-fill', skipReset: true, min, max, step, precision } ) );
+                limitsComponents.push( p.addNumber( 'Max', u.max, ( v ) => {
+                    u.max = v;
+                    limitsComponents.forEach( ( c ) => c.setLimits( u.min, u.max, u.step ) );
+                    pass.uniformsDirty = true;
+                }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, min, step, precision } ) );
+                limitsComponents.push( p.addNumber( 'Step', u.step, ( v ) => {
+                    u.step = v;
+                    limitsComponents.forEach( ( c ) => c.setLimits( u.min, u.max, u.step ) );
+                    pass.uniformsDirty = true;
+                }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, step, precision } ) );
+            }
+            else if ( u.isColor )
+            {
+                const hasAlpha = u.type === 'vec4f';
+                const color = { r: u.value[0], g: u.value[1], b: u.value[2] };
+                if ( hasAlpha )
+                {
+                    color.a = u.value[3];
+                }
+                p.addColor( null, LX.rgbToHex( color ), ( v ) => {
+                    u.value = [ v.r, v.g, v.b ];
+                    if ( hasAlpha ) u.value[3] = v.a;
+                    pass.uniformsDirty = true;
+                }, { className: 'flex-auto-fill', skipReset: true, useRGB: true } );
+            }
+            else
+            {
+                const vecFuncName = `addVector${u.value.length}`;
+                p[vecFuncName]( null, u.value, ( v ) => {
+                    u.value = v;
+                    pass.uniformsDirty = true;
+                }, { className: 'flex-auto-fill', skipReset: true, step: u.step } );
+            }
+
+            p.endLine();
+        }
+    },
+
+    renderShaderLibraryView()
+    {
+        const p = this.libraryContainerPanel;
+        if( !p ) return;
+
+        p.clear();
+
+        p.addText( null, '', ( v ) => {
+
+            const query = v.trim().toLowerCase();
+            if( !query )
+            {
+                this.renderLibraryCategory( library, library[0].name );
+                return;
+            }
+
+            const results = [];
+            for( const cat of library )
+            {
+                for( const snippet of cat.snippets )
+                {
+                    if( snippet.name.toLowerCase().includes( query ) )
+                    {
+                        results.push( snippet );
+                    }
+                }
+            }
+
+            this.renderLibraryCategory( library, null, results );
+
+        }, { className: 'w-full', trigger: 'input', placeholder: 'Search in library...' } );
+
+        // Sidebar with categories
+
+        const sidebarOptions = {
+            skipHeader: true,
+            skipFooter: true,
+            collapsed: false,
+            collapsable: false,
+            displaySelected: true
+        };
+
+        const usingWebGPU = ShaderHub.backend === 'webgpu';
+        const library = usingWebGPU ? GLSL_CODE_LIBRARY : GLSL_CODE_LIBRARY;
+        // sconst library = usingWebGPU ? WGSL_CODE_LIBRARY : GLSL_CODE_LIBRARY;
+
+        const sidebarCallback = ( m ) => {
+            library.forEach( c => {
+                m.add( c.name, { icon: c.icon, callback: () => {
+                    this.renderLibraryCategory( library, c.name );
+                } } );
+            } );
+        };
+
+        const sheetArea = new LX.Area( { height: 'calc(100% - 38px)', skipAppend: true } );
+        const sidebar = sheetArea.addSidebar( sidebarCallback, sidebarOptions );
+        p.attach( sheetArea );
+
+        // Add actual stuff to library
+        {
+            const contentArea = sidebar.siblingArea;
+            const contentPanel = contentArea.addPanel( { className: 'p-2 gap-2 items-center justify-center' } );
+
+            this.renderLibraryCategory = ( library, category, snippets ) => {
+
+                contentPanel.clear();
+
+                if( !snippets )
+                {
+                    const cat = library.find( c => c.name === category );
+                    if( !cat || !cat.snippets ) return;
+                    snippets = cat.snippets;
+                }
+
+                for( const snippet of snippets )
+                {
+                    contentPanel.addCard( snippet.name, {
+                        header: {
+                            title: snippet.name,
+                            description: snippet.description,
+                            action: { name: "Insert", callback: () => {
+                                const editor = this.editor;
+                                if( editor ) editor.appendText( '\n' + snippet.code + '\n', editor.getCurrentCursor( true ) );
+                            } }
+                        },
+                    } );
+                }
+            }
+
+            this.renderLibraryCategory( library, 'Constants' );
+        }
     },
 
     async onCodeEditorReady( editor, area )
@@ -2415,180 +2680,6 @@ export const ui = {
         }, { icon: 'EllipsisVertical', title: 'More', tooltip: true, buttonClass: 'ghost' } );
 
         /*
-            Custom Uniforms info
-        */
-
-        const customParametersContainer = LX.makeContainer(
-            [ `${Math.min( 800, window.innerWidth - 64 )}px`, 'auto' ],
-            'overflow-scroll',
-            '',
-            null,
-            { maxHeight: '256px', maxWidth: `${window.innerWidth - 64}px` }
-        );
-
-        const uniformsHeader = LX.makeContainer( [ 'auto', 'auto' ], 'flex flex-row p-2 items-center', '', customParametersContainer );
-        const uniformsCountTitle = LX.makeContainer( [ 'auto', 'auto' ], '', `Uniforms [0]`, uniformsHeader );
-        const addUniformButton = new LX.Button( null, 'AddNewCustomUniform', () => {
-            ShaderHub.addUniform();
-            this.customParametersPanel.refresh();
-        }, { icon: 'Plus', className: 'ml-auto self-center', buttonClass: 'bg-none', title: 'Add New Uniform', tooltip: true, width: '38px' } );
-        uniformsHeader.appendChild( addUniformButton.root );
-
-        // Create the content for the uniforms panel
-        {
-            this.customParametersPanel = new LX.Panel( { className: 'custom-parameters-panel w-full' } );
-            customParametersContainer.appendChild( this.customParametersPanel.root );
-
-            this.customParametersPanel.refresh = ( overridePanel, onRefresh ) => {
-                const pass = ShaderHub.currentPass;
-                if ( !pass || pass.type === 'common' ) return;
-
-                overridePanel = overridePanel ?? this.customParametersPanel;
-
-                overridePanel.clear();
-
-                overridePanel.addLabel( 'Uniform names must start with i + Capital letter (e.g. iTime).' );
-
-                for ( let i = 0; i < pass.uniforms.length; ++i )
-                {
-                    if ( i !== 0 )
-                    {
-                        overridePanel.addSeparator();
-                    }
-
-                    const u = pass.uniforms[i];
-                    const min = u.min, max = u.max, step = u.step;
-                    const precision = 6; // step.toString().split('.')[1]?.length ?? 0;
-                    const isScalar = [ 'f32', 'i32', 'u32' ].includes( u.type );
-
-                    overridePanel.sameLine();
-                    overridePanel.addText( null, u.name, ( v ) => {
-                        u.name = v;
-                        ShaderHub.compileShader( true, pass );
-                    }, { className: 'flex-auto-keep', inputClass: 'w-auto! field-sizing-content', skipReset: true,
-                        pattern: '\\b(?!(' + Constants.DEFAULT_UNIFORM_NAMES.join( '|' ) + ')\\b)(i[A-Z]\\w*)\\b' } );
-
-                    if ( isScalar )
-                    {
-                        const limitsComponents = [];
-
-                        limitsComponents.push( overridePanel.addNumber( 'Min', u.min, ( v ) => {
-                            u.min = v;
-                            limitsComponents.forEach( ( c ) => c.setLimits( u.min, u.max, u.step ) );
-                            pass.uniformsDirty = true;
-                        }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, max, step, precision } ) );
-                        limitsComponents.push( overridePanel.addRange( null, u.value, ( v ) => {
-                            u.value = v;
-                            pass.uniformsDirty = true;
-                        }, { className: 'primary flex-auto-fill', skipReset: true, min, max, step, precision } ) );
-                        limitsComponents.push( overridePanel.addNumber( 'Max', u.max, ( v ) => {
-                            u.max = v;
-                            limitsComponents.forEach( ( c ) => c.setLimits( u.min, u.max, u.step ) );
-                            pass.uniformsDirty = true;
-                        }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, min, step, precision } ) );
-                        limitsComponents.push( overridePanel.addNumber( 'Step', u.step, ( v ) => {
-                            u.step = v;
-                            limitsComponents.forEach( ( c ) => c.setLimits( u.min, u.max, u.step ) );
-                            pass.uniformsDirty = true;
-                        }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, step, precision } ) );
-                    }
-                    else if ( u.isColor )
-                    {
-                        const hasAlpha = u.type === 'vec4f';
-                        const color = { r: u.value[0], g: u.value[1], b: u.value[2] };
-                        if ( hasAlpha )
-                        {
-                            color.a = u.value[3];
-                        }
-                        overridePanel.addColor( null, LX.rgbToHex( color ), ( v ) => {
-                            u.value = [ v.r, v.g, v.b ];
-                            if ( hasAlpha ) u.value[3] = v.a;
-                            pass.uniformsDirty = true;
-                        }, { className: 'flex-auto-fill', skipReset: true, useRGB: true } );
-                    }
-                    else
-                    {
-                        const vecFuncName = `addVector${u.value.length}`;
-                        overridePanel[vecFuncName]( null, u.value, ( v ) => {
-                            u.value = v;
-                            pass.uniformsDirty = true;
-                        }, { className: 'flex-auto-fill', skipReset: true, step: u.step } );
-                    }
-
-                    const optionsButton = overridePanel.addButton( null, 'UniformOptionsButton', ( v ) => {
-                        const iUpdateUniformType = ( v ) => {
-                            ShaderHub.updateUniformType( pass, i, v );
-                            this.customParametersPanel.refresh( overridePanel );
-                        };
-
-                        const menu = LX.addDropdownMenu( optionsButton.root, [
-                            { name: 'Number', submenu: [
-                                { name: 'f32', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
-                                { name: 'i32', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
-                                { name: 'u32', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) }
-                            ] },
-                            { name: 'Vec2', submenu: [
-                                { name: 'vec2f', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
-                                { name: 'vec2i', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
-                                { name: 'vec2u', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) }
-                            ] },
-                            { name: 'Vec3', submenu: [
-                                { name: 'vec3f', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
-                                { name: 'vec3i', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
-                                { name: 'vec3u', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) }
-                            ] },
-                            { name: 'Vec4', submenu: [
-                                { name: 'vec4f', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
-                                { name: 'vec4i', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) },
-                                { name: 'vec4u', icon: 'Cuboid', callback: iUpdateUniformType.bind( this ) }
-                            ] },
-                            { name: 'Color', submenu: [
-                                { name: 'color3', icon: 'Pipette', callback: iUpdateUniformType.bind( this ) },
-                                { name: 'color4', icon: 'Pipette', callback: iUpdateUniformType.bind( this ) }
-                            ] },
-                            null,
-                            { name: 'Delete', icon: 'Trash2', className: 'destructive', callback: () => {
-                                ShaderHub.removeUniform( pass, i );
-                                this.customParametersPanel.refresh( overridePanel );
-                            } }
-                        ], { side: 'top', align: 'end' } );
-
-                        menu.root.skipFocus = true;
-                    }, { className: 'flex-auto-keep', icon: 'Menu', buttonClass: 'bg-none' } );
-
-                    overridePanel.endLine();
-                }
-
-                // Updates probably to the panel at the dialog
-                if ( onRefresh )
-                {
-                    onRefresh();
-                }
-                else
-                {
-                    // Updates to the popover
-                    uniformsCountTitle.innerHTML = `Uniforms [${pass.uniforms.length}]`;
-
-                    if ( LX.Popover.activeElement )
-                    {
-                        LX.Popover.activeElement._adjustPosition();
-                    }
-                }
-            };
-        }
-
-        this.openCustomParamsButton = customTabInfoButtonsPanel.addButton( null, 'OpenCustomParams', ( name, event ) => {
-            const pass = ShaderHub.currentPass;
-            if ( pass.name === 'Common' )
-            {
-                return;
-            }
-
-            this.customParametersPanel.refresh();
-            this.openUniformsDialog( event.target );
-        }, { icon: 'Settings2', title: 'Custom Parameters', tooltip: true, buttonClass: 'ghost' } );
-
-        /*
             Compile Button
         */
 
@@ -2705,6 +2796,27 @@ export const ui = {
         }, { passive: false } );
 
         return canvas;
+    },
+
+    pushCompilationLog( passName, msgType, msgText, lineNumber, colNumber )
+    {
+        const container = this.compileLogContainerPanel.root;
+        const isError = msgType === 'error';
+
+        const entry = LX.makeContainer( [ '100%', 'auto' ], `flex flex-row items-center gap-2 px-3 py-2 rounded-md cursor-pointer text-sm hover:bg-accent transition ${isError ? 'text-red-500' : 'text-yellow-500'}`, `
+            ${LX.makeIcon( isError ? 'CircleX' : 'TriangleAlert', { svgClass: 'sm flex-auto-keep' } ).innerHTML}
+            <span class="flex-auto-keep font-medium">[${passName}] ${lineNumber}:${colNumber}</span>
+            <span class="text-muted-foreground flex-1 truncate">${msgText}</span>
+        `, container );
+
+        entry.addEventListener( 'click', () => {
+            const editor = this.editor;
+            if( !editor ) return;
+            editor.loadTab( passName );
+            // editor.goToLine( lineNumber );
+        } );
+
+        container.scrollTop = container.scrollHeight;
     },
 
     async onLogin( user )
@@ -3093,43 +3205,6 @@ export const ui = {
         this._lastOpenedDialog = dialog;
     },
 
-    openUniformsDialog()
-    {
-        const pass = ShaderHub.currentPass;
-        if ( pass?.name === 'Common' )
-        {
-            return;
-        }
-
-        if ( this._lastOpenedDialog )
-        {
-            this._lastOpenedDialog.close();
-        }
-
-        const dialog = new LX.Dialog( `Uniforms [${pass.uniforms.length}]`, null, {
-            modal: false,
-            draggable: true,
-            size: [ Math.min( 800, window.innerWidth - 64 ), 'auto' ]
-        } );
-
-        // Put all the stuff in the dialog panel
-        this.customParametersPanel.refresh( dialog.panel );
-
-        const uniformsHeader = LX.makeContainer( [ 'auto', 'auto' ], 'flex flex-row items-center', '', dialog.title );
-        const addUniformButton = new LX.Button( null, 'AddNewCustomUniform', () => {
-            ShaderHub.addUniform();
-            this.customParametersPanel.refresh( dialog.panel, () => dialog.title.childNodes[0].textContent = `Uniforms [${pass.uniforms.length}]` );
-        }, { icon: 'Plus', className: 'ml-auto self-center', buttonClass: 'bg-none', title: 'Add New Uniform', width: '38px' } );
-        uniformsHeader.appendChild( addUniformButton.root );
-        LX.makeContainer( [ `auto`, '0.75rem' ], 'ml-2 mr-4 border-right border-colored text-muted-foreground self-center items-center', '', uniformsHeader );
-        const closerButton = dialog.title.querySelector( 'a' );
-        uniformsHeader.appendChild( closerButton );
-        // Re-add listener since it lost it changing the parent
-        closerButton.addEventListener( 'click', dialog.close );
-
-        this._lastOpenedDialog = dialog;
-    },
-
     async openAvailableChannels( pass, channelIndex )
     {
         if ( this._lastOpenedDialog )
@@ -3368,11 +3443,6 @@ export const ui = {
 
     toggleShaderChannelsView( force )
     {
-        this.channelsContainer.parentElement.classList.toggle( 'hidden', force );
-    },
-
-    toggleCustomUniformsButton( force )
-    {
-        this.openCustomParamsButton.root.classList.toggle( 'hidden', force );
+        this._shaderSettingsArea.root.classList.toggle( 'hidden', force );
     }
 };

@@ -86,6 +86,19 @@
 	flex: 0 0 auto;
 }
 
+.lexcard {
+	max-width: unset !important;
+	padding-block: 0.5rem !important;
+
+	& > .lexcontainer {
+		padding-inline: 0rem !important;
+	}
+
+	& .lexcontainer {
+		justify-content: center;
+	}
+}
+
 .shader-list-initial {
 	grid-template-columns:repeat(2, 1fr);
 }
