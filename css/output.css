@@ -61,6 +61,7 @@
     --color-accent: var(--accent);
     --color-destructive: var(--destructive);
     --color-success: var(--success);
+    --color-warning: var(--warning);
   }
 }
 @layer base {
@@ -726,20 +727,20 @@
   .text-orange-600 {
     color: var(--color-orange-600);
   }
-  .text-red-500 {
-    color: var(--color-red-500);
-  }
   .text-secondary-foreground {
     color: var(--color-secondary-foreground);
   }
   .text-success {
     color: var(--color-success);
   }
-  .text-yellow-500 {
-    color: var(--color-yellow-500);
+  .text-warning {
+    color: var(--color-warning);
   }
   .uppercase {
     text-transform: uppercase;
+  }
+  .italic {
+    font-style: italic;
   }
   .underline {
     text-decoration-line: underline;

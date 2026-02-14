@@ -6,7 +6,7 @@ import * as Utils from './utils.js';
 import { FS } from './fs.js';
 import { GLShader } from './graphics/gl_shader.js';
 import { Shader } from './graphics/shader.js';
-import { GLSL_CODE_LIBRARY } from './graphics/glsl_library.js';
+import { WGSL_CODE_LIBRARY, GLSL_CODE_LIBRARY } from './graphics/shader_code_library.js';
 
 const Query = Appwrite.Query;
 const mobile = Utils.isMobile();
@@ -884,7 +884,7 @@ export const ui = {
         let codeArea = new LX.Area({ className: 'box-shadow rounded-xl overflow-hidden code-border-default flex-auto-fill h-full', skipAppend: true } );
         let shaderSettingsArea = new LX.Area({
             height: 'auto',
-            className: 'max-h-96 flex flex-col box-shadow rounded-xl overflow-hidden pt-2 bg-none content-center flex-auto-keep',
+            className: 'max-h-96 flex flex-col box-shadow rounded-xl overflow-hidden pt-2 bg-card content-center flex-auto-keep',
             skipAppend: true
         } );
         rightArea.attach( codeArea );
@@ -892,7 +892,7 @@ export const ui = {
 
         this._shaderSettingsArea = shaderSettingsArea;
 
-        const shaderToolsTabs = shaderSettingsArea.addTabs({ fit: true });
+        const shaderToolsTabs = shaderSettingsArea.addTabs({ parentClass: 'bg-card', contentClass: 'bg-card', fit: true });
         
         this.channelsContainer = LX.makeContainer( [ '100%', '100%' ], 'channel-list grid p-2 gap-2 items-center justify-center' );
         shaderToolsTabs.add( 'Channels', this.channelsContainer );
@@ -1189,8 +1189,7 @@ export const ui = {
         };
 
         const usingWebGPU = ShaderHub.backend === 'webgpu';
-        const library = usingWebGPU ? GLSL_CODE_LIBRARY : GLSL_CODE_LIBRARY;
-        // sconst library = usingWebGPU ? WGSL_CODE_LIBRARY : GLSL_CODE_LIBRARY;
+        const library = usingWebGPU ? WGSL_CODE_LIBRARY : GLSL_CODE_LIBRARY;
 
         const sidebarCallback = ( m ) => {
             library.forEach( c => {
@@ -1225,10 +1224,10 @@ export const ui = {
                     contentPanel.addCard( snippet.name, {
                         header: {
                             title: snippet.name,
-                            description: snippet.description,
+                            description: `${snippet.description}${snippet.author ? `<br><span class="italic">by ${snippet.author}</span>` : ''}`,
                             action: { name: "Insert", callback: () => {
                                 const editor = this.editor;
-                                if( editor ) editor.appendText( '\n' + snippet.code + '\n', editor.getCurrentCursor( true ) );
+                                if( editor ) editor.appendText( `${snippet.code}\n`, editor.getCurrentCursor( true ) );
                             } }
                         },
                     } );
@@ -2803,11 +2802,12 @@ export const ui = {
         const container = this.compileLogContainerPanel.root;
         const isError = msgType === 'error';
 
-        const entry = LX.makeContainer( [ '100%', 'auto' ], `flex flex-row items-center gap-2 px-3 py-2 rounded-md cursor-pointer text-sm hover:bg-accent transition ${isError ? 'text-red-500' : 'text-yellow-500'}`, `
+        const entry = LX.makeContainer( [ '100%', 'auto' ], `flex flex-row items-center gap-2 px-3 py-2 rounded-md cursor-pointer text-sm hover:bg-accent transition ${isError ? 'text-destructive' : 'text-warning'}`, `
             ${LX.makeIcon( isError ? 'CircleX' : 'TriangleAlert', { svgClass: 'sm flex-auto-keep' } ).innerHTML}
             <span class="flex-auto-keep font-medium">[${passName}] ${lineNumber}:${colNumber}</span>
             <span class="text-muted-foreground flex-1 truncate">${msgText}</span>
         `, container );
+        entry.title = msgText;
 
         entry.addEventListener( 'click', () => {
             const editor = this.editor;
