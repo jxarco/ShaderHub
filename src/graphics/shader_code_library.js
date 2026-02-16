@@ -1,18 +1,27 @@
 // snippets collected from Xor's fragcoord.xyz website
 
-const CONSTANTS_LIBRARY_SNIPPETS = [{
-    name: "Common",
-    description: "PI, TAU, HPI, square roots",
-    code: `#define PI         3.14159265359
+const CONSTANTS_LIBRARY_SNIPPETS = [
+    {
+        name: "PI",
+        description: "π — ratio of circumference to diameter",
+        code: `#define PI         3.14159265359`
+    }, {
+        name: "TAU",
+        description: "2π — full circle in radians",
+        code: `#define TAU        6.28318530718`
+    }, {
+        name: "Common",
+        description: "PI, TAU, HPI, square roots",
+        code: `#define PI         3.14159265359
 #define TAU        6.28318530718
 #define HPI        1.57079632679
 #define SQRT_HALF  0.70710678118
 #define SQRT2      1.41421356237
 #define SQRT_THIRD 0.57735026919`
-}, {
-    name: "Simplex",
-    description: "Skew / unskew factors for simplex noise (2D–4D)",
-    code: `#define SQRT_3_4  0.86602540378 // sqrt(0.75)
+    }, {
+        name: "Simplex",
+        description: "Skew / unskew factors for simplex noise (2D–4D)",
+        code: `#define SQRT_3_4  0.86602540378 // sqrt(0.75)
 #define SQRT_HALF 0.70710678118 // sqrt(0.5)
 
 // Simplex skew:   (sqrt(N+1)-1)/N
@@ -23,7 +32,7 @@ const CONSTANTS_LIBRARY_SNIPPETS = [{
 #define G3 0.16666666667
 #define F4 0.30901699437
 #define G4 0.13819660113`
-}];
+    }];
 
 export const WGSL_CODE_LIBRARY = [
     {

@@ -12,6 +12,7 @@ const Query = Appwrite.Query;
 const mobile = Utils.isMobile();
 
 export const ui = {
+    autoCompile: false,
     captureInProgress: false,
     pageExploreLimit: 12,
 
@@ -884,7 +885,7 @@ export const ui = {
         let codeArea = new LX.Area({ className: 'box-shadow rounded-xl overflow-hidden code-border-default flex-auto-fill h-full', skipAppend: true } );
         let shaderSettingsArea = new LX.Area({
             height: 'auto',
-            className: 'max-h-96 flex flex-col box-shadow rounded-xl overflow-hidden pt-2 bg-card content-center flex-auto-keep',
+            className: 'max-h-105 flex flex-col box-shadow rounded-xl overflow-hidden pt-2 bg-card content-center flex-auto-keep',
             skipAppend: true
         } );
         rightArea.attach( codeArea );
@@ -892,24 +893,24 @@ export const ui = {
 
         this._shaderSettingsArea = shaderSettingsArea;
 
-        const shaderToolsTabs = shaderSettingsArea.addTabs({ parentClass: 'bg-card', contentClass: 'bg-card', fit: true });
+        const shaderToolsTabs = shaderSettingsArea.addTabs({ parentClass: 'p-2 bg-card', contentClass: 'bg-card', fit: true });
         
         this.channelsContainer = LX.makeContainer( [ '100%', '100%' ], 'channel-list grid p-2 gap-2 items-center justify-center' );
         shaderToolsTabs.add( 'Channels', this.channelsContainer );
 
-        const uniformsContainer = LX.makeContainer( [ '100%', '100%' ], 'p-2 gap-2 items-center justify-center' );
+        const uniformsContainer = LX.makeContainer( [ '100%', '100%' ], 'gap-2 items-center justify-center' );
         shaderToolsTabs.add( 'Uniforms', uniformsContainer );
         this.uniformsContainerPanel = new LX.Panel( { className: 'overflow-scroll' } );
         this.uniformsContainerPanel.root.classList.remove( 'scrollbar-hidden' );
         uniformsContainer.appendChild( this.uniformsContainerPanel.root );
 
-        const libraryContainer = LX.makeContainer( [ '100%', '100%' ], 'p-2 gap-2 items-center justify-center' );
+        const libraryContainer = LX.makeContainer( [ '100%', '100%' ], 'gap-2 items-center justify-center' );
         shaderToolsTabs.add( 'Library', libraryContainer );
-        this.libraryContainerPanel = new LX.Panel( { className: 'flex flex-col' } );
+        this.libraryContainerPanel = new LX.Panel( { className: 'flex flex-col gap-1' } );
         libraryContainer.appendChild( this.libraryContainerPanel.root );
         this.renderShaderLibraryView();
 
-        const logContainer = LX.makeContainer( [ '100%', '100%' ], 'p-2 gap-2 items-center justify-center' );
+        const logContainer = LX.makeContainer( [ '100%', '100%' ], 'gap-2 items-center justify-center' );
         shaderToolsTabs.add( 'Log', logContainer );
         this.compileLogContainerPanel = new LX.Panel( { className: 'flex flex-col' } );
         logContainer.appendChild( this.compileLogContainerPanel.root );
@@ -1005,6 +1006,12 @@ export const ui = {
                     ShaderHub.backend === 'webgpu' ? { name: 'Compute', icon: 'Binary', disabled: !canCreateBufferOrCompute, callback: ( v ) => ShaderHub.onShaderPassCreated( 'compute', v ) } : false
                 ].filter( Boolean );
                 new LX.DropdownMenu( e.target, dmOptions, { side: 'bottom', align: 'start' } );
+            },
+            onKeyDown: ( editor, event ) => {
+                if ( this.autoCompile )
+                {
+                    iCompileShader();
+                }
             },
             onSelectTab: async ( name, editor ) => {
                 ShaderHub.onShaderPassSelected( name );
@@ -1199,9 +1206,9 @@ export const ui = {
             } );
         };
 
-        const sheetArea = new LX.Area( { height: 'calc(100% - 38px)', skipAppend: true } );
-        const sidebar = sheetArea.addSidebar( sidebarCallback, sidebarOptions );
-        p.attach( sheetArea );
+        const snippetsArea = new LX.Area( { height: 'calc(100% - 38px)', className: 'rounded-xl overflow-hidden', skipAppend: true } );
+        const sidebar = snippetsArea.addSidebar( sidebarCallback, sidebarOptions );
+        p.attach( snippetsArea );
 
         // Add actual stuff to library
         {
@@ -2635,7 +2642,7 @@ export const ui = {
             {
                 options.push( {
                     name: 'Graphics',
-                    icon: 'Sparkle',
+                    icon: 'Sparkles',
                     submenu: [
                         { name: 'WebGPU', callback: () => window.location.href = `${window.location.origin}/create` },
                         { name: 'WebGL', callback: () => window.location.search = '?r=gl' }
@@ -2669,6 +2676,15 @@ export const ui = {
                         { name: 'Mouse', callback: ( v ) => iSetLines( v ) },
                         { name: 'Animated', callback: ( v ) => iSetLines( v ) }
                     ]
+                },
+                {
+                    name: 'Auto-compile',
+                    icon: 'Type',
+                    checked: this.autoCompile,
+                    disabled: true,
+                    callback: () => {
+                        this.autoCompile = !this.autoCompile;
+                    }
                 },
                 {
                     name: 'Quick Help',
