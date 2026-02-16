@@ -268,7 +268,7 @@ const ShaderHub = {
             this.shader.passes.push( shaderPass );
 
             // Set code in the editor
-            ui.editor.addTab( pass.name, false, pass.name, { codeLines: pass.codeLines, language: 'WGSL' } );
+            ui.editor.addTab( pass.name, { selected: false, title: pass.name, text: pass.codeLines.join( '\n' ), language: 'WGSL' } );
         }
         else
         {
@@ -300,7 +300,7 @@ const ShaderHub = {
                 this.shader.passes.push( shaderPass );
 
                 // Set code in the editor
-                ui.editor.addTab( pass.name, false, pass.name, { codeLines: pass.codeLines, language: 'WGSL' } );
+                ui.editor.addTab( pass.name, { selected: false, title: pass.name, text: pass.codeLines.join( '\n' ), language: 'WGSL' } );
 
                 if ( pass.name !== 'MainImage' )
                 {
@@ -326,7 +326,7 @@ const ShaderHub = {
         LX.emitSignal( '@on_like_changed', [ shaderLikes.total, alreadyLiked ] );
 
         ui.editor.loadTab( this.currentPass.name );
-        ui.editor._changeLanguage( this.renderer.lang );
+        ui.editor.setLanguage( this.renderer.lang );
     },
 
     onShaderPassCreated( passType, passName )
@@ -370,10 +370,12 @@ const ShaderHub = {
             this.shader.passes.splice( 0, 0, shaderPass ); // Add at the start
         }
 
-        ui.editor.addTab( passName, true, passName, {
+        ui.editor.addTab( passName, {
             indexOffset,
             language: 'WGSL',
-            codeLines: shaderPass.codeLines
+            selected: true,
+            title: passName,
+            text: shaderPass.codeLines.join( '\n' )
         } );
 
         // Wait for the tab to be created
@@ -397,7 +399,7 @@ const ShaderHub = {
         await ui.updateShaderChannelsView();
         ui.renderUniformsView( this.currentPass );
 
-        ui.editor.setCustomSuggestions( this.getCurrentSuggestions() );
+        this.updateCurrentSuggestions();
     },
 
     async onShaderPassDeleted( name, e )
@@ -727,6 +729,16 @@ const ShaderHub = {
         }
 
         return customSuggestions;
+    },
+
+    updateCurrentSuggestions()
+    {
+        if( !ui.editor )
+        {
+            return;
+        }
+
+        ui.editor.setCustomSuggestions( this.getCurrentSuggestions() );
     },
 
     getShaderPreviewName( uid )
@@ -1198,9 +1210,9 @@ const ShaderHub = {
         this._lastShaderCompilationWithErrors = false;
         this._compilingShader = true;
 
-        ui.editor.processLines();
+        ui.editor._renderAllLines();
 
-        const tabs = ui.editor.tabs.tabs;
+        const tabs = ui.editor._openedTabs;
         const compilePasses = pass ? [ pass ] : this.shader.passes;
         const inCommonPass = this.currentPass.type === 'common';
 
@@ -1210,7 +1222,7 @@ const ShaderHub = {
         {
             // Buffers and images draw
             const pass = compilePasses[i];
-            pass.codeLines = tabs[pass.name].lines;
+            pass.codeLines = tabs[pass.name].doc._lines;
             console.assert( pass.codeLines, `No tab with name ${pass.name}` );
             if ( pass.type === 'common' ) continue;
 
@@ -1248,7 +1260,7 @@ const ShaderHub = {
                         {
                             this.setEditorErrorBorder( ERROR_CODE_ERROR );
                             Utils.toast( `❌ ${LX.toTitleCase( msg.type )}: ${fragLineNumber}:${msg.linePos}`, msg.message, -1 );
-                            ui.editor.code.childNodes[fragLineNumber - 1]?.classList.add( msg.type === 'error' ? 'removed' : 'debug' );
+                            tabs[pass.name].dom.childNodes[fragLineNumber - 1]?.classList.add( msg.type === 'error' ? 'removed' : 'debug' );
                         }
 
                         ui.pushCompilationLog( pass.name, msg.type, msg.message, fragLineNumber, msg.linePos );
@@ -1392,7 +1404,8 @@ const ShaderHub = {
             await this.compileShader( true, pass );
         }
 
-        ui.editor.setCustomSuggestions( this.getCurrentSuggestions() );
+        this.updateCurrentSuggestions();
+
         ui.renderUniformsView( pass );
     },
 
@@ -1407,7 +1420,8 @@ const ShaderHub = {
             this.compileShader( true, pass );
         }
 
-        ui.editor.setCustomSuggestions( this.getCurrentSuggestions() );
+        this.updateCurrentSuggestions();
+
         ui.renderUniformsView( pass );
     },
 

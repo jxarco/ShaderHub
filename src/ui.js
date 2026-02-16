@@ -974,7 +974,6 @@ export const ui = {
             statusShowEditorFilename: false,
             customSuggestions: ShaderHub.getCurrentSuggestions(),
             onCreateStatusPanel: this.makeStatusBarButtons.bind( this ),
-            onCtrlSpace: iCompileShader.bind( this ),
             onSave: iCompileShader.bind( this ),
             onRun: iCompileShader.bind( this ),
             onCreateFile: ( editor ) => null,
@@ -992,7 +991,7 @@ export const ui = {
                 options.push( { path: 'Create Uniform', disabled: !regex.test( word ), callback: async () => {
                     await ShaderHub.addUniform( word );
                     await ShaderHub.compileShader( true, pass );
-                    this.openUniformsDialog();
+                    this.renderUniformsView( pass );
                 } } );
 
                 return options;
@@ -1007,7 +1006,8 @@ export const ui = {
                 ].filter( Boolean );
                 new LX.DropdownMenu( e.target, dmOptions, { side: 'bottom', align: 'start' } );
             },
-            onKeyDown: ( editor, event ) => {
+            onCodeChange: ( doc ) => {
+                // console.log(doc)
                 if ( this.autoCompile )
                 {
                     iCompileShader();
@@ -1017,6 +1017,11 @@ export const ui = {
                 ShaderHub.onShaderPassSelected( name );
             },
             onReady: async ( editor ) => {
+
+                // patch gutter height
+                const codearea = editor.root.querySelector( '.lexcodearea' );
+                codearea.firstChild.style.maxHeight = 'calc(100% - 97px)';
+
                 await this.onCodeEditorReady( editor, leftArea );
             }
         } );
@@ -1214,6 +1219,7 @@ export const ui = {
         {
             const contentArea = sidebar.siblingArea;
             const contentPanel = contentArea.addPanel( { className: 'p-2 gap-2 items-center justify-center' } );
+            contentPanel.root.classList.remove( 'scrollbar-hidden' );
 
             this.renderLibraryCategory = ( library, category, snippets ) => {
 
@@ -1234,7 +1240,7 @@ export const ui = {
                             description: `${snippet.description}${snippet.author ? `<br><span class="italic">by ${snippet.author}</span>` : ''}`,
                             action: { name: "Insert", callback: () => {
                                 const editor = this.editor;
-                                if( editor ) editor.appendText( `${snippet.code}\n`, editor.getCurrentCursor( true ) );
+                                if( editor ) editor.appendText( `${snippet.code}\n` );
                             } }
                         },
                     } );
@@ -1773,7 +1779,7 @@ export const ui = {
                             },
                             onReady: async ( editor ) => {
                                 this.shader.passes.forEach( ( pass, index ) => {
-                                    editor.addTab( pass.name, true, pass.name, { codeLines: pass.codeLines, language: 'WGSL' } );
+                                    editor.addTab( pass.name, { selected: true, title: pass.name, codeLines: pass.codeLines.join( '\n' ), language: 'WGSL' } );
                                 } );
                             }
                         } );
@@ -2681,7 +2687,6 @@ export const ui = {
                     name: 'Auto-compile',
                     icon: 'Type',
                     checked: this.autoCompile,
-                    disabled: true,
                     callback: () => {
                         this.autoCompile = !this.autoCompile;
                     }
