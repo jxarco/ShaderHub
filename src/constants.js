@@ -16,7 +16,7 @@ export const PASSWORD_MIN_LENGTH = 8;
 export const BUFFER_PASS_TEXTURE_A_INDEX = 0;
 export const BUFFER_PASS_TEXTURE_B_INDEX = 1;
 
-export const FEATURES = [ 'Multipass', 'Compute', 'Keyboard', 'Sound' ];
+export const FEATURES = [ 'All', 'Multipass', 'Compute', 'Keyboard', 'Sound' ];
 export const ORDER_BY_NAMES = [ 'Name', 'Popular', 'Recent' ];
 export const ORDER_BY_MAPPING = {
     'name': { field: 'name', direction: 'asc' },

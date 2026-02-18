@@ -164,8 +164,8 @@ const sidebarCallback = m => {
     m.add( "Search Shaders", entryOptions );
     m.separator();
     m.group("About");
+    m.add( "Changelog", entryOptions );
     m.add( "Source Code", { icon: "Code", skipSelection: true, callback: open.bind(this, "https://github.com/jxarco/ShaderHub/", "_blank") } );
-    // m.add("General", { skipSelection: true });
 }
 
 if (mobile) {

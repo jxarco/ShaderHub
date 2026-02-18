@@ -1,0 +1,131 @@
+<script type="module">
+
+    import { LX } from 'lexgui';
+
+    docMaker.header( "Changelog", "h1", "changelog" );
+
+    docMaker.paragraph( `Latest minor updates and announcements.`, false, "text-muted-foreground");
+
+    {
+        const params = new URLSearchParams( document.location.search );
+        const content = document.querySelector( '.lexdocs-content' );
+        const area = new LX.Area( { skipAppend: true, height: "auto" } );
+        const container = LX.makeContainer( ["100%", "auto"], "flex flex-col gap-6 mt-4 changelog-timeline", "", area );
+
+        const _parseMD = ( text ) => {
+
+            const lines = text.replaceAll("\r\n", "\n").split( "\n" );
+            let latestVersion = true;
+            let currentList = [];
+
+            for( let l = 0; l < lines.length; ++l )
+            {
+                let line = lines[ l ];
+
+                if( line[ 0 ] == '#' )
+                {
+                    // its a header
+                    const ht = (line.match(/#/g) || []).length;
+                    const headerString = line.substring( ht ).replaceAll( "#", "" );
+                    const endIdx = headerString.indexOf( " " );
+                    const id = endIdx > -1 ? headerString.substring( 0, endIdx ) : headerString;
+
+                    if( headerString.trim() === "" )
+                    return;
+                    
+                    const versionContainer = LX.makeContainer( ["100%", "auto"], `relative bg-card rounded-xl px-12 py-2 ${latestVersion ? 'border-primary' : 'border-color'}`, "", container );
+                    docMaker.setDomTarget( versionContainer );
+
+                    LX.makeElement( "span", `absolute w-4 h-4 rounded-full ${latestVersion ? 'bg-primary' : 'bg-foreground'} ml-[-5rem]`, "", versionContainer );
+
+                    docMaker.header( `<span class='${latestVersion ? 'text-primary' : 'text-muted-foreground'} shadow-[0 0 12px #f606,0 0 24px #ff660026]' >v${headerString.trim()}</span>`, `h${ ht + 1 }`, id );
+
+                    if( latestVersion )
+                    {
+                        latestVersion = false;
+                    }
+                }
+                else
+                {
+                    let codeIndex = line.indexOf( '`' );
+
+                    while( codeIndex > -1 )
+                    {
+                        const nextIndex = line.substring( codeIndex + 1 ).indexOf( '`' );
+                        const trim = line.substring( codeIndex, codeIndex + nextIndex + 2 );
+                        const trimReplaced = docMaker.iCode( trim ).replaceAll( '`', '' );
+                        line = line.replace( trim, trimReplaced );
+                        codeIndex = line.indexOf( '`' );
+                    }
+
+                    if( line == '' )
+                    {
+                        // I was doing another list
+                        if( currentList.length )
+                        {
+                            // close list
+                            docMaker.bulletList( currentList );
+                            currentList = [];
+                        }
+
+                        const p = lines[ l - 1 ] ?? "",
+                                n = lines[ l + 1 ] ?? "";
+                        if( p[ 0 ] != "#" && n[ 0 ] != "#" ) docMaker.lineBreak();
+                    }
+                    else if( line[ 0 ] == '-' )
+                    {
+                        // I was doing another list
+                        if( currentList.length && currentList[ currentList.length - 1 ].constructor === Array )
+                        {
+                            docMaker.bulletList( currentList );
+                            currentList = [];
+                        }
+
+                        currentList.push( line.substring( 2 ) );
+                    }
+                    else if( currentList.length )
+                    {
+                        if( line[ 0 ] == ' ' )
+                        {
+                            const updatedLine = line.substring( 4 );
+                            if( currentList[ currentList.length - 1 ].constructor === Array )
+                            {
+                                currentList[ currentList.length - 1 ].push( updatedLine );
+                            }
+                            else
+                            {
+                                currentList.push( [] );
+                                currentList[ currentList.length - 1 ].push( updatedLine );
+                            }
+                        }
+                        else
+                        {
+                            // close list
+                            docMaker.bulletList( currentList );
+                            currentList = [];
+                        }
+                    }
+                    else if( line.length )
+                    {
+                        docMaker.paragraph( line );
+                    }
+                }
+            }
+
+        };
+
+        LX.requestText( "../../changelog.md", ( text ) => {
+            _parseMD( text );
+
+            docMaker.setDomTarget( container );
+
+        }, (err) => {
+            console.error( err );
+        } )
+
+        content.appendChild( area.root );
+    }
+
+    </script>
+
+</body>

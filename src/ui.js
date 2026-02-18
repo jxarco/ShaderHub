@@ -14,7 +14,7 @@ const mobile = Utils.isMobile();
 export const ui = {
     autoCompile: false,
     captureInProgress: false,
-    pageExploreLimit: 12,
+    pageExploreLimit: 1,
 
     _dbAssetsCache: new Map(), // fileId -> ImageBitmap/audio
 
@@ -80,6 +80,10 @@ export const ui = {
             }
         }
 
+        const versionContainer = LX.makeContainer( [ `auto`, 'auto' ], 'flex-row p-1 gap-1 self-center items-center ml-auto cursor-pointer',
+            LX.badge( `v${ShaderHub.version}`, 'outline' ), menubar.root );
+        versionContainer.addEventListener( 'click', () => this._openPage( 'docs?p=changelog' ) );
+
         // Do it always and use it for small screens
         {
             const sidebarOptions = {
@@ -119,12 +123,12 @@ export const ui = {
 
             menubar.setButtonIcon( 'Menu', 'Menu', () => window.__currentSheet = new LX.Sheet( '256px', [ sheetArea ], { side: 'right' } ) );
             const menuButton = menubar.buttons['Menu'].root;
-            LX.addClass( menuButton, 'md:hidden ml-auto' );
+            LX.addClass( menuButton, 'md:hidden' );
         }
 
         if ( !mobile )
         {
-            const accountContainer = LX.makeContainer( [ `auto`, 'auto' ], 'hidden md:flex flex-row p-1 gap-1 self-center items-center ml-auto', '', menubar.root );
+            const accountContainer = LX.makeContainer( [ `auto`, 'auto' ], 'hidden md:flex flex-row p-1 gap-1 self-center items-center', '', menubar.root );
 
             const signupContainer = LX.makeContainer( [ `auto`, 'auto' ], 'flex flex-row p-1 gap-1 self-center items-center', '', accountContainer );
             signupContainer.id = 'signupContainer';
@@ -381,7 +385,8 @@ export const ui = {
         const url = new URL( `${ShaderHub.getFullPath( false )}/explore/` );
         url.search = currUrl.search;
         const alreadyThere = url.searchParams.get( 'feature' ) === v;
-        if ( v && v.trim() && !alreadyThere )
+        const removeFilter = v === 'all';
+        if ( v && v.trim() && !alreadyThere && !removeFilter )
         {
             url.searchParams.set( 'feature', v.trim() );
         }
@@ -446,7 +451,7 @@ export const ui = {
 
         // Create title/login area
         {
-            const container = LX.makeContainer( [ '100%', '100%' ], 'bg-background-blur flex flex-col gap-4 rounded-xl py-12 box-shadow box-border justify-evenly overflow-scroll', '', rightSide );
+            const container = LX.makeContainer( [ '100%', '100%' ], 'bg-background-blur flex flex-col gap-4 rounded-xl py-12 box-shadow box-border justify-evenly overflow-scroll items-center', '', rightSide );
 
             if ( this.fs.user )
             {
@@ -459,7 +464,7 @@ export const ui = {
 
             const header = LX.makeContainer( [ null, 'auto' ], 'flex flex-col px-4 md:px-10 gap-12 text-center items-center place-content-center', `
                 <img src="${ShaderHub.imagesRootPath}/favicon.png" class="">
-                <span class="text-muted-foreground text-2xl sm:text-3xl font-medium">ShaderHub (Pre alpha ${ShaderHub.version})</span>
+                <span class="text-muted-foreground text-3xl sm:text-4xl font-medium">ShaderHub</span>
                 <span class="text-balanced text-4xl sm:text-5xl font-medium">Create and share shaders using latest WebGPU!</span>
                 <a onclick='ui._openShader("new")' class="flex flex-row gap-1 items-center text-sm p-1 px-4 rounded-full text-secondary-foreground decoration-none hover:bg-secondary cursor-pointer"><span class="flex flex-auto-keep bg-orange-500 w-2 h-2 rounded-full"></span>
                 <span class="flex flex-auto-fill">New WebGL Renderer, New Sound Channel, and New Docs</span>${LX.makeIcon( 'ArrowRight', { svgClass: 'flex flex-auto-keep sm' } ).innerHTML}</a>
@@ -496,9 +501,7 @@ export const ui = {
         for ( let i = 0; i < 3; ++i )
         {
             const shaderItem = LX.makeElement( 'li', `shader-item ${i === 0 ? 'featured' : ''} lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
-            const shaderPreview = LX.makeElement( 'img', 'opacity-0 rounded-lg border-none cursor-pointer self-center mt-2', '', shaderItem );
-            shaderPreview.style.width = 'calc(100% - 1rem)';
-            shaderPreview.style.height = 'calc(100% - 1rem)';
+            const shaderPreview = LX.makeElement( 'img', 'size-full opacity-0 rounded-t-lg border-none cursor-pointer self-center', '', shaderItem );
             shaderPreview.src = ShaderHub.shaderPreviewPath;
             LX.makeContainer( [ '100%', 'auto' ], 'bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
                 <div class="w-full flex flex-col gap-1">
@@ -582,7 +585,6 @@ export const ui = {
                 const shader = shaderList[i];
                 const shaderItem = skeleton.root.children[i];
                 const shaderPreview = shaderItem.querySelector( 'img' );
-                shaderPreview.style.width = 'calc(100% - 1rem)';
                 shaderPreview.src = shader.preview ?? ShaderHub.shaderPreviewPath;
                 shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
                 shaderItem.querySelector( 'div' ).remove();
@@ -626,25 +628,23 @@ export const ui = {
 
         var [ topArea, bottomArea ] = this.area.split( { type: 'vertical', sizes: [ 'calc(100% - 48px)', null ], resize: false } );
         topArea.root.parentElement.classList.add( 'hub-background' );
-        topArea.root.className += ' p-6 overflow-scroll hub-background-blur';
+        topArea.root.className += ' p-6 overflow-scroll bg-transparent max-w-[1400px] ml-auto mr-auto';
         bottomArea.root.className += ' hub-background-blur-md items-center content-center';
 
-        const header = LX.makeContainer( [ '100%', 'auto' ], `flex ${mobile ? 'flex-col mb-2' : 'flex-row'} font-medium text-card-foreground`, ``, topArea, { fontSize: '2rem' } );
+        const header = LX.makeContainer( [ '100%', 'auto' ], `flex flex-col ${mobile ? 'mb-2' : 'md:flex-row'} font-medium text-card-foreground`, ``, topArea, { fontSize: '2rem' } );
+        const paddingCss = mobile ? 'p-1' : 'p-4';
 
         this._makeFooter( bottomArea );
 
         // Filters
         {
-            const filtersPanel = new LX.Panel( { className: 'p-4 bg-none flex-auto-fill', height: 'auto' } );
+            const filtersPanel = new LX.Panel( { className: `${paddingCss} bg-none flex-auto-fill`, height: 'auto' } );
             filtersPanel.sameLine();
 
             filtersPanel.addLabel( 'Features', { fit: true } );
-
-            for ( let f of Constants.FEATURES )
-            {
-                const fLower = f.toLowerCase();
-                filtersPanel.addButton( null, f, ( v ) => this._exploreFeature( v.toLowerCase() ), { buttonClass: `xs ${queryFeature === fLower ? 'primary' : 'outline bg-card!'}` } );
-            }
+            filtersPanel.addSelect( null, Constants.FEATURES, queryFeature ? LX.toTitleCase( queryFeature ) : 'All', ( v ) => {
+                this._exploreFeature( v.toLowerCase() )
+            } );
 
             filtersPanel.endLine();
             header.appendChild( filtersPanel.root );
@@ -652,7 +652,7 @@ export const ui = {
 
         // Exploring Shader Order
         {
-            const filtersPanel = new LX.Panel( { className: 'p-4 bg-none flex-auto-fill', height: 'auto' } );
+            const filtersPanel = new LX.Panel( { className: `${paddingCss} bg-none flex-auto-fill`, height: 'auto' } );
             filtersPanel.sameLine();
 
             filtersPanel.addLabel( 'Order by', { fit: true } );
@@ -668,6 +668,9 @@ export const ui = {
             filtersPanel.endLine();
             header.appendChild( filtersPanel.root );
         }
+
+        const shaderCountLabel = new LX.TextInput( null, '0 shaders', null, { disabled: true, className: `${paddingCss} flex-auto-keep`, inputClass: 'bg-none' } );
+        header.appendChild( shaderCountLabel.root );
 
         const page = queryPage ? parseInt( queryPage ) : 1;
         const orderBy = queryOrderBy ? Constants.ORDER_BY_MAPPING[queryOrderBy] : Constants.ORDER_BY_MAPPING['recent'];
@@ -707,6 +710,8 @@ export const ui = {
         const result = await this.fs.listDocuments( FS.SHADERS_COLLECTION_ID, shaderQueries );
         const totalPages = Math.ceil( result.total / this.pageExploreLimit );
 
+        shaderCountLabel.set( `${result.total} shaders` );
+
         this.paginator = new LX.Pagination( {
             page,
             pages: totalPages,
@@ -714,7 +719,7 @@ export const ui = {
             useEllipsis: true,
             alwaysShowEdges: false,
             allowChangeItemsPerPage: true,
-            className: 'flex-auto-keep',
+            className: `flex-auto-keep ${mobile ? 'p-4' : ''}`,
             itemsPerPage: this.pageExploreLimit,
             onChange: ( page ) => {
                 this._explorePage( page.toString() );
@@ -740,9 +745,7 @@ export const ui = {
         for ( let i = 0; i < dbShaders.length; ++i )
         {
             const shaderItem = LX.makeElement( 'li', `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
-            const shaderPreview = LX.makeElement( 'img', 'relative opacity-0 rounded-lg border-none cursor-pointer self-center mt-2', '', shaderItem );
-            shaderPreview.style.width = 'calc(100% - 1rem)';
-            shaderPreview.style.height = 'calc(100% - 1rem)';
+            const shaderPreview = LX.makeElement( 'img', 'size-full relative opacity-0 rounded-t-lg border-none cursor-pointer self-center', '', shaderItem );
             shaderPreview.src = ShaderHub.shaderPreviewPath;
             LX.makeContainer( [ '100%', 'auto' ], 'absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
                 <div class="w-full flex flex-col gap-1">
@@ -754,7 +757,7 @@ export const ui = {
         }
 
         const skeleton = new LX.Skeleton( skeletonHtml );
-        skeleton.root.classList.add( 'grid', 'shader-list', 'gap-6', 'justify-center' );
+        LX.addClass( skeleton.root, 'grid shader-list gap-6 justify-center p-2' );
         topArea.attach( skeleton.root );
 
         // This should list only the preview files we need
@@ -821,7 +824,6 @@ export const ui = {
                 const shader = shaderList[i];
                 const shaderItem = skeleton.root.children[i];
                 const shaderPreview = shaderItem.querySelector( 'img' );
-                shaderPreview.style.width = 'calc(100% - 1rem)';
                 shaderPreview.src = shader.preview ?? ShaderHub.shaderPreviewPath;
                 shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
                 shaderItem.querySelector( 'div' ).remove();
@@ -2052,9 +2054,7 @@ export const ui = {
                 for ( let i = 0; i < dbShaders.length; ++i )
                 {
                     const shaderItem = LX.makeElement( 'li', `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
-                    const shaderPreview = LX.makeElement( 'img', 'opacity-0 rounded-lg border-none cursor-pointer self-center mt-2', '', shaderItem );
-                    shaderPreview.style.width = 'calc(100% - 1rem)';
-                    shaderPreview.style.height = 'calc(100% - 1rem)';
+                    const shaderPreview = LX.makeElement( 'img', 'size-full opacity-0 rounded-t-lg border-none cursor-pointer self-center', '', shaderItem );
                     shaderPreview.src = ShaderHub.shaderPreviewPath;
                     LX.makeContainer( [ '100%', 'auto' ], 'absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
                         <div class="w-full flex flex-col gap-1">
@@ -2104,7 +2104,6 @@ export const ui = {
 
                         const shaderItem = skeleton.root.children[i];
                         const shaderPreview = shaderItem.querySelector( 'img' );
-                        shaderPreview.style.width = 'calc(100% - 1rem)';
                         shaderPreview.src = shaderInfo.preview ?? ShaderHub.shaderPreviewPath;
                         shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
                         shaderItem.querySelector( 'div' ).remove();
@@ -2270,9 +2269,7 @@ export const ui = {
                     for ( let i = 0; i < dbShaders.length; ++i )
                     {
                         const shaderItem = LX.makeElement( 'li', `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
-                        const shaderPreview = LX.makeElement( 'img', 'opacity-0 rounded-lg border-none cursor-pointer self-center mt-2', '', shaderItem );
-                        shaderPreview.style.width = 'calc(100% - 1rem)';
-                        shaderPreview.style.height = 'calc(100% - 1rem)';
+                        const shaderPreview = LX.makeElement( 'img', 'size-full opacity-0 rounded-t-lg border-none cursor-pointer self-center', '', shaderItem );
                         shaderPreview.src = ShaderHub.shaderPreviewPath;
                         LX.makeContainer( [ '100%', 'auto' ], 'absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
                             <div class="w-full flex flex-col gap-1">
@@ -2337,7 +2334,6 @@ export const ui = {
 
                             const shaderItem = skeleton.root.children[i];
                             const shaderPreview = shaderItem.querySelector( 'img' );
-                            shaderPreview.style.width = 'calc(100% - 1rem)';
                             shaderPreview.src = shaderInfo.preview ?? ShaderHub.shaderPreviewPath;
                             shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
                             shaderItem.querySelector( 'div' ).remove();
@@ -2684,14 +2680,6 @@ export const ui = {
                     ]
                 },
                 {
-                    name: 'Auto-compile',
-                    icon: 'Type',
-                    checked: this.autoCompile,
-                    callback: () => {
-                        this.autoCompile = !this.autoCompile;
-                    }
-                },
-                {
                     name: 'Quick Help',
                     icon: 'CircleQuestionMark',
                     callback: () => openQuickHelp()
@@ -2706,6 +2694,14 @@ export const ui = {
         customTabInfoButtonsPanel.addButton( null, 'CompileShaderButton', async () => {
             await ShaderHub.compileShader( true, null, true );
         }, { icon: 'Play', title: 'Compile', tooltip: true, buttonClass: 'ghost' } );
+
+        /*
+            Auto-compile Button
+        */
+
+        customTabInfoButtonsPanel.addCheckbox( null, this.autoCompile, (v) => {
+            this.autoCompile = v;
+        }, { label: 'Auto-compile', title: 'Toggle Auto-Compile', className: 'primary text-xs text-muted-foreground' } );
 
         customTabInfoButtonsPanel.endLine();
 
@@ -3008,7 +3004,13 @@ export const ui = {
             p.addButton( null, 'Forgot my password', async () => {
                 this.openRecoverPasswordDialog();
             }, { buttonClass: 'link' } );
-        }, { modal: true } );
+            p.sameLine();
+            p.addLabel( 'Still no account?', { inputClass: 'text-center' } )
+            p.addButton( null, 'Sign up', async () => {
+                this.openSignUpDialog();
+            }, { buttonClass: 'link' } );
+            p.endLine();
+        }, { size: [ '24rem', null ], modal: true } );
 
         this._lastOpenedDialog = dialog;
     },
