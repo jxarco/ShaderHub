@@ -14,7 +14,7 @@ const mobile = Utils.isMobile();
 export const ui = {
     autoCompile: false,
     captureInProgress: false,
-    pageExploreLimit: 1,
+    pageExploreLimit: 24,
 
     _dbAssetsCache: new Map(), // fileId -> ImageBitmap/audio
 
