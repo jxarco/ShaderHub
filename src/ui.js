@@ -80,10 +80,6 @@ export const ui = {
             }
         }
 
-        const versionContainer = LX.makeContainer( [ `auto`, 'auto' ], 'flex-row p-1 gap-1 self-center items-center ml-auto cursor-pointer',
-            LX.badge( `v${ShaderHub.version}`, 'outline' ), menubar.root );
-        versionContainer.addEventListener( 'click', () => this._openPage( 'docs?p=changelog' ) );
-
         // Do it always and use it for small screens
         {
             const sidebarOptions = {
@@ -128,7 +124,7 @@ export const ui = {
 
         if ( !mobile )
         {
-            const accountContainer = LX.makeContainer( [ `auto`, 'auto' ], 'hidden md:flex flex-row p-1 gap-1 self-center items-center', '', menubar.root );
+            const accountContainer = LX.makeContainer( [ `auto`, 'auto' ], 'hidden md:flex flex-row p-1 gap-1 self-center items-center ml-auto', '', menubar.root );
 
             const signupContainer = LX.makeContainer( [ `auto`, 'auto' ], 'flex flex-row p-1 gap-1 self-center items-center', '', accountContainer );
             signupContainer.id = 'signupContainer';
@@ -205,12 +201,15 @@ export const ui = {
             }
         } );
 
-        menubar.root.classList.add( 'hub-background-blur-md' );
-
         // Update main area after creating menubar
         {
             this.area = menubar.siblingArea;
             LX.addClass( this.area.root, 'content-area' );
+
+            const versionContainer = LX.makeContainer( [ `auto`, 'auto' ], 'flex-row p-1 gap-1 self-center items-center cursor-pointer',
+                LX.badge( `v${ShaderHub.version}`, 'outline border-primary' ) );
+            LX.insertChildAtIndex( menubar.root, versionContainer, 1 );
+            versionContainer.addEventListener( 'click', () => this._openPage( 'docs?p=changelog' ) );
         }
 
         window.addEventListener( 'popstate', this.router.bind( this ) );
@@ -421,7 +420,7 @@ export const ui = {
     _makeFooter( area )
     {
         LX.makeContainer( [ `auto`, 'auto' ], 'text-foreground text-sm flex flex-row gap-2 self-center items-center text-center place-content-center', `
-            ${LX.makeIcon( 'Github@solid', { svgClass: 'lg' } ).innerHTML}<a class="decoration-none hover:underline underline-offset-4" href="https://github.com/upf-gti/ShaderHub">Code on Github</a>`,
+            ${LX.makeIcon( 'Github@solid', { svgClass: 'lg' } ).innerHTML}<a class="text-primary decoration-none hover:underline underline-offset-4" href="https://github.com/upf-gti/ShaderHub">Code on Github</a>`,
             area );
     },
 
@@ -438,10 +437,10 @@ export const ui = {
 
         for ( let i = 0; i < n; ++i )
         {
-            const shaderItem = LX.makeElement( 'li', `shader-item ${homeView && i === 0 ? 'featured' : ''} lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto` );
+            const shaderItem = LX.makeElement( 'li', `shader-item ${homeView && i === 0 ? 'featured' : ''} lexskeletonpart relative hub-background-blur hover:bg-accent/50 overflow-hidden flex flex-col h-auto` );
             const shaderPreview = LX.makeElement( 'img', 'size-full opacity-0 rounded-t-lg border-none cursor-pointer self-center', '', shaderItem );
             shaderPreview.src = ShaderHub.shaderPreviewPath;
-            LX.makeContainer( [ '100%', 'auto' ], 'bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
+            LX.makeContainer( [ '100%', 'auto' ], 'hub-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
                 <div class="w-full flex flex-row gap-1">
                     <div class="w-3/4 h-3 lexskeletonpart"></div>
                     <div class="w-1/2 h-3 lexskeletonpart"></div>
@@ -462,7 +461,7 @@ export const ui = {
         var [ topArea, bottomArea ] = this.area.split( { type: 'vertical', sizes: [ 'calc(100% - 48px)', '48px' ], resize: false } );
         this.area.root.className += ' hub-background';
         bottomArea.root.className += ' items-center content-center';
-        topArea.root.className += ' flex flex-row hub-background-blur content-area';
+        topArea.root.className += ' flex flex-row hub-background content-area';
 
         this._makeFooter( bottomArea );
 
@@ -472,7 +471,7 @@ export const ui = {
 
         // Create title/login area
         {
-            const container = LX.makeContainer( [ '100%', '100%' ], 'bg-background-blur flex flex-col gap-4 rounded-xl py-12 box-shadow box-border justify-evenly overflow-scroll items-center', '', rightSide );
+            const container = LX.makeContainer( [ '100%', '100%' ], 'hub-background-blur flex flex-col gap-4 rounded-xl py-12 box-shadow box-border justify-evenly overflow-scroll items-center', '', rightSide );
 
             if ( this.fs.user )
             {
@@ -483,7 +482,7 @@ export const ui = {
                 welcomeMessage.id = 'welcomeMessage';
             }
 
-            const header = LX.makeContainer( [ null, 'auto' ], 'flex flex-col px-4 md:px-10 gap-12 text-center items-center place-content-center', `
+            const header = LX.makeContainer( [ null, 'auto' ], 'flex flex-col px-8 md:px-12 gap-12 text-center items-center place-content-center', `
                 <img src="${ShaderHub.imagesRootPath}/favicon.png" class="">
                 <span class="text-muted-foreground text-3xl sm:text-4xl font-medium">ShaderHub</span>
                 <span class="text-balanced text-4xl sm:text-5xl font-medium">Create and share shaders using latest WebGPU!</span>
@@ -644,7 +643,7 @@ export const ui = {
         var [ topArea, bottomArea ] = this.area.split( { type: 'vertical', sizes: [ 'calc(100% - 48px)', null ], resize: false } );
         topArea.root.parentElement.classList.add( 'hub-background' );
         topArea.root.className += ' p-6 overflow-scroll bg-transparent max-w-[1600px] ml-auto mr-auto';
-        bottomArea.root.className += ' hub-background-blur-md items-center content-center';
+        bottomArea.root.className += ' items-center content-center';
 
         const header = LX.makeContainer( [ '100%', 'auto' ], `flex flex-col ${mobile ? 'mb-2' : 'md:flex-row'} font-medium text-card-foreground`, ``, topArea, { fontSize: '2rem' } );
         const paddingCss = mobile ? 'p-1' : 'p-4';
@@ -889,7 +888,7 @@ export const ui = {
 
         // Set background to parent area
         this.area.root.parentElement.className = this.area.root.parentElement.className.replace( 'bg-background', 'hub-background' );
-        leftArea.root.parentElement.classList.add( 'hub-background-blur' );
+        leftArea.root.parentElement.classList.add( 'hub-background' );
 
         let codeArea = new LX.Area({ className: 'box-shadow rounded-xl overflow-hidden code-border-default flex-auto-fill h-full', skipAppend: true } );
         let shaderSettingsArea = new LX.Area({
@@ -1975,7 +1974,7 @@ export const ui = {
 
         let [ topArea, bottomArea ] = this.area.split( { type: 'vertical', sizes: [ 'calc(100% - 48px)', null ], resize: false } );
         topArea.root.parentElement.classList.add( 'hub-background' );
-        topArea.root.className += ' p-6 hub-background-blur overflow-scroll';
+        topArea.root.className += ' p-6 hub-background overflow-scroll';
         bottomArea.root.className += ' items-center content-center';
 
         this._makeFooter( bottomArea );

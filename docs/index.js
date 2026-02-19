@@ -182,7 +182,6 @@ else {
 menubar.addButtons(menubarButtons, { float: mobile ? "right" : "center" });
 
 
-menubar.root.classList.add("hub-background-blur-md");
 LX.addClass( menubar.siblingArea.root, "content-area");
 menubar.siblingArea.root.style.overflowY = "scroll";
 menubar.siblingArea.root.appendChild(content);
