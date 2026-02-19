@@ -425,8 +425,8 @@
   .max-w-\[40\%\] {
     max-width: 40%;
   }
-  .max-w-\[1400px\] {
-    max-width: 1400px;
+  .max-w-\[1600px\] {
+    max-width: 1600px;
   }
   .max-w-full {
     max-width: 100%;
@@ -794,6 +794,12 @@
     --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
   }
+  .shadow-primary {
+    --tw-shadow-color: var(--color-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      --tw-shadow-color: color-mix(in oklab, var(--color-primary) var(--tw-shadow-alpha), transparent);
+    }
+  }
   .outline {
     outline-style: var(--tw-outline-style);
     outline-width: 1px;
@@ -1073,6 +1079,16 @@
   border: 1px solid var(--primary);
   @supports (color: color-mix(in lab, red, red)) {
     border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  }
+}
+.shadow-primary {
+  -webkit-filter: drop-shadow( 0 0px 6px var(--primary) );
+  @supports (color: color-mix(in lab, red, red)) {
+    -webkit-filter: drop-shadow( 0 0px 6px color-mix(in srgb, var(--primary) 40%, transparent) );
+  }
+  filter: drop-shadow( 0 0px 6px var(--primary) );
+  @supports (color: color-mix(in lab, red, red)) {
+    filter: drop-shadow( 0 0px 6px color-mix(in srgb, var(--primary) 40%, transparent) );
   }
 }
 .notifications ol .lextoast .lextoastcontent .desc {

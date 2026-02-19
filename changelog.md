@@ -1,3 +1,7 @@
+# 0.16
+- Improved snippet library and code suggestions.
+- Add shader views.
+
 # 0.15
 - Code snippets library (xor's fragcoord.xyz).
 - Add Shader compile log.

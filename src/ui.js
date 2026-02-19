@@ -432,6 +432,27 @@ export const ui = {
         this.area.sections = [];
     },
 
+    _generateShaderItemSkeleton( n, homeView )
+    {
+        let skeletonHtml = '';
+
+        for ( let i = 0; i < n; ++i )
+        {
+            const shaderItem = LX.makeElement( 'li', `shader-item ${homeView && i === 0 ? 'featured' : ''} lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto` );
+            const shaderPreview = LX.makeElement( 'img', 'size-full opacity-0 rounded-t-lg border-none cursor-pointer self-center', '', shaderItem );
+            shaderPreview.src = ShaderHub.shaderPreviewPath;
+            LX.makeContainer( [ '100%', 'auto' ], 'bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
+                <div class="w-full flex flex-row gap-1">
+                    <div class="w-3/4 h-3 lexskeletonpart"></div>
+                    <div class="w-1/2 h-3 lexskeletonpart"></div>
+                </div>`, shaderItem );
+
+            skeletonHtml += shaderItem.outerHTML;
+        }
+
+        return skeletonHtml;
+    },
+
     async renderHomePage()
     {
         this._clearContent();
@@ -496,24 +517,9 @@ export const ui = {
             }
         }
 
-        let skeletonHtml = '';
-
-        for ( let i = 0; i < 3; ++i )
-        {
-            const shaderItem = LX.makeElement( 'li', `shader-item ${i === 0 ? 'featured' : ''} lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
-            const shaderPreview = LX.makeElement( 'img', 'size-full opacity-0 rounded-t-lg border-none cursor-pointer self-center', '', shaderItem );
-            shaderPreview.src = ShaderHub.shaderPreviewPath;
-            LX.makeContainer( [ '100%', 'auto' ], 'bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
-                <div class="w-full flex flex-col gap-1">
-                    <div class="w-3/4 h-3 lexskeletonpart"></div>
-                    <div class="w-1/2 h-3 lexskeletonpart"></div>
-                </div>`, shaderItem );
-
-            skeletonHtml += shaderItem.outerHTML;
-        }
-
         LX.makeContainer( [ '100%', 'auto' ], 'font-medium text-card-foreground', `Featured Shaders`, leftSide, { fontSize: '2rem' } );
 
+        const skeletonHtml = this._generateShaderItemSkeleton( 3, true );
         const skeleton = new LX.Skeleton( skeletonHtml );
         skeleton.root.classList.add( 'grid', 'shader-list-initial', 'gap-8', 'justify-center' );
         leftSide.appendChild( skeleton.root );
@@ -541,12 +547,15 @@ export const ui = {
             for ( const document of result.documents )
             {
                 const name = document.name;
+                const uid = document['$id'];
 
                 const shaderInfo = {
                     name,
-                    uid: document['$id'],
+                    uid,
                     creationDate: Utils.toESDate( document['$createdAt'] ),
-                    likeCount: document['like_count'] ?? 0
+                    likeCount: document['like_count'] ?? 0,
+                    viewCount: document['view_count'] ?? 0,
+                    liked: this.dbUser ? ( this.dbUser.liked_shaders ?? [] ).includes( uid ) : false,
                 };
 
                 const authorId = document['author_id'];
@@ -594,9 +603,15 @@ export const ui = {
                         <span class="text-base font-light text-muted-foreground flex-auto-keep">by ${
                     !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${shader.authorId}")' class='hub-link font-medium'>` : ''
                 }<span>${shader.author}</span>${!shader.anonAuthor ? '</a>' : ''}</span>
-                        <div class="flex flex-row gap-1 items-center ml-auto flex-auto-keep">
-                            ${LX.makeIcon( 'Heart', { svgClass: 'fill-current text-card-foreground' } ).innerHTML}
-                            <span>${shader.likeCount ?? 0}</span>
+                        <div class="flex flex-row gap-2 items-center ml-auto flex-auto-keep text-sm">
+                            <div class="flex flex-row gap-1 items-center">
+                                ${LX.makeIcon( 'Heart', { svgClass: `${shader.liked ? 'text-orange-600 shadow-primary' : ''} fill-current` } ).innerHTML}
+                                <span class="text-muted-foreground">${shader.likeCount ?? 0}</span>
+                            </div>
+                            <div class="flex flex-row gap-1 items-center">
+                                ${LX.makeIcon( 'Eye', { svgClass: `text-muted-foreground fill-current` } ).innerHTML}
+                                <span class="text-muted-foreground">${shader.viewCount ?? 0}</span>
+                            </div>
                         </div>
                     </div>`, shaderItem );
 
@@ -628,7 +643,7 @@ export const ui = {
 
         var [ topArea, bottomArea ] = this.area.split( { type: 'vertical', sizes: [ 'calc(100% - 48px)', null ], resize: false } );
         topArea.root.parentElement.classList.add( 'hub-background' );
-        topArea.root.className += ' p-6 overflow-scroll bg-transparent max-w-[1400px] ml-auto mr-auto';
+        topArea.root.className += ' p-6 overflow-scroll bg-transparent max-w-[1600px] ml-auto mr-auto';
         bottomArea.root.className += ' hub-background-blur-md items-center content-center';
 
         const header = LX.makeContainer( [ '100%', 'auto' ], `flex flex-col ${mobile ? 'mb-2' : 'md:flex-row'} font-medium text-card-foreground`, ``, topArea, { fontSize: '2rem' } );
@@ -740,22 +755,7 @@ export const ui = {
             return;
         }
 
-        let skeletonHtml = '';
-
-        for ( let i = 0; i < dbShaders.length; ++i )
-        {
-            const shaderItem = LX.makeElement( 'li', `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
-            const shaderPreview = LX.makeElement( 'img', 'size-full relative opacity-0 rounded-t-lg border-none cursor-pointer self-center', '', shaderItem );
-            shaderPreview.src = ShaderHub.shaderPreviewPath;
-            LX.makeContainer( [ '100%', 'auto' ], 'absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
-                <div class="w-full flex flex-col gap-1">
-                    <div class="w-3/4 h-3 lexskeletonpart"></div>
-                    <div class="w-1/2 h-3 lexskeletonpart"></div>
-                </div>`, shaderItem );
-
-            skeletonHtml += shaderItem.outerHTML;
-        }
-
+        const skeletonHtml = this._generateShaderItemSkeleton( dbShaders.length );
         const skeleton = new LX.Skeleton( skeletonHtml );
         LX.addClass( skeleton.root, 'grid shader-list gap-6 justify-center p-2' );
         topArea.attach( skeleton.root );
@@ -782,6 +782,7 @@ export const ui = {
                     uid,
                     creationDate: Utils.toESDate( document['$createdAt'] ),
                     likeCount: document['like_count'],
+                    viewCount: document['view_count'],
                     features: ( document['features'] ?? '' ).split( ',' ),
                     public: document['public'] ?? true,
                     liked: this.dbUser ? ( this.dbUser.liked_shaders ?? [] ).includes( uid ) : false,
@@ -837,9 +838,15 @@ export const ui = {
                         <span class="text-sm font-light text-muted-foreground flex-auto-keep">by ${
                     !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${shader.authorId}")' class='hub-link font-medium'>` : ''
                 }<span>${shader.author}</span>${!shader.anonAuthor ? '</a>' : ''}</span>
-                        <div class="flex flex-row gap-1 items-center ml-auto flex-auto-keep">
-                            ${LX.makeIcon( 'Heart', { svgClass: `${shader.liked ? 'text-orange-600' : ''} fill-current sm` } ).innerHTML}
-                            <span class="text-sm">${shader.likeCount ?? 0}</span>
+                        <div class="flex flex-row gap-2 items-center ml-auto flex-auto-keep">
+                            <div class="flex flex-row gap-1 items-center">
+                                ${LX.makeIcon( 'Heart', { svgClass: `${shader.liked ? 'text-orange-600 shadow-primary' : ''} fill-current sm` } ).innerHTML}
+                                <span class="text-xs text-muted-foreground">${shader.likeCount ?? 0}</span>
+                            </div>
+                            <div class="flex flex-row gap-1 items-center">
+                                ${LX.makeIcon( 'Eye', { svgClass: `text-muted-foreground fill-current sm` } ).innerHTML}
+                                <span class="text-xs text-muted-foreground">${shader.viewCount ?? 0}</span>
+                            </div>
                         </div>
                     </div>`, shaderItem );
 
@@ -2122,22 +2129,7 @@ export const ui = {
                     return;
                 }
 
-                let skeletonHtml = '';
-
-                for ( let i = 0; i < dbShaders.length; ++i )
-                {
-                    const shaderItem = LX.makeElement( 'li', `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
-                    const shaderPreview = LX.makeElement( 'img', 'size-full opacity-0 rounded-t-lg border-none cursor-pointer self-center', '', shaderItem );
-                    shaderPreview.src = ShaderHub.shaderPreviewPath;
-                    LX.makeContainer( [ '100%', 'auto' ], 'absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
-                        <div class="w-full flex flex-col gap-1">
-                            <div class="w-3/4 h-3 lexskeletonpart"></div>
-                            <div class="w-1/2 h-3 lexskeletonpart"></div>
-                        </div>`, shaderItem );
-
-                    skeletonHtml += shaderItem.outerHTML;
-                }
-
+                const skeletonHtml = this._generateShaderItemSkeleton( dbShaders.length );
                 const skeleton = new LX.Skeleton( skeletonHtml );
                 skeleton.root.classList.add( 'grid', 'shader-list', 'gap-6', 'justify-center' );
                 listContent.appendChild( skeleton.root );
@@ -2187,7 +2179,7 @@ export const ui = {
                             <div class="flex flex-row gap-2 flex-auto-keep items-center">
                                 ${ownProfile ? LX.makeIcon( shaderInfo.public ? 'Eye' : 'EyeOff', { svgClass: 'viz-icon text-card-foreground' } ).innerHTML : ''}
                                 <div class="flex flex-row gap-1 items-center">
-                                    ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600' : ''} fill-current` } ).innerHTML}
+                                    ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600 shadow-primary' : ''} fill-current` } ).innerHTML}
                                     <span>${shaderInfo.likeCount ?? 0}</span>
                                 </div>
                                 ${ownProfile ? `<span class="h-4 mx-2 border-right border-color text-muted-foreground self-center items-center"></span>` : ''}
@@ -2337,22 +2329,7 @@ export const ui = {
                         return;
                     }
 
-                    let skeletonHtml = '';
-
-                    for ( let i = 0; i < dbShaders.length; ++i )
-                    {
-                        const shaderItem = LX.makeElement( 'li', `shader-item lexskeletonpart relative bg-card hover:bg-accent/50 overflow-hidden flex flex-col h-auto`, '' );
-                        const shaderPreview = LX.makeElement( 'img', 'size-full opacity-0 rounded-t-lg border-none cursor-pointer self-center', '', shaderItem );
-                        shaderPreview.src = ShaderHub.shaderPreviewPath;
-                        LX.makeContainer( [ '100%', 'auto' ], 'absolute bottom-0 bg-background-blur flex flex-row rounded-b-lg gap-6 p-4 select-none', `
-                            <div class="w-full flex flex-col gap-1">
-                                <div class="w-3/4 h-3 lexskeletonpart"></div>
-                                <div class="w-1/2 h-3 lexskeletonpart"></div>
-                            </div>`, shaderItem );
-
-                        skeletonHtml += shaderItem.outerHTML;
-                    }
-
+                    const skeletonHtml = this._generateShaderItemSkeleton( dbShaders.length );
                     const skeleton = new LX.Skeleton( skeletonHtml );
                     skeleton.root.classList.add( 'grid', 'shader-list', 'gap-6', 'justify-center' );
                     listContent.appendChild( skeleton.root );
@@ -2417,7 +2394,7 @@ export const ui = {
                                 !shaderInfo.anonAuthor ? `<a onclick='ui._openUserProfile("${shaderInfo.authorId}")' class='hub-link font-medium'>` : ''
                             }<span>${shaderInfo.author}</span>${!shaderInfo.anonAuthor ? '</a>' : ''}</span>
                                     <div class="flex flex-row gap-1 items-center ml-auto flex-auto-keep">
-                                        ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600' : ''} fill-current sm` } ).innerHTML}
+                                        ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600 shadow-primary' : ''} fill-current sm` } ).innerHTML}
                                         <span class="text-sm">${shaderInfo.likeCount ?? 0}</span>
                                     </div>
                                 </div>`, shaderItem );

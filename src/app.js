@@ -326,6 +326,12 @@ const ShaderHub = {
         const alreadyLiked = ( fs?.user && shaderLikesByUser.length > 0 ) ?? false;
         LX.emitSignal( '@on_like_changed', [ shaderLikes.total, alreadyLiked ] );
 
+        // Record view for existing shaders
+        if ( this.shader.uid && this.shader.uid !== 'EMPTY_ID' )
+        {
+            this.recordShaderView( this.shader.uid );
+        }
+
         ui.editor.loadTab( this.currentPass.name );
         ui.editor.setLanguage( this.renderer.lang );
     },
@@ -487,6 +493,26 @@ const ShaderHub = {
         } );
 
         LX.emitSignal( '@on_like_changed', [ shaderLikes.total, !wasLiked ] );
+    },
+
+    async recordShaderView( shaderUid )
+    {
+        const key = `viewed_${shaderUid}`;
+        const last = localStorage.getItem( key );
+        if ( last && Date.now() - parseInt( last ) < 3_600_000 ) return; // 1h cooldown
+        localStorage.setItem( key, Date.now() );
+
+        try
+        {
+            const shader = await fs.getDocument( FS.SHADERS_COLLECTION_ID, shaderUid );
+            await fs.updateDocument( FS.SHADERS_COLLECTION_ID, shaderUid, {
+                view_count: ( shader.view_count ?? 0 ) + 1
+            } );
+        }
+        catch ( e )
+        {
+            // Silently ignore (e.g. permission errors for anonymous users)
+        }
     },
 
     onShaderTimePaused()
