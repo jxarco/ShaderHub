@@ -440,6 +440,12 @@
   .resize {
     resize: both;
   }
+  .auto-rows-max {
+    grid-auto-rows: max-content;
+  }
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   .flex-col {
     flex-direction: column;
   }
@@ -1093,12 +1099,22 @@
 }
 .lexcard {
   max-width: unset !important;
-  padding-block: 0.5rem !important;
+  height: 100% !important;
+  justify-content: center;
+  padding-block: 1rem !important;
+  padding-inline: 1rem;
+  transition: border 0.15s ease-out;
   & > .lexcontainer {
     padding-inline: 0rem !important;
   }
   & .lexcontainer {
     justify-content: center;
+  }
+  &:hover {
+    border-color: var(--primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in srgb, var(--primary) 40%, transparent);
+    }
   }
 }
 .shader-list-initial {

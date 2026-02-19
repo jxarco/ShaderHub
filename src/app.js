@@ -6,6 +6,7 @@ import { GLRenderer } from './graphics/gl_renderer.js';
 import { GLShader, GLShaderPass } from './graphics/gl_shader.js';
 import { GPURenderer } from './graphics/gpu_renderer.js';
 import { Shader, ShaderPass } from './graphics/shader.js';
+import * as ShaderCode from './graphics/shader_code_library.js';
 import { ui } from './ui.js';
 import * as Utils from './utils.js';
 
@@ -726,6 +727,64 @@ const ShaderHub = {
         if ( this.currentPass )
         {
             customSuggestions.push( ...this.currentPass.uniforms.map( ( u ) => u.name ) );
+        }
+
+        // API Code library
+        const usingWebGPU = this.backend === 'webgpu';
+        const library = usingWebGPU ? ShaderCode.WGSL_CODE_LIBRARY : ShaderCode.GLSL_CODE_LIBRARY;
+        let iGetSuggestion = null;
+
+        if( usingWebGPU )
+        {
+
+        }
+        else
+        {
+            customSuggestions.push( ...ShaderCode.GLSL_SHADER_CONSTANTS.map( c => c.name ) );
+            customSuggestions.push( ...ShaderCode.GLSL_SHADER_FUNCTIONS.map( f => f.name ) );
+
+            // Extract function signatures from snippet code
+            const l = c => [...c.matchAll(/(?:float|vec[234]|mat[234]|int|uint|void|bool)\s+(\w+)\s*\(/g)];
+            // Get last signature
+            const c = d => {
+                var u;
+                return ( ( u = l( d ).pop() ) == null ? void 0 : u[ 1 ] ) ?? "";
+            }
+
+            iGetSuggestion = ( d, f, u ) => {
+                const g = c( f.code );
+                const m = g ? f.label ? `${g} (${f.label})` : g : f.label ? `${u.name} (${f.label})` : u.name;
+                // const  w = ["lib", g, u.name, f.label, d.name].filter( Boolean ).join( " " );
+                return {
+                    label: `${ LX.makeIcon( 'BookOpenText' ).innerHTML } ${m}`,
+                    detail: u.description,
+                    insertText: f.code,
+                    // filterText: w,
+                    // sortText: `3_${d.name}_${u.name}_${f.label}`
+                }
+            };
+        }
+
+        if( 0 && iGetSuggestion !== null )
+        {
+            const results = [];
+            for( const cat of library )
+            {
+                for( const snippet of cat.snippets )
+                {
+                    const options = snippet.options ?? [{
+                        label: "",
+                        code: snippet.code ?? ""
+                    }];
+
+                    for( const o of options )
+                    {
+                        results.push( iGetSuggestion( cat, o, snippet ) );
+                    }
+                }
+            }
+
+            customSuggestions.push( ...results );
         }
 
         return customSuggestions;

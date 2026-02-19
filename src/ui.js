@@ -6,7 +6,7 @@ import * as Utils from './utils.js';
 import { FS } from './fs.js';
 import { GLShader } from './graphics/gl_shader.js';
 import { Shader } from './graphics/shader.js';
-import { WGSL_CODE_LIBRARY, GLSL_CODE_LIBRARY } from './graphics/shader_code_library.js';
+import * as ShaderCode from './graphics/shader_code_library.js';
 
 const Query = Appwrite.Query;
 const mobile = Utils.isMobile();
@@ -1172,6 +1172,7 @@ export const ui = {
             const query = v.trim().toLowerCase();
             if( !query )
             {
+                sidebar.toggleCollapsed( false );
                 this.renderLibraryCategory( library, library[0].name );
                 return;
             }
@@ -1181,11 +1182,32 @@ export const ui = {
             {
                 for( const snippet of cat.snippets )
                 {
-                    if( snippet.name.toLowerCase().includes( query ) )
+                    if( snippet.name.toLowerCase().includes( query ) 
+                        || snippet.description?.toLowerCase().includes( query )
+                        || snippet.author?.toLowerCase().includes( query ) )
                     {
                         results.push( snippet );
                     }
+
+                    const options = snippet.options;
+                    if( !options )
+                    {
+                        continue;
+                    }
+
+                    for( const option of options )
+                    {
+                        if( option.label.toLowerCase().includes( query ) )
+                        {
+                            results.push( { snippet: option, parentSnippet: snippet } );
+                        }
+                    }
                 }
+            }
+
+            if( !sidebar.collapsed )
+            {
+                sidebar.toggleCollapsed( true );
             }
 
             this.renderLibraryCategory( library, null, results );
@@ -1198,18 +1220,40 @@ export const ui = {
             skipHeader: true,
             skipFooter: true,
             collapsed: false,
-            collapsable: false,
+            collapsable: true,
             displaySelected: true
         };
 
         const usingWebGPU = ShaderHub.backend === 'webgpu';
-        const library = usingWebGPU ? WGSL_CODE_LIBRARY : GLSL_CODE_LIBRARY;
+        const library = usingWebGPU ? ShaderCode.WGSL_CODE_LIBRARY : ShaderCode.GLSL_CODE_LIBRARY;
 
         const sidebarCallback = ( m ) => {
             library.forEach( c => {
+
                 m.add( c.name, { icon: c.icon, callback: () => {
                     this.renderLibraryCategory( library, c.name );
                 } } );
+
+                const snippets = c.snippets;
+                if( !snippets )
+                {
+                    return;
+                }
+
+                // For snippets with different options
+                snippets.forEach( s => {
+
+                    const options = s.options;
+                    if( !options )
+                    {
+                        return;
+                    }
+
+                    const key = `${c.name}/${s.name}`;
+                    m.add( key, { callback: () => {
+                        this.renderLibraryCategory( library, c.name, options, s );
+                    } } );
+                } );
             } );
         };
 
@@ -1220,12 +1264,23 @@ export const ui = {
         // Add actual stuff to library
         {
             const contentArea = sidebar.siblingArea;
-            const contentPanel = contentArea.addPanel( { className: 'p-2 gap-2 items-center justify-center' } );
-            contentPanel.root.classList.remove( 'scrollbar-hidden' );
+            LX.addClass( contentArea.root, 'p-2' )
 
-            this.renderLibraryCategory = ( library, category, snippets ) => {
+            this.renderLibraryCategory = ( library, category, snippets, parentSnippet ) => {
 
-                contentPanel.clear();
+                contentArea.root.innerHTML = "";
+
+                if( category && parentSnippet )
+                {
+                    const contentTop = LX.makeElement( 'div', 'w-full h-auto flex flex-row gap-2 pl-2 pt-2', '', contentArea );
+                    contentTop.appendChild( new LX.Button( null, "Back", () => {
+                        this.renderLibraryCategory( library, category );
+                    }, { className: 'w-auto', buttonClass: 'link', icon: 'ArrowLeft', iconPosition: 'start' } ).root );
+                    contentTop.appendChild( new LX.TextInput( null, `${category} / ${parentSnippet.name}`, null, { disabled: true, inputClass: 'font-semibold bg-none' } ).root );
+                }
+
+                const contentPanel = contentArea.addPanel( { className: 'grid grid-cols-2 auto-rows-max p-2 items-center justify-center' } );
+                contentPanel.root.classList.remove( 'scrollbar-hidden' );
 
                 if( !snippets )
                 {
@@ -1234,17 +1289,35 @@ export const ui = {
                     snippets = cat.snippets;
                 }
 
-                for( const snippet of snippets )
+                for( const s of snippets )
                 {
+                    let snippet = s.snippet ?? s;
+                    let title = snippet.label ?? snippet.name;
+                    if( s.parentSnippet )
+                    {
+                        title = `<span class="text-muted-foreground">${s.parentSnippet.name}</span> / ${title}`;
+                    }
+
+                    const author = snippet.author ?? parentSnippet?.author;
+                    const desc = snippet.description ?? ( parentSnippet?.description ?? '' );
+
                     contentPanel.addCard( snippet.name, {
                         header: {
-                            title: snippet.name,
-                            description: `${snippet.description}${snippet.author ? `<br><span class="italic">by ${snippet.author}</span>` : ''}`,
-                            action: { name: "Insert", callback: () => {
-                                const editor = this.editor;
-                                if( editor ) editor.appendText( `${snippet.code}\n` );
+                            title,
+                            description: `${desc}${author ? `<br><span class="italic">by ${author}</span>` : ''}`,
+                            action: { name: snippet.options ? "Open" : "Insert", callback: () => {
+                                if( snippet.options )
+                                {
+                                    this.renderLibraryCategory( library, category, snippet.options, snippet );
+                                }
+                                else
+                                {
+                                    const editor = this.editor;
+                                    if( editor ) editor.appendText( `${snippet.code}\n` );
+                                }
                             } }
                         },
+                        className: 'h-full'
                     } );
                 }
             }
