@@ -1,5 +1,4 @@
 import * as Constants from '../constants.js';
-import { Renderer } from './renderer.js';
 
 class ShaderPass
 {
@@ -399,7 +398,7 @@ class ShaderPass
                 const [ samplerName, index ] = b;
                 const binding = bindingIndex++;
                 console.assert( binding === index, `Sampler binding indices do not match in pipeline: ${pipeline.label}` );
-                entries.push( { binding, resource: Renderer[samplerName] } );
+                entries.push( { binding, resource: this.renderer[samplerName] } );
             } );
         }
 
@@ -436,7 +435,7 @@ class ShaderPass
                     const [ samplerName, index ] = b;
                     const binding = baseBindingIndex++;
                     console.assert( binding === index, `Sampler binding indices do not match in pipeline: ${pipeline.label}` );
-                    baseEntries.push( { binding, resource: Renderer[samplerName] } );
+                    baseEntries.push( { binding, resource: this.renderer[samplerName] } );
                 } );
             }
 

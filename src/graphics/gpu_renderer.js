@@ -24,8 +24,13 @@ class GPURenderer extends Renderer
         this.webGPUContext = this.canvas.getContext( 'webgpu' );
 
         const devicePixelRatio = window.devicePixelRatio;
-        this.canvas.width = this.canvas.clientWidth * devicePixelRatio;
-        this.canvas.height = this.canvas.clientHeight * devicePixelRatio;
+        const clientW = this.canvas.clientWidth * devicePixelRatio;
+        const clientH = this.canvas.clientHeight * devicePixelRatio;
+        if ( clientW > 0 && clientH > 0 )
+        {
+            this.canvas.width = clientW;
+            this.canvas.height = clientH;
+        }
 
         this.presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 

@@ -14,19 +14,15 @@ class Renderer
 
     async init()
     {
-        // Create default texture samplers
-        {
-            // clamp-to-edge samplers
-            Renderer.nearestSampler = this.createSampler();
-            Renderer.bilinearSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear' } );
-            Renderer.trilinearSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear' } );
-
-            // repeat samplers
-            Renderer.nearestRepeatSampler = this.createSampler( { addressModeU: 'repeat', addressModeV: 'repeat', addressModeW: 'repeat' } );
-            Renderer.bilinearRepeatSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear', addressModeU: 'repeat', addressModeV: 'repeat', addressModeW: 'repeat' } );
-            Renderer.trilinearRepeatSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', addressModeU: 'repeat', addressModeV: 'repeat',
-                addressModeW: 'repeat' } );
-        }
+        // Instance-level samplers — each renderer (main + previews) creates its own
+        // so they're always tied to the correct GPU device and never cross-contaminate
+        this.nearestSampler = this.createSampler();
+        this.bilinearSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear' } );
+        this.trilinearSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear' } );
+        this.nearestRepeatSampler = this.createSampler( { addressModeU: 'repeat', addressModeV: 'repeat', addressModeW: 'repeat' } );
+        this.bilinearRepeatSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear', addressModeU: 'repeat', addressModeV: 'repeat', addressModeW: 'repeat' } );
+        this.trilinearRepeatSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear', addressModeU: 'repeat', addressModeV: 'repeat',
+            addressModeW: 'repeat' } );
     }
 
     createBuffer( desc = {} )

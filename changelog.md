@@ -1,6 +1,7 @@
 # 0.16
 - Improved snippet library and code suggestions.
-- Add shader views.
+- Add shader live previews in Home page.
+- Add shader view count.
 
 # 0.15
 - Code snippets library (xor's fragcoord.xyz).

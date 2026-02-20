@@ -426,6 +426,13 @@ export const ui = {
 
     _clearContent()
     {
+        // Stop any running home-page preview loops before wiping the DOM
+        if ( this._previewCleanups )
+        {
+            this._previewCleanups.forEach( fn => fn() );
+            this._previewCleanups = [];
+        }
+
         this.area.root.innerHTML = '';
         delete this.area.type;
         this.area.sections = [];
@@ -551,6 +558,8 @@ export const ui = {
                 const shaderInfo = {
                     name,
                     uid,
+                    fileId: document['file_id'],
+                    backend: document['backend'],
                     creationDate: Utils.toESDate( document['$createdAt'] ),
                     likeCount: document['like_count'] ?? 0,
                     viewCount: document['view_count'] ?? 0,
@@ -604,7 +613,7 @@ export const ui = {
                 }<span>${shader.author}</span>${!shader.anonAuthor ? '</a>' : ''}</span>
                         <div class="flex flex-row gap-2 items-center ml-auto flex-auto-keep text-sm">
                             <div class="flex flex-row gap-1 items-center">
-                                ${LX.makeIcon( 'Heart', { svgClass: `${shader.liked ? 'text-orange-600 shadow-primary' : ''} fill-current` } ).innerHTML}
+                                ${LX.makeIcon( 'Heart', { svgClass: `${shader.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current` } ).innerHTML}
                                 <span class="text-muted-foreground">${shader.likeCount ?? 0}</span>
                             </div>
                             <div class="flex flex-row gap-1 items-center">
@@ -618,6 +627,35 @@ export const ui = {
                 shaderPreview.addEventListener( 'mouseup', ( e ) => {
                     this._openShader( shader.uid, e );
                 } );
+
+                let renderJob = null;
+
+                shaderPreview.addEventListener( 'mouseenter', ( e ) => {
+                    if( !renderJob ) return;
+                    ShaderHub.raf = renderJob.frame.bind( renderJob );
+                    ShaderHub.rafId = requestAnimationFrame( ShaderHub.raf ) ;
+                } );
+                shaderPreview.addEventListener( 'mouseleave', ( e ) => {
+                    if( !renderJob ) return;
+                    if( ShaderHub.rafId )
+                    {
+                        renderJob.clean();
+                        cancelAnimationFrame( ShaderHub.rafId );
+                    }
+                } );
+
+                // Live preview canvas overlays the static thumbnail once compiled
+                if ( shader.fileId )
+                {
+                    const previewCanvasContainer = LX.makeElement( 'div', 'size-full relative' );
+                    shaderItem.prepend( previewCanvasContainer );
+                    const previewCanvas = LX.makeElement( 'canvas', 'absolute inset-0 size-full opacity-0 transition-opacity duration-700 pointer-events-none' );
+                    previewCanvasContainer.appendChild( shaderPreview );
+                    previewCanvasContainer.appendChild( previewCanvas );
+
+                    renderJob = await ShaderHub.startShaderPreview( previewCanvas, shader.fileId, shader.backend );
+                    previewCanvas.classList.remove( 'opacity-0' );
+                }
             }
 
             if ( shaderList.length === 0 )
@@ -645,7 +683,9 @@ export const ui = {
         topArea.root.className += ' p-6 overflow-scroll bg-transparent max-w-[1600px] ml-auto mr-auto';
         bottomArea.root.className += ' items-center content-center';
 
-        const header = LX.makeContainer( [ '100%', 'auto' ], `flex flex-col ${mobile ? 'mb-2' : 'md:flex-row'} font-medium text-card-foreground`, ``, topArea, { fontSize: '2rem' } );
+        LX.makeContainer( [ '100%', 'auto' ], 'font-medium text-card-foreground text-4xl text-center mb-2', `Explore Shaders`, topArea );
+
+        const header = LX.makeContainer( [ '100%', 'auto' ], `flex flex-col ${mobile ? 'mb-2' : 'md:flex-row'} font-medium text-card-foreground`, ``, topArea );
         const paddingCss = mobile ? 'p-1' : 'p-4';
 
         this._makeFooter( bottomArea );
@@ -839,7 +879,7 @@ export const ui = {
                 }<span>${shader.author}</span>${!shader.anonAuthor ? '</a>' : ''}</span>
                         <div class="flex flex-row gap-2 items-center ml-auto flex-auto-keep">
                             <div class="flex flex-row gap-1 items-center">
-                                ${LX.makeIcon( 'Heart', { svgClass: `${shader.liked ? 'text-orange-600 shadow-primary' : ''} fill-current sm` } ).innerHTML}
+                                ${LX.makeIcon( 'Heart', { svgClass: `${shader.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current sm` } ).innerHTML}
                                 <span class="text-xs text-muted-foreground">${shader.likeCount ?? 0}</span>
                             </div>
                             <div class="flex flex-row gap-1 items-center">
@@ -2178,7 +2218,7 @@ export const ui = {
                             <div class="flex flex-row gap-2 flex-auto-keep items-center">
                                 ${ownProfile ? LX.makeIcon( shaderInfo.public ? 'Eye' : 'EyeOff', { svgClass: 'viz-icon text-card-foreground' } ).innerHTML : ''}
                                 <div class="flex flex-row gap-1 items-center">
-                                    ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600 shadow-primary' : ''} fill-current` } ).innerHTML}
+                                    ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current` } ).innerHTML}
                                     <span>${shaderInfo.likeCount ?? 0}</span>
                                 </div>
                                 ${ownProfile ? `<span class="h-4 mx-2 border-right border-color text-muted-foreground self-center items-center"></span>` : ''}
@@ -2393,7 +2433,7 @@ export const ui = {
                                 !shaderInfo.anonAuthor ? `<a onclick='ui._openUserProfile("${shaderInfo.authorId}")' class='hub-link font-medium'>` : ''
                             }<span>${shaderInfo.author}</span>${!shaderInfo.anonAuthor ? '</a>' : ''}</span>
                                     <div class="flex flex-row gap-1 items-center ml-auto flex-auto-keep">
-                                        ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600 shadow-primary' : ''} fill-current sm` } ).innerHTML}
+                                        ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current sm` } ).innerHTML}
                                         <span class="text-sm">${shaderInfo.likeCount ?? 0}</span>
                                     </div>
                                 </div>`, shaderItem );

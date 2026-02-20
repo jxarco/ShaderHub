@@ -1099,6 +1099,134 @@ const ShaderHub = {
         requestAnimationFrame( this.onFrame.bind( this ) );
     },
 
+    async startShaderPreview( canvas, fileId, backend )
+    {
+        const backendToUse = ( backend === 'webgpu' && !navigator.gpu ) ? 'webgl' : ( backend ?? this.backend );
+        const RendererClass = backendToUse === 'webgpu' ? GPURenderer : GLRenderer;
+        const ShaderPassClass = backendToUse === 'webgpu' ? ShaderPass : GLShaderPass;
+        const ShaderClass = backendToUse === 'webgpu' ? Shader : GLShader;
+
+        const W = 320, H = 180;
+        canvas.width = W;
+        canvas.height = H;
+
+        const renderer = new RendererClass( canvas, backendToUse );
+        await renderer.init();
+
+        const url = await fs.getFileUrl( fileId );
+        const json = JSON.parse( await fs.requestFile( url, 'text' ) );
+        if ( !json?.passes ) return null;
+
+        const shader = new ShaderClass( { name: 'preview_' + fileId, uid: 'PREVIEW_ID' } );
+        shader.passes = [];
+
+        for ( const pass of json.passes ?? [] )
+        {
+            pass.resolutionX = W;
+            pass.resolutionY = H;
+
+            pass.uniforms = pass.uniforms ?? [];
+            // Make sure it has all new properties..
+            pass.uniforms.forEach( ( u ) => {
+                u.type = u.type ?? 'f32';
+                u.step = u.step ?? 0.1;
+            } );
+
+            // Push passes to the shader
+            const shaderPass = new ShaderPassClass( shader, renderer, pass );
+            if ( pass.type === 'buffer' || pass.type === 'compute' )
+            {
+                console.assert( shaderPass.textures, 'Buffer does not have render target textures' );
+                renderer.gpuTextures[pass.name] = shaderPass.textures;
+            }
+
+            shader.passes.push( shaderPass );
+        }
+
+        // new render job
+        const that = this;
+        const j = {
+            fileId,
+            timeDelta: 0.0,
+            elapsedTime: 0.0,
+            frameCount: 0,
+            lastTime: 0.0,
+            clean: function() {
+                this.mustClean = true;    
+            },
+            frame: async function() {
+
+                that.renderer = renderer;
+
+                const now = LX.getTime();
+
+                this.timeDelta = ( now - this.lastTime ) / 1000;
+
+                if( this.mustClean )
+                {
+                    this.timeDelta = 0.0;
+                    this.mustClean = false;
+                }
+                
+                renderer.updateFrame( this.timeDelta, this.elapsedTime, this.frameCount, shader );
+                renderer.updateResolution( W, H, shader );
+
+                this.elapsedTime += this.timeDelta;
+                this.frameCount++;
+                
+                this.lastTime = now;
+
+                for ( let i = 0; i < shader.passes.length; ++i )
+                {
+                    // Buffers and images draw
+                    const pass = shader.passes[i];
+                    if ( pass.type === 'common' ) continue;
+
+                    // Fill buffers and textures for each pass channel
+                    for ( let c = 0; c < pass.channels?.length ?? 0; ++c )
+                    {
+                        const channel = pass.channels[c];
+                        if ( !channel ) continue;
+                        const channelId = channel.id;
+
+                        if ( !renderer.gpuTextures[channelId] )
+                        {
+                            if ( channelId === 'Keyboard' )
+                            {
+                                await that.createKeyboardTexture( c );
+                            }
+                            else if ( channelId.startsWith( 'Buffer' ) )
+                            {
+                                await that.loadBufferChannel( pass, channelId, c );
+                            }
+                            // Texture, cubemap or sound
+                            else
+                            {
+                                await that.createTextureFromFile( channelId );
+                            }
+                        }
+
+                        pass.setChannelTexture( c, renderer.gpuTextures[channelId] );
+                    }
+
+                    if ( pass.uniformsDirty )
+                    {
+                        pass.updateUniforms();
+                    }
+
+                    if ( !that._lastShaderCompilationWithErrors && !that._compilingShader )
+                    {
+                        await pass.execute( renderer );
+                    }
+                }
+
+                that.rafId = requestAnimationFrame( that.raf ) ;
+            }
+        };
+
+        return j;
+    },
+
     async createTextureFromFile( channelName )
     {
         const result = await fs.listDocuments( FS.ASSETS_COLLECTION_ID, [ Query.equal( 'file_id', channelName ) ] );
