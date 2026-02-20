@@ -19,7 +19,7 @@ const fps = new FPSCounter();
 const Query = Appwrite.Query;
 
 const ShaderHub = {
-    version: '0.15',
+    version: '0.16',
 
     keyState: new Map(),
     keyToggleState: new Map(),
