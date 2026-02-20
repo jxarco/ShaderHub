@@ -1443,8 +1443,8 @@ class Shader
 }
 
 Shader.WGSL_KEYBOARD_UTILS = `fn keyDown( texture: texture_2d<f32>, code : i32 ) -> f32 { return textureLoad( texture, vec2i(code, 0), 0 ).x; }
-fn keyPressed( texture: texture_2d<f32>, code : i32 ) -> f32 { return textureLoad( texture, vec2i(code, 1), 0 ).x; }
-fn keyState( texture: texture_2d<f32>, code : i32 ) -> f32 { return textureLoad( texture, vec2i(code, 2), 0 ).x; }`.split( '\n' );
+fn keyState( texture: texture_2d<f32>, code : i32 ) -> f32 { return textureLoad( texture, vec2i(code, 1), 0 ).x; }
+fn keyPressed( texture: texture_2d<f32>, code : i32 ) -> f32 { return textureLoad( texture, vec2i(code, 2), 0 ).x; }`.split( '\n' );
 
 Shader.COMMON = `struct MouseData {
     pos : vec2f,
@@ -1579,6 +1579,54 @@ Shader.RENDER_ANIMATED_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2
 
     // Output to screen
     return vec4f(color, 1.0);
+}`.split( '\n' );
+
+Shader.RENDER_KEYBOARD_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    // Connect iChannel0 to: Keyboard
+    //
+    // Keyboard utility functions (auto-injected when Keyboard channel is connected):
+    //   keyDown(iChannel0, key)    → 1.0 while the key is held
+    //   keyState(iChannel0, key)   → toggles each time the key is pressed
+    //   keyPressed(iChannel0, key) → 1.0 for one frame when the key is pressed
+
+    // Key codes (ASCII / DOM KeyEvent codes)
+    let KEY_LEFT  : i32 = 37; let KEY_RIGHT : i32 = 39;
+    let KEY_UP    : i32 = 38; let KEY_DOWN  : i32 = 40;
+    let KEY_W : i32 = 87; let KEY_A : i32 = 65;
+    let KEY_S : i32 = 83; let KEY_D : i32 = 68;
+    let KEY_SPACE : i32 = 32;
+
+    // State (held): is the key currently held down?
+    let l = clamp(keyDown(iChannel0, KEY_LEFT)  + keyDown(iChannel0, KEY_A), 0.0, 1.0);
+    let r = clamp(keyDown(iChannel0, KEY_RIGHT) + keyDown(iChannel0, KEY_D), 0.0, 1.0);
+    let u = clamp(keyDown(iChannel0, KEY_UP)    + keyDown(iChannel0, KEY_W), 0.0, 1.0);
+    let d = clamp(keyDown(iChannel0, KEY_DOWN)  + keyDown(iChannel0, KEY_S), 0.0, 1.0);
+
+    // Press (one-frame): fires once the moment the key is pressed
+    let press  = keyPressed(iChannel0, KEY_SPACE);
+
+    // Toggle: flips each time the key is pressed
+    let toggle = keyState(iChannel0, KEY_SPACE);
+
+    let aspect = iResolution.x / iResolution.y;
+    let uv = fragCoord / iResolution;
+    let dir = vec2f(r - l, u - d);
+
+    // Scrolling grid driven by held arrow keys / WASD
+    let gv = (uv * vec2f(aspect, 1.0) + dir * iTime * 2.0) * 10.0;
+    let grid = smoothstep(0.05, 0.0, min(fract(gv.x), fract(gv.y)));
+
+    // Space toggles color palette
+    let colA = vec3f(0.15, 0.45, 1.0);
+    let colB = vec3f(1.0, 0.30, 0.60);
+    let pal  = mix(colA, colB, toggle);
+
+    var col = vec3f(0.04, 0.04, 0.08) + grid * pal * 0.6;
+
+    // Space press flashes the screen
+    col += press * 0.4;
+
+    return vec4f(col, 1.0);
 }`.split( '\n' );
 
 Shader.RENDER_COMMON_TEMPLATE = `fn someFunc(a: f32, b: f32) -> f32 {

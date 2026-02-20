@@ -1000,6 +1000,11 @@
       padding-inline: calc(var(--spacing) * 12);
     }
   }
+  .lg\:flex-row {
+    @media (width >= 64rem) {
+      flex-direction: row;
+    }
+  }
   .\32 xl\:max-w-\[20\%\] {
     @media (width >= 96rem) {
       max-width: 20%;

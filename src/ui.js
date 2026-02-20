@@ -2014,7 +2014,7 @@ export const ui = {
 
         let [ topArea, bottomArea ] = this.area.split( { type: 'vertical', sizes: [ 'calc(100% - 48px)', null ], resize: false } );
         topArea.root.parentElement.classList.add( 'hub-background' );
-        topArea.root.className += ' p-6 hub-background overflow-scroll';
+        topArea.root.className += ' p-6 bg-transparent overflow-scroll max-w-[1600px] ml-auto mr-auto';
         bottomArea.root.className += ' items-center content-center';
 
         this._makeFooter( bottomArea );
@@ -2457,7 +2457,7 @@ export const ui = {
                 document.title = `${userName} Preferences - ShaderHub`;
             } } );
 
-            const content = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col md:flex-row gap-2 p-1 my-2', '', preferencesContainer );
+            const content = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col lg:flex-row gap-2 p-1 my-2', '', preferencesContainer );
 
             // profile
             {
@@ -2765,7 +2765,8 @@ export const ui = {
                         { name: 'Main', callback: ( v ) => iSetLines( v ) },
                         { name: 'Texture', callback: ( v ) => iSetLines( v ) },
                         { name: 'Mouse', callback: ( v ) => iSetLines( v ) },
-                        { name: 'Animated', callback: ( v ) => iSetLines( v ) }
+                        { name: 'Animated', callback: ( v ) => iSetLines( v ) },
+                        { name: 'Keyboard', callback: ( v ) => iSetLines( v ) }
                     ]
                 },
                 {

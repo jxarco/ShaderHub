@@ -645,6 +645,58 @@ GLShader.RENDER_ANIMATED_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord)
     return vec4(color, 1.0);
 }`.split( '\n' );
 
+GLShader.RENDER_KEYBOARD_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
+    // Connect iChannel0 to: Keyboard
+    // Keyboard texture layout (256 x 3):
+    //   Row 0 — state  : is the key currently held down
+    //   Row 1 — press  : one-frame pulse when the key is pressed
+    //   Row 2 — toggle : flips each time the key is pressed
+
+    const int KEY_LEFT  = 37, KEY_RIGHT = 39, KEY_UP = 38, KEY_DOWN = 40;
+    const int KEY_W = 87, KEY_A = 65, KEY_S = 83, KEY_D = 68;
+    const int KEY_SPACE = 32;
+
+    // State (held): is the key currently held down?
+    float l = clamp(
+        texelFetch(iChannel0, ivec2(KEY_LEFT, 0), 0).r +
+        texelFetch(iChannel0, ivec2(KEY_A, 0), 0).r, 0.0, 1.0);
+    float r = clamp(
+        texelFetch(iChannel0, ivec2(KEY_RIGHT, 0), 0).r +
+        texelFetch(iChannel0, ivec2(KEY_D, 0), 0).r, 0.0, 1.0);
+    float u = clamp(
+        texelFetch(iChannel0, ivec2(KEY_UP, 0), 0).r +
+        texelFetch(iChannel0, ivec2(KEY_W, 0), 0).r, 0.0, 1.0);
+    float d = clamp(
+        texelFetch(iChannel0, ivec2(KEY_DOWN, 0), 0).r +
+        texelFetch(iChannel0, ivec2(KEY_S, 0), 0).r, 0.0, 1.0);
+
+    // Toggle: flips each time the key is pressed
+    float toggle  = texelFetch(iChannel0, ivec2(KEY_SPACE, 1), 0).r;
+    
+    // Press (one-frame): fires once the moment the key is pressed
+    float press = texelFetch(iChannel0, ivec2(KEY_SPACE, 2), 0).r;
+
+    vec2 uv = fragCoord / iResolution.xy;
+    float aspect = iResolution.x / iResolution.y;
+    vec2 dir = vec2(r - l, u - d);
+
+    // Scrolling grid driven by held arrow keys / WASD
+    vec2 gv = (uv * vec2(aspect, 1.0) + dir * iTime * 2.0) * 10.0;
+    float grid = smoothstep(0.05, 0.0, min(fract(gv.x), fract(gv.y)));
+
+    // Space toggles color palette
+    vec3 colA = vec3(0.15, 0.45, 1.0);
+    vec3 colB = vec3(1.0, 0.30, 0.60);
+    vec3 pal  = mix(colA, colB, toggle);
+
+    vec3 col = vec3(0.04, 0.04, 0.08) + grid * pal * 0.6;
+
+    // Space press flashes the screen
+    col += press * 0.4;
+
+    return vec4(col, 1.0);
+}`.split( '\n' );
+
 GLShader.RENDER_COMMON_TEMPLATE = `float someFunc(float a, float b) {
     return a + b;
 }`.split( '\n' );
