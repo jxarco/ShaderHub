@@ -3580,3 +3580,4 @@ export const ui = {
         this._shaderSettingsArea.root.classList.toggle( 'hidden', force );
     }
 };
+window.ui = ui;
