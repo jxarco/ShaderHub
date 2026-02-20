@@ -1831,9 +1831,4 @@ const ShaderHub = {
 
 await ShaderHub.init();
 
-window.LX = LX;
-window.fs = fs;
-window.ui = ui;
-window.ShaderHub = ShaderHub;
-
 export { ShaderHub };
