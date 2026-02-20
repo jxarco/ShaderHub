@@ -568,7 +568,8 @@ GLShader.RENDER_MAIN_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
     return vec4(color, 1.0);
 }`.split( '\n' );
 
-GLShader.RENDER_TEXTURE_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
+GLShader.RENDER_TEXTURE_TEMPLATE = {
+    channels: [ { index: 0, id: '68bdc7df000157b32148', category: 'texture' } ], code: `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
     // Normalized pixel coordinates (from 0 to 1)
     vec2 uv = fragUV; // The same as: fragCoord/iResolution.xy;
 
@@ -577,7 +578,8 @@ GLShader.RENDER_TEXTURE_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) 
 
     // Output to screen
     return vec4(color.rgb, 1.0);
-}`.split( '\n' );
+}`.split( '\n' )
+};
 
 GLShader.RENDER_MOUSE_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
     // Normalized pixel coordinates (from 0 to 1)
@@ -645,7 +647,9 @@ GLShader.RENDER_ANIMATED_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord)
     return vec4(color, 1.0);
 }`.split( '\n' );
 
-GLShader.RENDER_KEYBOARD_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
+GLShader.RENDER_KEYBOARD_TEMPLATE = {
+    channels: [ { index: 0, id: 'Keyboard', category: 'misc' } ],
+    code: `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
     // Connect iChannel0 to: Keyboard
     // Keyboard texture layout (256 x 3):
     //   Row 0 — state  : is the key currently held down
@@ -695,7 +699,8 @@ GLShader.RENDER_KEYBOARD_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord)
     col += press * 0.4;
 
     return vec4(col, 1.0);
-}`.split( '\n' );
+}`.split( '\n' )
+};
 
 GLShader.RENDER_COMMON_TEMPLATE = `float someFunc(float a, float b) {
     return a + b;

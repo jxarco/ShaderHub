@@ -1,8 +1,11 @@
 # 0.16
 - Improved snippet library and code suggestions.
-- Add shader live previews in Home page.
-- Add shader view count.
-- Replace 'Name' for 'Trending' shader sorting.
+- Shader live previews in Home page.
+- Shader view count.
+- New Keyboard template.
+- Replaced 'Name' for 'Trending' shader sorting.
+- Fixed Keyboard wgsl utils.
+- Fixed template channel dependencies.
 
 # 0.15
 - Code snippets library (xor's fragcoord.xyz).

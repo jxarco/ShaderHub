@@ -1504,7 +1504,8 @@ Shader.RENDER_MAIN_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -
     return vec4f(color, 1.0);
 }`.split( '\n' );
 
-Shader.RENDER_TEXTURE_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+Shader.RENDER_TEXTURE_TEMPLATE = {
+    channels: [ { index: 0, id: '68bdc7df000157b32148', category: 'texture' } ], code: `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
     // Normalized pixel coordinates (from 0 to 1)
     let uv : vec2f = fragUV; // The same as: fragCoord/iResolution.xy;
 
@@ -1513,7 +1514,8 @@ Shader.RENDER_TEXTURE_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f
 
     // Output to screen
     return vec4f(color.rgb, 1.0);
-}`.split( '\n' );
+}`.split( '\n' )
+};
 
 Shader.RENDER_MOUSE_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
     // Normalized pixel coordinates (from 0 to 1)
@@ -1581,7 +1583,9 @@ Shader.RENDER_ANIMATED_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2
     return vec4f(color, 1.0);
 }`.split( '\n' );
 
-Shader.RENDER_KEYBOARD_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+Shader.RENDER_KEYBOARD_TEMPLATE = {
+    channels: [ { index: 0, id: 'Keyboard', category: 'misc' } ],
+    code: `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
     // Connect iChannel0 to: Keyboard
     //
     // Keyboard utility functions (auto-injected when Keyboard channel is connected):
@@ -1627,7 +1631,8 @@ Shader.RENDER_KEYBOARD_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2
     col += press * 0.4;
 
     return vec4f(col, 1.0);
-}`.split( '\n' );
+}`.split( '\n' )
+};
 
 Shader.RENDER_COMMON_TEMPLATE = `fn someFunc(a: f32, b: f32) -> f32 {
     return a + b;

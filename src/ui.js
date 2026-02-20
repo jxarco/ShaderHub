@@ -2741,7 +2741,7 @@ export const ui = {
                 }, null );
             }
 
-            const iSetLines = ( templateName ) => {
+            const iSetLines = async ( templateName ) => {
                 const pass = ShaderHub.currentPass;
                 if ( !pass )
                 {
@@ -2749,11 +2749,32 @@ export const ui = {
                 }
 
                 const ShaderClass = usingWebGPU ? Shader : GLShader;
-                const templateLines = ShaderClass[`RENDER_${templateName.toUpperCase()}_TEMPLATE`];
+                const template = ShaderClass[`RENDER_${templateName.toUpperCase()}_TEMPLATE`];
+
+                // supports both plain array (code only) and object { code, channels }
+                const templateLines = Array.isArray( template ) ? template : template.code;
+                const templateChannels = Array.isArray( template ) ? [] : ( template.channels ?? [] );
                 pass.codeLines = templateLines;
                 editor.setText( templateLines.join( '\n' ) );
 
-                ShaderHub.compileShader( true, pass );
+                if ( templateChannels.length )
+                {
+                    for ( const ch of templateChannels )
+                    {
+                        ShaderHub.addUniformChannel( pass, ch.index, { id: ch.id, category: ch.category } );
+                    }
+
+                    await ui.updateShaderChannelsView( pass );
+                }
+                else
+                {
+                    pass.channels.forEach( ( c, i ) => {
+                        if( c === undefined ) return;
+                        ShaderHub.removeUniformChannel( i );
+                    } );
+                }
+
+                pass.mustCompile = true;
             };
 
             LX.addDropdownMenu( moreButton.root, [
