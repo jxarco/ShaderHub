@@ -2,6 +2,7 @@
 - Improved snippet library and code suggestions.
 - Add shader live previews in Home page.
 - Add shader view count.
+- Replace 'Name' for 'Trending' shader sorting.
 
 # 0.15
 - Code snippets library (xor's fragcoord.xyz).
