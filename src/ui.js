@@ -2212,48 +2212,44 @@ export const ui = {
                         shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
                         shaderItem.querySelector( 'div' ).remove();
                         const shaderDesc = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none', `
-                            <div class="w-full flex-auto-fill overflow-hidden">
-                                <div class="text-sm sm:text-base font-medium"><span class="truncate max-w-full block">${shaderInfo.name}</span></div>
-                            </div>
-                            <div class="flex flex-row gap-2 flex-auto-keep items-center">
-                                ${ownProfile ? LX.makeIcon( shaderInfo.public ? 'Eye' : 'EyeOff', { svgClass: 'viz-icon text-card-foreground' } ).innerHTML : ''}
+                            <span class="w-full text-sm font-medium text-nowrap truncate">${shaderInfo.name}</span>
+                            <div class="flex flex-row gap-1 flex-auto-keep items-center shader-prof-opt">
                                 <div class="flex flex-row gap-1 items-center">
-                                    ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current` } ).innerHTML}
-                                    <span>${shaderInfo.likeCount ?? 0}</span>
+                                    ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current sm` } ).innerHTML}
+                                    <span class="text-xs text-muted-foreground">${shaderInfo.likeCount ?? 0}</span>
                                 </div>
-                                ${ownProfile ? `<span class="h-4 mx-2 border-right border-color text-muted-foreground self-center items-center"></span>` : ''}
-                                ${ownProfile ? LX.makeIcon( 'EllipsisVertical', { svgClass: 'shader-prof-opt text-card-foreground cursor-pointer' } ).innerHTML : ''}
+                                ${ownProfile ? `<span class="h-4 mx-1 border-right border-color text-muted-foreground self-center items-center"></span>` : ''}
                             </div>`, shaderItem );
 
                         let vizIcon = shaderDesc.querySelector( '.viz-icon' );
-                        const optButton = shaderDesc.querySelector( '.shader-prof-opt' );
-                        if ( optButton )
+                        const shaderOptionsCont = shaderDesc.querySelector( '.shader-prof-opt' );
+                        if ( shaderOptionsCont )
                         {
-                            optButton.addEventListener( 'click', ( e ) => {
-                                LX.addDropdownMenu( optButton, [
-                                    { name: shaderInfo.public ? 'Make Private' : 'Make Public', icon: shaderInfo.public ? 'EyeOff' : 'Eye', callback: async () => {
-                                        shaderInfo.public = !shaderInfo.public;
-                                        const newIcon = LX.makeIcon( shaderInfo.public ? 'Eye' : 'EyeOff', { svgClass: 'viz-icon text-card-foreground' } ).querySelector( 'svg' );
-                                        vizIcon.replaceWith( newIcon );
-                                        vizIcon = newIcon;
-                                        await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, uid, {
-                                            'public': shaderInfo.public
-                                        } );
-                                    } },
-                                    { name: 'Export', icon: 'Download', callback: async () => {
-                                        const json = JSON.parse( await this.fs.requestFile( shaderInfo.url, 'text' ) );
-                                        const code = json.passes.map( ( p, i ) => {
-                                            const lines = [];
-                                            if ( i !== 0 ) lines.push( '' );
-                                            lines.push( `// ${p.name}`, '', ...p.codeLines );
-                                            return lines.join( '\n' );
-                                        } ).join( '\n' );
-                                        LX.downloadFile( `${shaderInfo.name.replaceAll( ' ', '' )}.wgsl`, code );
-                                    } },
-                                    null,
-                                    { name: 'Delete', icon: 'Trash2', className: 'destructive', callback: () => ShaderHub.deleteShader( { uid, name } ) }
-                                ], { side: 'top', align: 'end' } );
-                            } );
+                            const vB = new LX.Button( null, 'VisibilityButton', async ( value, event ) => {
+                                shaderInfo.public = !shaderInfo.public;
+                                await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, uid, {
+                                    'public': shaderInfo.public
+                                } );
+                            }, { icon: shaderInfo.public ? 'Eye' : 'EyeOff', swap: shaderInfo.public ? 'EyeOff' : 'Eye',
+                                title: 'Toggle Public/Private', tooltip: true, className: 'p-0', buttonClass: 'px-1! ghost sm' } );
+                            shaderOptionsCont.appendChild( vB.root );
+
+                            const oB = new LX.Button( null, 'ExportButton', async ( value, event ) => {
+                                const json = JSON.parse( await this.fs.requestFile( shaderInfo.url, 'text' ) );
+                                const code = json.passes.map( ( p, i ) => {
+                                    const lines = [];
+                                    if ( i !== 0 ) lines.push( '' );
+                                    lines.push( `// ${p.name}`, '', ...p.codeLines );
+                                    return lines.join( '\n' );
+                                } ).join( '\n' );
+                                LX.downloadFile( `${shaderInfo.name.replaceAll( ' ', '' )}.wgsl`, code );
+                            }, { icon: 'Download', className: 'p-0', buttonClass: 'px-1! ghost sm', title: 'Export', tooltip: true } );
+                            shaderOptionsCont.appendChild( oB.root );
+
+                            const dB = new LX.Button( null, 'DeleteButton', ( value, event ) => {
+                                ShaderHub.deleteShader( { uid, name } );
+                            }, { icon: 'Trash2', className: 'p-0', buttonClass: 'px-1! destructive sm', title: 'Delete', tooltip: true } );
+                            shaderOptionsCont.appendChild( dB.root );
                         }
 
                         shaderPreview.addEventListener( 'mousedown', ( e ) => e.preventDefault() );

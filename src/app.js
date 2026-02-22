@@ -780,18 +780,19 @@ const ShaderHub = {
             iGetSuggestion = ( d, f, u ) => {
                 const g = c( f.code );
                 const m = g ? f.label ? `${g} (${f.label})` : g : f.label ? `${u.name} (${f.label})` : u.name;
-                // const  w = ["lib", g, u.name, f.label, d.name].filter( Boolean ).join( " " );
+                const  w = ["lib", g, u.name, f.label, d.name].filter( Boolean ).join( " " );
                 return {
-                    label: `${ LX.makeIcon( 'BookOpenText' ).innerHTML } ${m}`,
+                    label: `${m}`,
                     detail: u.description,
                     insertText: f.code,
-                    // filterText: w,
+                    icon: 'BookOpenText',
+                    filterText: w,
                     // sortText: `3_${d.name}_${u.name}_${f.label}`
                 }
             };
         }
 
-        if( 0 && iGetSuggestion !== null )
+        if( iGetSuggestion !== null )
         {
             const results = [];
             for( const cat of library )
