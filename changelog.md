@@ -1,3 +1,5 @@
+- Fixed mobile paths redirect bug.
+
 # 0.16
 - Improved snippet library and code suggestions.
 - Shader live previews in Home page.

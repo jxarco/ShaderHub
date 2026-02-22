@@ -103,8 +103,8 @@ export const ui = {
                     m.add( 'Create account', { icon: 'UserPlus', callback: () => this.openSignUpDialog() } );
                 }
 
-                m.add( 'Explore', { icon: 'Search', callback: () => this._openPage( 'explore' ) } );
-                m.add( 'Docs', { icon: 'BookOpen', callback: () => this._openPage( 'docs' ) } );
+                m.add( 'Explore', { icon: 'Search', callback: ( k ) => this._openPage( `${k.toLowerCase()}/` ) } );
+                m.add( 'Docs', { icon: 'BookOpen', callback: ( k ) => this._openPage( `${k.toLowerCase()}/` ) } );
 
                 if ( fs.user )
                 {
