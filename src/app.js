@@ -780,14 +780,14 @@ const ShaderHub = {
             iGetSuggestion = ( d, f, u ) => {
                 const g = c( f.code );
                 const m = g ? f.label ? `${g} (${f.label})` : g : f.label ? `${u.name} (${f.label})` : u.name;
-                const  w = ["lib", g, u.name, f.label, d.name].filter( Boolean ).join( " " );
+                const w = ["lib", g, u.name, f.label, d.name].filter( Boolean ).join( " " );
                 return {
                     label: `${m}`,
                     detail: u.description,
                     insertText: f.code,
                     icon: 'BookOpenText',
                     filterText: w,
-                    // sortText: `3_${d.name}_${u.name}_${f.label}`
+                    sortText: `3_${d.name}_${u.name}_${f.label}`
                 }
             };
         }

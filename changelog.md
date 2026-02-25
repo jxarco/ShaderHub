@@ -1,4 +1,7 @@
+# 0.16.1
 - Fixed mobile paths redirect bug.
+- Update LexGUI version to get improved CodeEditor and other fixes.
+- Minor UI improvements.
 
 # 0.16
 - Improved snippet library and code suggestions.

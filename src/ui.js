@@ -1025,6 +1025,7 @@ export const ui = {
             onSave: iCompileShader.bind( this ),
             onRun: iCompileShader.bind( this ),
             onCreateFile: ( editor ) => null,
+            onHoverSymbol: () => null,
             onContextMenu: ( editor, content, event ) => {
                 const pass = ShaderHub.currentPass;
                 if ( pass.name === 'Common' || !content ) return;
