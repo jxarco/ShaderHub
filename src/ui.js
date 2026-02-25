@@ -1042,6 +1042,10 @@ export const ui = {
                     await ShaderHub.compileShader( true, pass );
                     this.renderUniformsView( pass );
                 } } );
+                // options.push( { path: 'Explain Lines', callback: async () => {
+                //     const selection = editor.cursorSet.getSelectedText( editor.doc );
+                //     const result = await ShaderHub._explainLinesAI( selection, editor.getText() );
+                // } } );
 
                 return options;
             },

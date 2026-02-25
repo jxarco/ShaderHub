@@ -1827,6 +1827,48 @@ const ShaderHub = {
         const blob = await this.snapshotCanvas();
         const url = URL.createObjectURL( blob );
         window.open( url );
+    },
+
+    async _makeAIPrompt( prompt )
+    {
+        const response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+                "x-api-key": localStorage.getItem("ANTHROPIC_KEY"),
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify( prompt )
+        });
+
+        return await response.text();
+    },
+
+    async _explainLinesAI( selectedLines, fullShaderCode )
+    {
+        const promptBody = {
+            model: "claude-haiku-4-5-20251001",
+            max_tokens: 1000,
+            system: `You are a GLSL shader expert. Explain shader code clearly and concisely.
+                Keep explanations beginner-friendly but technically accurate.
+                When explaining, focus on: what it does visually, what the math means, and why it's written that way.
+                Never explain lines the user didn't select unless it's necessary for context.`,
+            messages: [
+                {
+                    role: "user",
+                    content: `Full shader for context:
+                \`\`\`glsl
+                ${fullShaderCode}
+                \`\`\`
+
+                Explain these selected lines:
+                \`\`\`glsl
+                ${selectedLines}
+                \`\`\``
+                }
+            ]
+        }
+
+        return this._makeAIPrompt( promptBody );
     }
 };
 
