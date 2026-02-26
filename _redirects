@@ -3,4 +3,5 @@
 /user/*     /index.html        200
 /explore    /index.html        200
 /create     /index.html        200
+/liked      /index.html        200
 /           /index.html        200

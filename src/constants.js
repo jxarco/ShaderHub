@@ -17,11 +17,12 @@ export const BUFFER_PASS_TEXTURE_A_INDEX = 0;
 export const BUFFER_PASS_TEXTURE_B_INDEX = 1;
 
 export const FEATURES = [ 'All', 'Multipass', 'Compute', 'Keyboard', 'Sound' ];
-export const ORDER_BY_NAMES = [ 'Popular', 'Trending', 'Recent' ];
+export const ORDER_BY_NAMES = [ 'Popular', 'Trending', 'Recent', 'A-Z' ];
 export const ORDER_BY_MAPPING = {
     'popular': { field: 'like_count', direction: 'desc' },
     'trending': { field: 'view_count', direction: 'desc' },
-    'recent': { field: '$createdAt', direction: 'desc' }
+    'recent': { field: '$createdAt', direction: 'desc' },
+    'a-z': { field: 'name', direction: 'asc' },
 };
 
 export const UNIFORM_CHANNELS_COUNT = 4;

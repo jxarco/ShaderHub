@@ -432,6 +432,9 @@
   .max-w-\[40\%\] {
     max-width: 40%;
   }
+  .max-w-\[740px\] {
+    max-width: 740px;
+  }
   .max-w-\[1600px\] {
     max-width: 1600px;
   }
@@ -639,9 +642,6 @@
   }
   .p-6 {
     padding: calc(var(--spacing) * 6);
-  }
-  .p-8 {
-    padding: calc(var(--spacing) * 8);
   }
   .pad-2xl {
     padding: var(--pad-2xl);
@@ -1004,6 +1004,11 @@
   .md\:flex-row {
     @media (width >= 48rem) {
       flex-direction: row;
+    }
+  }
+  .md\:p-12 {
+    @media (width >= 48rem) {
+      padding: calc(var(--spacing) * 12);
     }
   }
   .md\:px-12 {

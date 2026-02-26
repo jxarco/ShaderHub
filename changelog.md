@@ -2,7 +2,10 @@
 - Uniform and Define values on hover code.
 - iDate uniform (year, month, day, seconds).
 - User Collections to organize Shaders.
+- Moved liked shaders to /liked page.
 - Like shaders from Explore page.
+- Better Shader info in profile page.
+- Get back ordering Shaders by name.
 - Fixed GL uniforms reseting on compile.
 
 # 0.16.1
