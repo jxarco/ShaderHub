@@ -1,9 +1,9 @@
 # 0.17
 - Uniform and Define values on hover code.
-- Fixed GL uniforms reseting on compile.
 - iDate uniform (year, month, day, seconds).
 - User Collections to organize Shaders.
 - Like shaders from Explore page.
+- Fixed GL uniforms reseting on compile.
 
 # 0.16.1
 - Fixed mobile paths redirect bug.

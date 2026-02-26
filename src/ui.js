@@ -2248,8 +2248,8 @@ export const ui = {
                         shaderPreview.src = shaderInfo.preview ?? ShaderHub.shaderPreviewPath;
                         shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
                         shaderItem.querySelector( 'div' ).remove();
-                        const shaderDesc = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col rounded-b-lg gap-1 px-4 py-3 items-center select-none', `
-                            <span class="w-full text-sm font-medium text-nowrap truncate text-center">${shaderInfo.name}</span>
+                        const shaderDesc = LX.makeContainer( [ '100%', 'auto' ], `flex ${ownProfile ? 'flex-col' : 'flex-row'} rounded-b-lg gap-1 px-4 py-3 items-center select-none`, `
+                            <span class="w-full text-sm font-medium text-nowrap truncate ${ownProfile ? 'text-center' : ''}">${shaderInfo.name}</span>
                             <div class="flex flex-row gap-1 flex-auto-keep items-center shader-prof-opt">
                                 <div class="flex flex-row gap-1 items-center">
                                     ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current sm` } ).innerHTML}
@@ -2260,7 +2260,7 @@ export const ui = {
 
                         let vizIcon = shaderDesc.querySelector( '.viz-icon' );
                         const shaderOptionsCont = shaderDesc.querySelector( '.shader-prof-opt' );
-                        if ( shaderOptionsCont )
+                        if ( ownProfile && shaderOptionsCont )
                         {
                             const vB = new LX.Button( null, 'VisibilityButton', async ( value, event ) => {
                                 shaderInfo.public = !shaderInfo.public;
