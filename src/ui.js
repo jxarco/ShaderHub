@@ -1141,27 +1141,47 @@ export const ui = {
             }
         }
 
+        const PAGE_LIMIT = 8;
         const usersDocuments = await this.fs.listDocuments( FS.USERS_COLLECTION_ID );
         const user = usersDocuments.documents.find( ( d ) => d.user_id === userID );
         const userName = user['user_name'];
         const isPublicProfile = user['public'];
-
-        document.title = `${userName} - ShaderHub`;
-
         const params = new URLSearchParams( document.location.search );
         const queryOrderBy = params.get( 'order_by' );
 
-        // Likes are only shown for the active user, they are private!
+        document.title = `${userName} - ShaderHub`;
 
-        const PAGE_LIMIT = 8;
-
+        const shaderDocuments = await this.fs.listDocuments( FS.SHADERS_COLLECTION_ID, [ Query.equal( 'author_id', userID ), Query.limit( 1e3 ) ] );
+        const totalLikesCount = shaderDocuments.documents.reduce( ( acc, v ) => acc + v['like_count'] , 0 );
+        const totalViewsCount = shaderDocuments.documents.reduce( ( acc, v ) => acc + v['view_count'] , 0 );
+        
         const avatar = new LX.Avatar( { imgSource: user['avatar'], fallback: userName[0].toUpperCase(), className: `size-12 [&_span]:text-xl [&_span]:leading-12` } );
-        const infoContainer = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col gap-4 p-2 my-8 justify-center', `
+        const infoContainer = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col gap-4 p-2 my-12 justify-center items-center', `
             <div class="avatar-container flex flex-row gap-3 text-3xl font-bold content-center items-center">
-                ${user['display_name'] ? `${user['display_name']} <span class="text-xl font-normal text-muted-foreground">(${userName})</span>` : userName}
+                ${user['display_name'] ? `${user['display_name']} <span class="text-xl font-normal text-muted-foreground">(@${userName})</span>` : userName}
             </div>
             <div class="flex flex-row gap-2">
-                <div style="max-width: 600px; overflow-wrap: break-word;" class="desc-content text-lg font-medium text-card-foreground">${user['description'] ?? ''}</div>
+                <div class="desc-content text-lg font-medium text-card-foreground word-break max-w-150 text-balance text-center">${user['description'] ?? ''}</div>
+            </div>
+            <div class="flex flex-row gap-6 hub-background-blur p-2 px-6 w-max rounded-lg border-color">
+                <div class="flex flex-col items-center">
+                    <span class="text-lg font-medium text-foreground">${user['shader_count'] ?? 0}</span>
+                    <span class="text-[0.65rem] text-muted-foreground">SHADERS</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="flex flex-row gap-1 items-center">
+                        ${LX.makeIcon( 'Heart', { svgClass: `text-orange-600 shadow-primary sm fill-current` } ).innerHTML}
+                        <span class="text-lg font-medium text-foreground">${totalLikesCount}</span>
+                    </div>
+                    <span class="text-[0.65rem] text-muted-foreground">LIKES</span>
+                </div>
+                <div class="flex flex-col items-center">
+                    <div class="flex flex-row gap-1 items-center">
+                        ${LX.makeIcon( 'Eye', { svgClass: `text-muted-foreground sm fill-current` } ).innerHTML}
+                        <span class="text-lg font-medium text-foreground">${totalViewsCount}</span>
+                    </div>
+                    <span class="text-[0.65rem] text-muted-foreground">VIEWS</span>
+                </div>
             </div>
         `, topArea );
 
@@ -1356,7 +1376,7 @@ export const ui = {
                                     'public': shaderInfo.public
                                 } );
                             }, { icon: shaderInfo.public ? 'Globe' : 'Lock', swap: shaderInfo.public ? 'EyeOff' : 'Eye',
-                                title: 'Toggle Public/Private', tooltip: true, className: 'p-0', buttonClass: 'px-1! ghost sm' } );
+                                title: 'Toggle Public/Private', tooltip: true, className: 'p-0', buttonClass: 'px-1! outline sm' } );
                             shaderOptionsCont.appendChild( vB.root );
 
                             const iUpdateShaderCollection = async ( shader, collectionId ) => {
@@ -1463,7 +1483,7 @@ export const ui = {
 
                                 LX.addDropdownMenu( cB.root, mOptions, { side: 'top', align: 'center' } );
                             }, { icon: 'Layers2', title: 'Collections', tooltip: true,
-                                className: 'p-0', buttonClass: 'px-1! ghost sm' } );
+                                className: 'p-0', buttonClass: 'px-1! outline sm' } );
                             shaderOptionsCont.appendChild( cB.root );
 
                             const oB = new LX.Button( null, 'ExportButton', async ( value, event ) => {
@@ -1475,12 +1495,14 @@ export const ui = {
                                     return lines.join( '\n' );
                                 } ).join( '\n' );
                                 LX.downloadFile( `${shaderInfo.name.replaceAll( ' ', '' )}.wgsl`, code );
-                            }, { icon: 'Download', className: 'p-0', buttonClass: 'px-1! ghost sm', title: 'Export', tooltip: true } );
+                            }, { icon: 'Download', className: 'p-0', buttonClass: 'px-1! outline sm', title: 'Export', tooltip: true } );
                             shaderOptionsCont.appendChild( oB.root );
 
                             const dB = new LX.Button( null, 'DeleteButton', ( value, event ) => {
-                                ShaderHub.deleteShader( { uid, name } );
-                            }, { icon: 'Trash2', className: 'p-0', buttonClass: 'px-1! destructive sm', title: 'Delete', tooltip: true } );
+                                const spinner = new LX.Spinner();
+                                dB.root.querySelector( 'button' ).prepend( spinner.root );
+                                ShaderHub.deleteShader( { uid, name }, () => this._refreshOwnShaders() );
+                            }, { icon: 'Trash2', className: 'p-0', buttonClass: 'px-1! destructive border-color sm', title: 'Delete', tooltip: true } );
                             shaderOptionsCont.appendChild( dB.root );
                         }
 
@@ -2244,55 +2266,69 @@ export const ui = {
                 } );
             }
 
-            const shaderOptions = LX.makeContainer( [ `auto`, 'auto' ], 'ml-auto flex flex-row p-1 gap-1 self-start content-center items-center', ``, shaderNameAuthorOptionsContainer );
+            const shaderOptions = LX.makeContainer( [ `auto`, 'auto' ], 'ml-auto flex flex-row p-1 self-start content-center items-center', ``, shaderNameAuthorOptionsContainer );
             const editable = ownProfile || isNewShader;
 
             if ( this.fs.user )
             {
-                const shaderOptionsButton = new LX.Button( null, 'ShaderOptions', async () => {
-                    const result = await ShaderHub.shaderExists();
+                const result = await ShaderHub.shaderExists( shader.uid );
 
-                    let dmOptions = [];
-
-                    if ( editable )
+                if( mobile )
+                {
+                    if( result )
                     {
-                        dmOptions.push(
-                            mobile ? 0 : { name: 'Save Shader', icon: 'Save', callback: () => ShaderHub.saveShader( result ) },
-                            ( isNewShader || mobile ) ? 0 : { name: 'Settings', icon: 'Settings', callback: () => this.openShaderSettingsDialog( result ) }
-                        );
-
-                        if ( result )
-                        {
-                            dmOptions.push(
-                                mobile ? 0 : { name: 'Update Preview', icon: 'ImageUp', callback: () => ShaderHub.updateShaderPreview( shader.uid, true ) }
-                            );
-                        }
+                        const shareShaderButton = new LX.Button( null, 'ShareShaderButton', async () => this.openShareiFrameDialog( result ),
+                            { icon: 'Share2', buttonClass: 'primary' } );
+                        shaderOptions.appendChild( shareShaderButton.root );
                     }
                     else
                     {
-                        dmOptions.push( mobile ? 0 : { name: 'Remix Shader', icon: 'GitFork', disabled: !( result.remixable ?? true ), callback: () => ShaderHub.remixShader() } );
+                        LX.makeContainer( [ `auto`, 'auto' ], 'text-muted-foreground text-sm', 'Save Disabled in mobile :(', shaderOptions );
                     }
-
-                    dmOptions.push(
-                        !result ? 0 : { name: 'Share', icon: 'Share2', callback: () => this.openShareiFrameDialog( result ) }
-                    );
-
-                    if ( editable && result )
+                }
+                else
+                {
+                    if( ownProfile && ( result || isNewShader )  )
                     {
-                        dmOptions.push(
-                            mobile ? 0 : null,
-                            { name: 'Delete Shader', icon: 'Trash2', className: 'destructive', callback: () => ShaderHub.deleteShader() }
-                        );
+                        const saveShaderButton = new LX.Button( null, 'SaveShaderButton', async () => ShaderHub.saveShader( result ),
+                            { icon: 'Save', buttonClass: 'primary', title: 'Save Shader', tooltip: true } );
+                        shaderOptions.appendChild( saveShaderButton.root );
                     }
-
-                    dmOptions = dmOptions.filter( ( o ) => o !== 0 );
-
-                    if ( dmOptions.length )
+                    
+                    if( !isNewShader && result )
                     {
-                        LX.addDropdownMenu( shaderOptionsButton.root, dmOptions, { side: 'bottom', align: 'end' } );
+                        const shaderOptionsButton = new LX.Button( null, 'ShaderOptions', async () => {
+        
+                            let dmOptions = [];
+        
+                            if ( ownProfile )
+                            {
+                                dmOptions.push(
+                                    { name: 'Settings', icon: 'Settings', callback: () => this.openShaderSettingsDialog( result ) },
+                                    { name: 'Update Preview', icon: 'ImageUp', callback: () => ShaderHub.updateShaderPreview( shader.uid, true ) }
+                                );
+                            }
+                            else
+                            {
+                                dmOptions.push( { name: 'Remix Shader', icon: 'GitFork', disabled: !( result.remixable ?? true ), callback: () => ShaderHub.remixShader() } );
+                            }
+        
+                            dmOptions.push( { name: 'Share', icon: 'Share2', callback: () => this.openShareiFrameDialog( result ) } );
+        
+                            if ( ownProfile )
+                            {
+                                dmOptions.push( null, { name: 'Delete Shader', icon: 'Trash2', className: 'destructive', callback: () => ShaderHub.deleteShader( undefined, () => {
+                                        // go to explore page on delete shader
+                                        this._openPage( 'explore/' );
+                                    }) });
+                            }
+        
+                            LX.addDropdownMenu( shaderOptionsButton.root, dmOptions, { side: 'bottom', align: 'end' } );
+
+                        }, { icon: 'Menu', title: 'More Options', tooltip: true } );
+                        shaderOptions.appendChild( shaderOptionsButton.root );
                     }
-                }, { icon: 'Menu' } );
-                shaderOptions.appendChild( shaderOptionsButton.root );
+                }
             }
             else
             {
@@ -2303,7 +2339,7 @@ export const ui = {
             {
                 // Like click events
                 const shaderStats = LX.makeContainer( [ `auto`, 'auto' ], 'ml-auto flex p-1 gap-1 items-center', `
-                    ${LX.makeIcon( 'Heart', { svgClass: 'shader-like-button lg fill-current transition duration-150 ease-in-out' } ).innerHTML} <span></span>
+                    ${LX.makeIcon( 'Heart', { svgClass: 'shader-like-button fill-current transition duration-150 ease-in-out' } ).innerHTML} <span></span>
                 ` );
                 shaderOptions.prepend( shaderStats );
 
@@ -3478,9 +3514,9 @@ export const ui = {
         const dialog = new LX.Dialog( 'Share this Shader', ( p ) => {
             // direct link
             {
-                p.addTextArea( null, `Direct link - Just copy and paste the URL below:`, null, { inputClass: 'text-card-foreground', disabled: true, fitHeight: true } );
+                p.addTextArea( null, `Direct link - Just copy and paste the URL below:`, null, { inputClass: 'bg-none text-foreground', disabled: true, fitHeight: true } );
                 const directLink = `${window.location.origin}${window.location.pathname}?shader=${r['$id']}`;
-                p.addTextArea( null, directLink, null, { disabled: true, fitHeight: true } );
+                p.addTextArea( null, directLink, null, { inputClass: 'bg-none', disabled: true, fitHeight: true } );
                 const copyButtonComponent = p.addButton( null, 'Copy Shader URL', async () => {
                     navigator.clipboard.writeText( directLink );
                     copyButtonComponent.root.querySelector( "input[type='checkbox']" ).style.pointerEvents = 'none';
@@ -3496,7 +3532,7 @@ export const ui = {
 
             // iframe code
             {
-                p.addTextArea( null, `iFrame - Copy the code below to embed this shader in your website or blog:`, null, { inputClass: 'text-card-foreground', disabled: true, fitHeight: true } );
+                p.addTextArea( null, `iFrame - Copy the code below to embed this shader in your website or blog:`, null, { inputClass: 'bg-none text-foreground', disabled: true, fitHeight: true } );
                 p.addCheckbox( 'Show UI', showUI, ( v ) => {
                     showUI = v;
                     const newUrl = `<iframe src="${window.location.origin}${window.location.pathname}embed/?shader=${r['$id']}${
@@ -3509,7 +3545,7 @@ export const ui = {
                     showUI ? '' : '&ui=false'
                 }" frameborder="0" width="640" height="405" class="rounded-lg" allowfullscreen></iframe>`;
 
-                const iframeText = p.addTextArea( null, iframeUrl, null, { disabled: true, fitHeight: true } );
+                const iframeText = p.addTextArea( null, iframeUrl, null, { inputClass: 'bg-none', disabled: true, fitHeight: true } );
                 const copyButtonComponent = p.addButton( null, 'Copy iFrame html', async () => {
                     navigator.clipboard.writeText( iframeText.value() );
                     copyButtonComponent.root.querySelector( "input[type='checkbox']" ).style.pointerEvents = 'none';

@@ -19,7 +19,7 @@ const fps = new FPSCounter();
 const Query = Appwrite.Query;
 
 const ShaderHub = {
-    version: '0.17',
+    version: '0.17.1',
 
     keyState: new Map(),
     keyToggleState: new Map(),
@@ -919,7 +919,9 @@ const ShaderHub = {
             return;
         }
 
-        const dialog = new LX.Dialog( 'Confirm Shader Data', ( p ) => {
+        let blockSave = false;
+
+        const dialog = new LX.Dialog( 'Save Shader', ( p ) => {
             let shaderName = this.shader.name, isShaderPublic = false, isShaderRemixable = true;
             const textInput = p.addText( 'Name', shaderName, ( v ) => {
                 shaderName = v;
@@ -933,16 +935,23 @@ const ShaderHub = {
             }, { nameWidth: '50%', className: 'primary' } );
             p.sameLine( 2 );
             p.addButton( null, 'Cancel', () => dialog.close(), { width: '50%', buttonClass: 'destructive' } );
-            p.addButton( null, 'Confirm', async () => {
-                if ( !shaderName.length || !textInput.valid( shaderName ) )
+            const confirmButton = p.addButton( null, 'Confirm', async () => {
+                if ( blockSave || !shaderName.length || !textInput.valid( shaderName ) )
                 {
                     return;
                 }
+
+                blockSave = true;
+
+                const spinner = new LX.Spinner();
+                confirmButton.root.querySelector( 'button' ).prepend( spinner.root );
 
                 this.shader.name = shaderName;
 
                 const ownShader = this.shader.authorId === fs.getUserId();
                 const newFileId = await this.saveShaderFiles( ownShader );
+                const curUser = await fs.getDocument( FS.USERS_COLLECTION_ID, ui.dbUser['$id'] );
+                console.assert( curUser );
 
                 // Create a new shader in the DB
                 const result = await fs.createDocument( FS.SHADERS_COLLECTION_ID, {
@@ -959,14 +968,18 @@ const ShaderHub = {
                     'backend': this.backend
                 } );
 
+                // Update user shader count
+                ui.dbUser = await fs.updateDocument( FS.USERS_COLLECTION_ID, curUser['$id'], {
+                    'shader_count': parseInt( curUser['shader_count'] ) + 1,
+                } );
+
                 this.shader.uid = result['$id'];
 
                 // Upload canvas snapshot
                 await this.updateShaderPreview( this.shader.uid, false );
 
-                // Close dialog on succeed and show toast
-                dialog.close();
-                Utils.toast( `✅ Shader saved`, `Shader: ${shaderName} by ${fs.user.name}` );
+                // Go to shader edit view with the new shader
+                ui._openShader( result['$id'] );
             }, { width: '50%', buttonClass: 'primary' } );
         } );
     },
@@ -1004,7 +1017,7 @@ const ShaderHub = {
         }
     },
 
-    async deleteShader( shaderInfo )
+    async deleteShader( shaderInfo, onDelete )
     {
         const uid = this.shader?.uid ?? shaderInfo?.uid;
         const name = this.shader?.name ?? shaderInfo?.name;
@@ -1026,6 +1039,14 @@ const ShaderHub = {
             // DB entry
             await fs.deleteDocument( FS.SHADERS_COLLECTION_ID, uid );
 
+            const curUser = await fs.getDocument( FS.USERS_COLLECTION_ID, ui.dbUser['$id'] );
+            console.assert( curUser );
+
+            // Update user shader count
+            ui.dbUser = await fs.updateDocument( FS.USERS_COLLECTION_ID, curUser['$id'], {
+                'shader_count': Math.max( parseInt( curUser['shader_count'] ) - 1, 0 ) ,
+            } );
+
             // Shader files
             await fs.deleteFile( result['file_id'] );
 
@@ -1037,6 +1058,11 @@ const ShaderHub = {
             }
 
             dialog.destroy();
+
+            if( onDelete )
+            {
+                onDelete( uid );
+            }
 
             Utils.toast( `✅ Shader deleted`, `Shader: ${name} by ${fs.user.name}` );
         };
@@ -1057,10 +1083,12 @@ const ShaderHub = {
         // Create a new col to store original_id so it can be shown in the page
         // Get the new shader id, and reload page in shader view with that id
 
+        const curUser = await fs.getDocument( FS.USERS_COLLECTION_ID, ui.dbUser['$id'] );
+        console.assert( curUser );
         const shaderUid = this.shader.uid;
         const shaderName = `${this.shader.name}_remix`;
         const newFileId = await this.saveShaderFiles( false, shaderName );
-
+        
         // Create a new shader in the DB
         const result = await fs.createDocument( FS.SHADERS_COLLECTION_ID, {
             'name': this.shader.name,
@@ -1072,6 +1100,11 @@ const ShaderHub = {
             'like_count': 0,
             'remixable': true,
             'public': true
+        } );
+
+        // Update user shader count
+        ui.dbUser = await fs.updateDocument( FS.USERS_COLLECTION_ID, curUser['$id'], {
+            'shader_count': parseInt( curUser['shader_count'] ) + 1,
         } );
 
         // Upload canvas snapshot

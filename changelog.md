@@ -1,3 +1,10 @@
+# 0.17.1
+- Improved Shader profile.
+- More visible Save Shader button.
+- Fixed transitions on Save/Delete Shaders. 
+- 2 more Featured Shader in Home page.
+- Added SDF Font texture by `otaviogood`.
+
 # 0.17
 - Uniform and Define values on hover code.
 - iDate uniform (year, month, day, seconds).
