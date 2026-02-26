@@ -493,8 +493,8 @@ export const ui = {
                 <img src="${ShaderHub.imagesRootPath}/favicon.png" class="">
                 <span class="text-muted-foreground text-3xl sm:text-4xl font-medium">ShaderHub</span>
                 <span class="text-balanced text-4xl sm:text-5xl font-medium">Create and share shaders using latest WebGPU!</span>
-                <a onclick='ui._openShader("new")' class="flex flex-row gap-1 items-center text-sm p-1 px-4 rounded-full text-secondary-foreground decoration-none hover:bg-secondary cursor-pointer"><span class="flex flex-auto-keep bg-orange-500 w-2 h-2 rounded-full"></span>
-                <span class="flex flex-auto-fill">New WebGL Renderer, New Sound Channel, and New Docs</span>${LX.makeIcon( 'ArrowRight', { svgClass: 'flex flex-auto-keep sm' } ).innerHTML}</a>
+                <a onclick='ui._openPage("docs?p=changelog")' class="flex flex-row gap-1 items-center text-sm p-1 px-4 rounded-full text-secondary-foreground decoration-none hover:bg-secondary cursor-pointer"><span class="flex flex-auto-keep bg-orange-500 w-2 h-2 rounded-full"></span>
+                <span class="flex flex-auto-fill">Shader Collections, Snippet Library, and New Code editor features</span>${LX.makeIcon( 'ArrowRight', { svgClass: 'flex flex-auto-keep sm' } ).innerHTML}</a>
             `, container );
 
             if ( !mobile )
