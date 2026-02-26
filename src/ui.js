@@ -2696,7 +2696,8 @@ export const ui = {
                 makeParagraph( `Time information:`, p );
                 makeParagraph( `<span class="text-foreground">iTime: f32</span> <span class="text-muted-foreground">// Elapsed time</span><br>
 <span class="text-foreground">iTimeDelta: f32</span> <span class="text-muted-foreground">// Delta time between frames</span><br>
-<span class="text-foreground">iFrame: i32</span> <span class="text-muted-foreground">// Frame number</span>`, p );
+<span class="text-foreground">iFrame: i32</span> <span class="text-muted-foreground">// Frame number</span><br>
+<span class="text-foreground">iDate: vec4f</span> <span class="text-muted-foreground">// Current date (year, month, day, seconds)</span>`, p );
 
                 makeParagraph( `Selectable channel textures (with support for different texture samplers):`, p );
                 makeParagraph( `<span class="text-foreground">iChannel0...3: texture_2d<f32></span><br>

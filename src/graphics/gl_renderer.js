@@ -388,6 +388,20 @@ class GLRenderer extends Renderer
         }
     }
 
+    updateDate( date, shader )
+    {
+        const gl = this.gl;
+        if ( !gl )
+        {
+            return;
+        }
+
+        for ( const pass of shader.passes )
+        {
+            pass.setUniform( gl, 'iDate', date );
+        }
+    }
+
     generateMipmaps( texture, mipLevelCount )
     {
         const encoder = this.device.createCommandEncoder();

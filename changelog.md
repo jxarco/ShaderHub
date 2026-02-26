@@ -1,6 +1,7 @@
 # 0.17
 - Uniform and Define values on hover code.
 - Fixed GL uniforms reseting on compile.
+- iDate uniform (year, month, day, seconds).
 - Like shaders from Explore page.
 
 # 0.16.1

@@ -31,6 +31,8 @@ const ShaderHub = {
     frameCount: 0,
     lastTime: 0,
     elapsedTime: 0,
+    date: [ 0, 0, 0, 0 ],
+    currentDate: null,
     capturer: null,
     generateKbTexture: true,
     timePaused: false,
@@ -40,6 +42,10 @@ const ShaderHub = {
 
     async init()
     {
+        const date = Date.now(), yt = new Date( date );
+        this.currentDate = yt;
+        this.date = [yt.getFullYear(), yt.getMonth(), yt.getDate(), date % 864e5 / 1e3],
+
         this.audioContext = new AudioContext( { sampleRate: 48000 } );
         this.shaderPreviewPath = `${this.imagesRootPath}/shader_preview.png`;
 
@@ -96,6 +102,11 @@ const ShaderHub = {
             ];
 
             this.renderer.updateMouse( data, this.shader );
+        }
+
+        {
+            this.date[3] = Date.now() % 864e5 / 1e3;
+            this.renderer.updateDate( this.date, this.shader );
         }
 
         this.lastTime = now;
@@ -735,13 +746,15 @@ const ShaderHub = {
 
     getCodeSymbolValue( name )
     {
-        const typeGen = ( t ) => `<span class="text-info font-code text-xs">(${Constants.WGSL_TO_GLSL[t]})</span>`;
+        const usingWebGPU = this.backend === 'webgpu';
+        const typeGen = ( t ) => `<span class="text-info font-code text-xs">(${usingWebGPU ? t : Constants.WGSL_TO_GLSL[t]})</span>`;
         const valueGen = ( v ) => `<span class="font-medium">${v}</span>`;
 
         if( name == 'iTime' ) return `${typeGen( 'f32' )} ${valueGen( this.elapsedTime.toFixed( 3 ) )}`;
         if( name == 'iTimeDelta' ) return `${typeGen( 'f32' )} ${valueGen( this.timeDelta.toFixed( 3 ) )}`;
         if( name == 'iFrame' ) return `${typeGen( 'i32' )} ${valueGen( this.frameCount.toString() )}`;
         if( name == 'iResolution' ) return `${typeGen( 'vec2f' )} ${valueGen( `${this.resolutionX}, ${this.resolutionY}` )}`;
+        if( name == 'iDate' ) return `${typeGen( 'vec4f' )} ${valueGen( `${this.date[0]}, ${this.date[1]}, ${this.date[2]}, ${this.date[3]}` )}`;
         if( name == 'iMouse' )
         {
             return [

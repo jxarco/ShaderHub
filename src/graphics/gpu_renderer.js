@@ -76,6 +76,11 @@ class GPURenderer extends Renderer
                 size: 32,
                 usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
             } );
+
+            this.gpuBuffers['iDate'] = this.createBuffer( {
+                size: 16,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+            } );
         }
 
         super.init();
@@ -252,6 +257,20 @@ class GPURenderer extends Renderer
             this.gpuBuffers['iMouse'],
             0,
             new Float32Array( data )
+        );
+    }
+
+    updateDate( date, shader )
+    {
+        if ( !this.device )
+        {
+            return;
+        }
+
+        this.device.queue.writeBuffer(
+            this.gpuBuffers['iDate'],
+            0,
+            new Float32Array( date )
         );
     }
 
