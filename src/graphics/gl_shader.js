@@ -248,6 +248,8 @@ class GLShaderPass extends ShaderPass
         this.frameCount = 0;
         this.mustCompile = false;
 
+        this.updateUniforms();
+
         return Constants.WEBGL_OK;
     }
 

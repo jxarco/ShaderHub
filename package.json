@@ -1,4 +1,5 @@
 {
+    "type": "module",
     "dependencies": {
         "@rollup/plugin-terser": "^0.4.4",
         "@tailwindcss/cli": "^4.1.18",

@@ -1,5 +1,6 @@
 # 0.17
 - Uniforms value on hover code.
+- Fixed GL uniforms reseting on compile.
 
 # 0.16.1
 - Fixed mobile paths redirect bug.

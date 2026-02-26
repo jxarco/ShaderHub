@@ -9,7 +9,7 @@ export default [
         ],
         output: {
             file: 'build/app.js',
-            format: 'es',
+            format: 'esm',
             sourcemap: false,
             plugins: [terser()]
         }
