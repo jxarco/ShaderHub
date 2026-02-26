@@ -944,6 +944,16 @@
       }
     }
   }
+  .hover\:shadow-primary {
+    &:hover {
+      @media (hover: hover) {
+        --tw-shadow-color: var(--color-primary);
+        @supports (color: color-mix(in lab, red, red)) {
+          --tw-shadow-color: color-mix(in oklab, var(--color-primary) var(--tw-shadow-alpha), transparent);
+        }
+      }
+    }
+  }
   .sm\:max-w-\[25\%\] {
     @media (width >= 40rem) {
       max-width: 25%;

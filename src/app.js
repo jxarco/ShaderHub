@@ -431,16 +431,16 @@ const ShaderHub = {
         }
     },
 
-    async onShaderLike()
+    async onShaderLike( shaderUid )
     {
-        const userId = fs.getUserId();
+        shaderUid = shaderUid ?? this.shader.uid;
 
         // Update user likes and interactions table
-        const users = await fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_id', userId ) ] );
-        const user = users?.documents[0];
+        const userId = fs.getUserId();
+        const user = ui.dbUser;
         console.assert( user );
         const userLikes = user['liked_shaders'];
-        const userLikeIndex = userLikes.indexOf( this.shader.uid );
+        const userLikeIndex = userLikes.indexOf( shaderUid );
         const wasLiked = userLikeIndex !== -1;
 
         if ( wasLiked )
@@ -450,8 +450,8 @@ const ShaderHub = {
             // Search current interaction and remove it
             const doc = await fs.listDocuments( FS.INTERACTIONS_COLLECTION_ID, [
                 Query.equal( 'type', 'like' ),
-                Query.equal( 'author_id', fs.getUserId() ),
-                Query.equal( 'shader_id', this.shader.uid )
+                Query.equal( 'author_id', userId ),
+                Query.equal( 'shader_id', shaderUid )
             ] );
 
             if ( doc.total === 0 )
@@ -466,24 +466,24 @@ const ShaderHub = {
         }
         else
         {
-            userLikes.push( this.shader.uid );
+            userLikes.push( shaderUid );
 
             // Add interaction
             await fs.createDocument( FS.INTERACTIONS_COLLECTION_ID, {
                 'type': 'like',
-                'author_id': fs.getUserId(),
-                'shader_id': this.shader.uid
+                'author_id': userId,
+                'shader_id': shaderUid
             } );
         }
 
         // Get the total like count for the shader
         const shaderLikes = await fs.listDocuments( FS.INTERACTIONS_COLLECTION_ID, [
             Query.equal( 'type', 'like' ),
-            Query.equal( 'shader_id', this.shader.uid )
+            Query.equal( 'shader_id', shaderUid )
         ] );
 
         // save shader like-count
-        await fs.updateDocument( FS.SHADERS_COLLECTION_ID, this.shader.uid, {
+        await fs.updateDocument( FS.SHADERS_COLLECTION_ID, shaderUid, {
             'like_count': shaderLikes.total
         } );
 
@@ -492,7 +492,11 @@ const ShaderHub = {
             'liked_shaders': userLikes
         } );
 
-        LX.emitSignal( '@on_like_changed', [ shaderLikes.total, !wasLiked ] );
+        const likeData = [ shaderLikes.total, !wasLiked, shaderUid ];
+
+        LX.emitSignal( '@on_like_changed', likeData );
+
+        return likeData;
     },
 
     async recordShaderView( shaderUid )

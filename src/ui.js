@@ -879,7 +879,7 @@ export const ui = {
                 }<span>${shader.author}</span>${!shader.anonAuthor ? '</a>' : ''}</span>
                         <div class="flex flex-row gap-2 items-center ml-auto flex-auto-keep">
                             <div class="flex flex-row gap-1 items-center">
-                                ${LX.makeIcon( 'Heart', { svgClass: `${shader.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current sm` } ).innerHTML}
+                                ${LX.makeIcon( 'Heart', { svgClass: `shader-like-button ${shader.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current sm hover:text-orange-600 hover:shadow-primary cursor-pointer` } ).innerHTML}
                                 <span class="text-xs text-muted-foreground">${shader.likeCount ?? 0}</span>
                             </div>
                             <div class="flex flex-row gap-1 items-center">
@@ -888,6 +888,36 @@ export const ui = {
                             </div>
                         </div>
                     </div>`, shaderItem );
+
+                const likeButton = shaderItem.querySelector( 'svg.shader-like-button' );
+                const ownProfile = this.fs.user && ( shader.authorId === this.fs.getUserId() );
+                likeButton.addEventListener( 'click', async ( e ) => {
+                    e.preventDefault();
+                    if( !this.fs.user )
+                    {
+                        if ( this._lastOpenedDialog )
+                        {
+                            this._lastOpenedDialog.close();
+                        }
+
+                        const dialog = new LX.Dialog( null, ( p ) => {
+                            p.root.className = LX.mergeClass( p.root.className, 'pad-2xl flex flex-col gap-2' );
+                            LX.makeContainer( [ '100%', '100%' ], 'text-lg font-medium text-foreground p-2', `Login to like this shader.`, p );
+                            p.addButton( null, 'Close', () => {
+                                dialog.destroy();
+                            }, { buttonClass: 'h-8 ghost' } );
+                        }, { modal: true } );
+
+                        this._lastOpenedDialog = dialog;
+                    }
+                    else if ( !ownProfile )
+                    {
+                        const [ likesCount, alreadyLiked, shaderUid ] = await ShaderHub.onShaderLike( shader.uid );
+                        likeButton.nextElementSibling.innerHTML = likesCount;
+                        LX.toggleClass( likeButton, 'text-orange-600', alreadyLiked );
+                        LX.toggleClass( likeButton, 'shadow-primary', alreadyLiked );
+                    }
+                } );
 
                 shaderPreview.addEventListener( 'mousedown', ( e ) => e.preventDefault() );
                 shaderPreview.addEventListener( 'mouseup', ( e ) => {
@@ -1517,12 +1547,13 @@ export const ui = {
 
                 const likeSpan = shaderStats.querySelector( 'span' );
                 const likeButton = shaderOptions.querySelector( 'svg.shader-like-button' );
-                likeButton.classList.add( 'hover:text-orange-600', 'cursor-pointer' );
+                LX.addClass( likeButton, 'hover:text-orange-600 hover:shadow-primary cursor-pointer' );
 
                 LX.addSignal( '@on_like_changed', ( target, likeData ) => {
-                    const [ likesCount, alreadyLiked ] = likeData;
+                    const [ likesCount, alreadyLiked, shaderUid ] = likeData;
                     likeSpan.innerHTML = likesCount;
-                    likeButton.classList.toggle( 'text-orange-600', alreadyLiked );
+                    LX.toggleClass( likeButton, 'text-orange-600', alreadyLiked );
+                    LX.toggleClass( likeButton, 'shadow-primary', alreadyLiked );
                 } );
 
                 // Like action
