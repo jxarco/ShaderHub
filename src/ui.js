@@ -2627,7 +2627,7 @@ export const ui = {
 
     onSymbolHovered( info, editor )
     {
-        return ShaderHub.getUniformValue( info.word );
+        return ShaderHub.getCodeSymbolValue( info.word );
     },
 
     async makeStatusBarButtons( p, editor )

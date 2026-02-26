@@ -729,7 +729,7 @@ const ShaderHub = {
         return window.location.origin + ( addPath ? window.location.pathname : '' );
     },
 
-    getUniformValue( name )
+    getCodeSymbolValue( name )
     {
         const typeGen = ( t ) => `<span class="text-info font-code text-xs">(${Constants.WGSL_TO_GLSL[t]})</span>`;
         const valueGen = ( v ) => `<span class="font-medium">${v}</span>`;
@@ -752,6 +752,9 @@ const ShaderHub = {
 
         const u = this.currentPass.uniforms.find( (u) => u.name === name );
         if( u ) return `${typeGen( u.type )} ${valueGen( u.value )}`;
+
+        const d = this.currentPass.defines[name];
+        if( d !== undefined ) return `${valueGen( d )}`;
 
         return null;
     },
