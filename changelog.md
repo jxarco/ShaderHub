@@ -1,3 +1,6 @@
+# 0.17
+- Uniforms value on hover code.
+
 # 0.16.1
 - Fixed mobile paths redirect bug.
 - Update LexGUI version to get improved CodeEditor and other fixes.

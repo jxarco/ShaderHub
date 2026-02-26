@@ -61,6 +61,7 @@
     --color-destructive: var(--destructive);
     --color-success: var(--success);
     --color-warning: var(--warning);
+    --color-info: var(--info);
   }
 }
 @layer base {
@@ -759,6 +760,9 @@
   }
   .text-foreground {
     color: var(--color-foreground);
+  }
+  .text-info {
+    color: var(--color-info);
   }
   .text-inherit\! {
     color: inherit !important;

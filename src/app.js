@@ -729,6 +729,33 @@ const ShaderHub = {
         return window.location.origin + ( addPath ? window.location.pathname : '' );
     },
 
+    getUniformValue( name )
+    {
+        const typeGen = ( t ) => `<span class="text-info font-code text-xs">(${Constants.WGSL_TO_GLSL[t]})</span>`;
+        const valueGen = ( v ) => `<span class="font-medium">${v}</span>`;
+
+        if( name == 'iTime' ) return `${typeGen( 'f32' )} ${valueGen( this.elapsedTime.toFixed( 3 ) )}`;
+        if( name == 'iTimeDelta' ) return `${typeGen( 'f32' )} ${valueGen( this.timeDelta.toFixed( 3 ) )}`;
+        if( name == 'iFrame' ) return `${typeGen( 'i32' )} ${valueGen( this.frameCount.toString() )}`;
+        if( name == 'iResolution' ) return `${typeGen( 'vec2f' )} ${valueGen( `${this.resolutionX}, ${this.resolutionY}` )}`;
+        if( name == 'iMouse' )
+        {
+            return [
+                `${typeGen( 'vec2f' )} pos: ${valueGen( `${this.mousePosition[0]}, ${this.mousePosition[1]}` )}`,
+                `${typeGen( 'vec2f' )} start: ${valueGen( `${this.lastMousePosition[0]}, ${this.lastMousePosition[1]}` )}`,
+                `${typeGen( 'vec2f' )} delta: ${valueGen( `${this.lastMousePosition[0] - this.mousePosition[0]}, ${this.lastMousePosition[1] - this.mousePosition[1]}` )}`,
+                `${typeGen( 'f32' )} press: ${valueGen( `${this._mouseDown ?? -1.0}` )}`,
+                `${typeGen( 'f32' )} click: ${valueGen( `${this._mousePressed ?? -1.0}` )}`,
+            ].join( '<br>' );
+        }
+        if( !this.currentPass ) return null;
+
+        const u = this.currentPass.uniforms.find( (u) => u.name === name );
+        if( u ) return `${typeGen( u.type )} ${valueGen( u.value )}`;
+
+        return null;
+    },
+
     getCurrentSuggestions()
     {
         const customSuggestions = [];

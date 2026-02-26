@@ -1025,7 +1025,7 @@ export const ui = {
             onSave: iCompileShader.bind( this ),
             onRun: iCompileShader.bind( this ),
             onCreateFile: ( editor ) => null,
-            onHoverSymbol: () => null,
+            onHoverSymbol: this.onSymbolHovered.bind( this ),
             onContextMenu: ( editor, content, event ) => {
                 const pass = ShaderHub.currentPass;
                 if ( pass.name === 'Common' || !content ) return;
@@ -2623,6 +2623,11 @@ export const ui = {
                 content.appendChild( p.root );
             }
         }
+    },
+
+    onSymbolHovered( info, editor )
+    {
+        return ShaderHub.getUniformValue( info.word );
     },
 
     async makeStatusBarButtons( p, editor )
