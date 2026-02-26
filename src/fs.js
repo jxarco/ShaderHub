@@ -11,6 +11,7 @@ class FS
     static USERS_COLLECTION_ID = 'users';
     static ASSETS_COLLECTION_ID = 'assets';
     static INTERACTIONS_COLLECTION_ID = 'interactions';
+    static COLLECTIONS_COLLECTION_ID = 'collections';
 
     constructor()
     {

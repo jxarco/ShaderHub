@@ -2232,7 +2232,8 @@ export const ui = {
                             likeCount: document['like_count'] ?? 0,
                             public: document['public'] ?? true,
                             url: await this.fs.getFileUrl( document['file_id'] ),
-                            liked: this.dbUser ? ( this.dbUser.liked_shaders ?? [] ).includes( uid ) : false
+                            liked: this.dbUser ? ( this.dbUser.liked_shaders ?? [] ).includes( uid ) : false,
+                            collection: document['scollection']
                         };
 
                         const previewName = ShaderHub.getShaderPreviewName( shaderInfo.uid );
@@ -2247,8 +2248,8 @@ export const ui = {
                         shaderPreview.src = shaderInfo.preview ?? ShaderHub.shaderPreviewPath;
                         shaderPreview.onload = () => shaderPreview.classList.remove( 'opacity-0' );
                         shaderItem.querySelector( 'div' ).remove();
-                        const shaderDesc = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-row rounded-b-lg gap-6 px-4 py-3 items-center select-none', `
-                            <span class="w-full text-sm font-medium text-nowrap truncate">${shaderInfo.name}</span>
+                        const shaderDesc = LX.makeContainer( [ '100%', 'auto' ], 'flex flex-col rounded-b-lg gap-1 px-4 py-3 items-center select-none', `
+                            <span class="w-full text-sm font-medium text-nowrap truncate text-center">${shaderInfo.name}</span>
                             <div class="flex flex-row gap-1 flex-auto-keep items-center shader-prof-opt">
                                 <div class="flex flex-row gap-1 items-center">
                                     ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current sm` } ).innerHTML}
@@ -2269,6 +2270,113 @@ export const ui = {
                             }, { icon: shaderInfo.public ? 'Eye' : 'EyeOff', swap: shaderInfo.public ? 'EyeOff' : 'Eye',
                                 title: 'Toggle Public/Private', tooltip: true, className: 'p-0', buttonClass: 'px-1! ghost sm' } );
                             shaderOptionsCont.appendChild( vB.root );
+
+                            const iUpdateShaderCollection = async ( shader, collectionId ) => {
+                                const r = await this.fs.updateDocument( FS.SHADERS_COLLECTION_ID, shader.uid, {
+                                    'scollection': collectionId
+                                } );
+                                shader.collection = collectionId;
+                                return r;
+                            };
+
+                            const iUpdateCollectionShaders = async ( collection, shaders ) => {
+                                const r = await this.fs.updateDocument( FS.COLLECTIONS_COLLECTION_ID, collection['$id'], {
+                                    shaders
+                                } );
+                                collection.shaders = [ ...shaders ];
+                                return r;
+                            };
+
+                            const iRemoveShaderFromCollection = async ( collection, shader ) => {
+                                const idx = collection.shaders.indexOf( shader.uid );
+                                if( idx === -1 ) return 0;
+                                collection.shaders.splice( idx, 1 );
+                                await iUpdateCollectionShaders( collection, collection.shaders );
+                                await iUpdateShaderCollection( shader, null );
+                                return 1;
+                            };
+
+                            const cB = new LX.Button( null, 'CollectionsButton', async ( value, event ) => {
+
+                                const collections = await this.fs.listDocuments( FS.COLLECTIONS_COLLECTION_ID, [Query.equal( 'author_id', this.fs.getUserId() )] );
+                                const colOptions = collections.documents.map( d => {
+                                    return {
+                                        name: d.name,
+                                        disabled: shaderInfo.collection === d['$id'],
+                                        callback: async () => {
+
+                                            if( shaderInfo.collection )
+                                            {
+                                                const col = collections.documents.find( c => c['$id'] === shaderInfo.collection );
+                                                if( col )
+                                                {
+                                                    await iRemoveShaderFromCollection( col, shaderInfo );
+                                                }
+                                            }
+
+                                            const idx = d.shaders.indexOf( shaderInfo.uid );
+                                            if( idx !== -1 ) return;
+                                            await iUpdateCollectionShaders( d, [ ...d.shaders, shaderInfo.uid ] )
+                                            await iUpdateShaderCollection( shaderInfo, d['$id'] );
+                                            Utils.toast( `✅ Added to ${d.name} Collection`, `Shader: ${shaderInfo.name}` );
+                                        }
+                                    }
+                                } );
+                                colOptions.splice( 0, 0, {
+                                    name: "Create new Collection",
+                                    callback: async () => {
+                                        new LX.prompt( null, "Collection Name", async (v) => {
+
+                                            if( shaderInfo.collection )
+                                            {
+                                                const col = collections.documents.find( c => c['$id'] === shaderInfo.collection );
+                                                if( col )
+                                                {
+                                                    await iRemoveShaderFromCollection( col, shaderInfo );
+                                                }
+                                            }
+
+                                            const r = await this.fs.createDocument( FS.COLLECTIONS_COLLECTION_ID, {
+                                                'name': v,
+                                                'author_id': this.fs.getUserId(),
+                                                'shaders': [shaderInfo.uid]
+                                            } );
+                                            if( !r ) return;
+                                            await iUpdateShaderCollection( shaderInfo, r['$id'] );
+                                            Utils.toast( `✅ Added to ${v} Collection`, `Shader: ${shaderInfo.name}` );
+                                        }, { required: true } );
+                                    }
+                                } );
+
+                                const mOptions = [{
+                                    name: 'Add to Collection',
+                                    icon: 'Grid2x2Plus',
+                                    submenu: colOptions
+                                }];
+                                
+                                if( shaderInfo.collection )
+                                {
+                                    const col = collections.documents.find( c => c['$id'] === shaderInfo.collection );
+                                    if( col )
+                                    {
+                                        mOptions.push( {
+                                            name: `Remove from ${col.name}`,
+                                            icon: 'Grid2x2X',
+                                            callback: async () => {
+                                                const r = await iRemoveShaderFromCollection( col, shaderInfo );
+                                                if( r )
+                                                {
+                                                    Utils.toast( `✅ Removed from ${col.name} Collection`, `Shader: ${shaderInfo.name}` );
+                                                }
+                                            }
+                                        } );
+                                    }
+                                }
+
+                                LX.addDropdownMenu( cB.root, mOptions, { side: 'top', align: 'center' } );
+                            }, { icon: 'Layers2', title: 'Collections', tooltip: true,
+                                className: 'p-0', buttonClass: 'px-1! ghost sm' } );
+                            shaderOptionsCont.appendChild( cB.root );
 
                             const oB = new LX.Button( null, 'ExportButton', async ( value, event ) => {
                                 const json = JSON.parse( await this.fs.requestFile( shaderInfo.url, 'text' ) );
@@ -2299,10 +2407,38 @@ export const ui = {
             await this._refreshOwnShaders();
         }
 
-        // Show likes only for account owner
+        // Show the rest only for account owner
         if ( !ownProfile )
         {
             return;
+        }
+
+        // Collections
+        {
+            const collectionsContainer = LX.makeContainer( [ null, 'auto' ], 'flex flex-col relative p-1 pt-0 rounded-lg overflow-hidden' );
+            tabs.add( 'Collections', collectionsContainer, { xselected: true, onSelect: async ( event, name ) => {
+                document.title = `${userName} Collections - ShaderHub`;
+
+                collectionsContainer.innerHTML = "";
+                const content = LX.makeContainer( [ '100%', 'auto' ], 'grid shader-list gap-6 p-1 my-2', '', collectionsContainer );
+                const collections = await this.fs.listDocuments( FS.COLLECTIONS_COLLECTION_ID, [Query.equal( 'author_id', this.fs.getUserId() )] );
+                collections.documents.forEach( c => {
+
+                    const collectionContainer = LX.makeContainer( [ '100%', 'auto' ], 
+                        'hub-background-blur flex flex-col gap-1 text-2xl border-color rounded-xl p-6', `<span class="mb-2">${c.name}</span>`, content );
+                    c.shaders.forEach( async ( s ) => {
+
+                        const r = await this.fs.listDocuments( FS.SHADERS_COLLECTION_ID, [
+                            Query.equal( 'author_id', this.fs.getUserId() ),
+                            Query.equal( '$id', s )]
+                        );
+                        console.assert( r.total === 1 );
+                        const shaderInfo = r.documents[0];
+                        const shaderContainer = LX.makeContainer( [ '100%', 'auto' ], 'text-base',
+                            `<a onclick='ui._openShader("${shaderInfo['$id']}")' class='hub-link font-medium'>${shaderInfo.name}</a>`, collectionContainer );
+                    } );
+                } );
+            }} );
         }
 
         // Likes
