@@ -4,6 +4,7 @@
 - Fixed transitions on Save/Delete Shaders. 
 - 2 more Featured Shader in Home page.
 - Added SDF Font texture by `otaviogood`.
+- Uniform sliders replaced by Number+Slider Inputs.
 
 # 0.17
 - Uniform and Define values on hover code.

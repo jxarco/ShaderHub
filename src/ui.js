@@ -1983,7 +1983,7 @@ export const ui = {
                     limitsComponents.forEach( ( c ) => c.setLimits( u.min, u.max, u.step ) );
                     pass.uniformsDirty = true;
                 }, { className: 'flex-auto-keep', width: '20%', nameWidth: '35%', skipReset: true, max, step, precision } ) );
-                limitsComponents.push( p.addRange( null, u.value, ( v ) => {
+                limitsComponents.push( p.addNumber( null, u.value, ( v ) => {
                     u.value = v;
                     pass.uniformsDirty = true;
                 }, { className: 'primary flex-auto-fill', skipReset: true, min, max, step, precision } ) );
