@@ -19,7 +19,7 @@ const fps = new FPSCounter();
 const Query = Appwrite.Query;
 
 const ShaderHub = {
-    version: '0.17.1',
+    version: '0.17.2',
 
     keyState: new Map(),
     keyToggleState: new Map(),
@@ -813,8 +813,13 @@ const ShaderHub = {
         }
         else
         {
-            customSuggestions.push( ...ShaderCode.GLSL_SHADER_CONSTANTS.map( c => c.name ) );
-            customSuggestions.push( ...ShaderCode.GLSL_SHADER_FUNCTIONS.map( f => f.name ) );
+            customSuggestions.push( ...ShaderCode.GLSL_SHADER_CONSTANTS.map( c => {
+                return { label: c.name, detail: c.detail, kind: 'constant' }
+            } ) );
+            customSuggestions.push( ...ShaderCode.GLSL_SHADER_FUNCTIONS.map( f => {
+                const firstParam = f.signature.match( /\(([^,)]+)/ )?.[1]?.trim() ?? '';
+                return { label: f.name, detail: f.signature, kind: 'function', insertText: f.signature, cursorOffset: f.name.length + 1, selectLength: firstParam.length }
+            } ) );
 
             // Extract function signatures from snippet code
             const l = c => [...c.matchAll(/(?:float|vec[234]|mat[234]|int|uint|void|bool)\s+(\w+)\s*\(/g)];
@@ -922,17 +927,18 @@ const ShaderHub = {
         let blockSave = false;
 
         const dialog = new LX.Dialog( 'Save Shader', ( p ) => {
-            let shaderName = this.shader.name, isShaderPublic = false, isShaderRemixable = true;
+            let shaderName = this.shader.name, isShaderPublic = false, isShaderRemixable = false;
             const textInput = p.addText( 'Name', shaderName, ( v ) => {
                 shaderName = v;
             }, { pattern: LX.buildTextPattern( { minLength: 3 } ) } );
             p.addSeparator();
             p.addCheckbox( 'Public', isShaderPublic, ( v ) => {
                 isShaderPublic = v;
+                allowRemixCheckbox.setDisabled( !isShaderPublic );
             }, { nameWidth: '50%', className: 'primary' } );
-            p.addCheckbox( 'Allow Remix', isShaderRemixable, ( v ) => {
+            const allowRemixCheckbox = p.addCheckbox( 'Allow Remix', isShaderRemixable, ( v ) => {
                 isShaderRemixable = v;
-            }, { nameWidth: '50%', className: 'primary' } );
+            }, { nameWidth: '50%', className: 'primary', disabled: true } );
             p.sameLine( 2 );
             p.addButton( null, 'Cancel', () => dialog.close(), { width: '50%', buttonClass: 'destructive' } );
             const confirmButton = p.addButton( null, 'Confirm', async () => {

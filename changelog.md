@@ -1,3 +1,8 @@
+# 0.17.2
+- Updated LexGUI to `8.4.1`.
+- Minor UI improvements.
+- Improved constant and functions suggestions for GLSL.
+
 # 0.17.1
 - Improved Shader profile.
 - More visible Save Shader button.
