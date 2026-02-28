@@ -343,6 +343,7 @@ class FS
             { id: FS.USERS_COLLECTION_ID, name: 'users' },
             { id: FS.ASSETS_COLLECTION_ID, name: 'assets' },
             { id: FS.INTERACTIONS_COLLECTION_ID, name: 'interactions' },
+            { id: FS.COLLECTIONS_COLLECTION_ID, name: 'collections' },
         ];
 
         const backup = {
