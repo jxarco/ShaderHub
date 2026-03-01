@@ -10,7 +10,7 @@ class GLShaderPass extends ShaderPass
         this.uniformLocations = {};
     }
 
-    async execute( renderer )
+    async execute( renderer, debugPass )
     {
         if ( this.type === 'common' )
         {
@@ -28,7 +28,7 @@ class GLShaderPass extends ShaderPass
 
         const gl = renderer.gl;
 
-        if ( this.type === 'image' )
+        if ( this.type === 'image' || debugPass )
         {
             // default swapchain
             gl.bindFramebuffer( gl.FRAMEBUFFER, null );

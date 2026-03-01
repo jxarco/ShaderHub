@@ -2291,7 +2291,7 @@ export const ui = {
                     if( ownProfile && ( result || isNewShader )  )
                     {
                         const saveShaderButton = new LX.Button( null, 'SaveShaderButton', async () => ShaderHub.saveShader( result ),
-                            { icon: 'Save', buttonClass: 'primary', title: 'Save Shader', tooltip: true } );
+                            { icon: 'Save', buttonClass: 'primary', title: result ? 'Update Shader' : 'Save Shader', tooltip: true } );
                         shaderOptions.appendChild( saveShaderButton.root );
                     }
                     
@@ -2764,6 +2764,29 @@ export const ui = {
             panel.addLabel( '0x0', { signal: '@resolution', inputClass: 'size-content' } );
             panel.endLine( 'items-center h-full' );
 
+            // Debug Pass controls
+            {
+                panel.sameLine();
+                const b = panel.addButton( null, LX.makeIcon( 'Layers' ).innerHTML, ( name, event ) => {
+
+                    const passes = [
+                        { name: "None", callback: () => ShaderHub.debugPass = null },
+                        ...this.shader.passes.filter( p => p.type == 'buffer' ).map( p => {
+                        return { name: p.name, callback: ( v ) => ShaderHub.debugPass = v }
+                    } ) ];
+
+                    LX.addDropdownMenu( b.root, passes, { side: 'bottom', align: 'end' } );
+
+                }, { icon: 'ChevronDown', iconPosition: 'end', buttonClass: 'outline', title: 'Debug Pass', tooltip: true } );
+                panel.endLine( 'items-center h-full ml-auto' );
+            }
+
+            LX.makeElement( 'span', 'h-4 mx-1 border-right border-color text-muted-foreground self-center items-center', '', panel );
+
+            panel.sameLine();
+            panel.addButton( null, 'Fullscreen', () => ShaderHub.requestFullscreen(), { icon: 'Fullscreen', title: 'Fullscreen', tooltip: true } );
+            panel.endLine( 'items-center h-full ml-auto' );
+
             if ( !mobile )
             {
                 let exportOptions = {
@@ -2776,8 +2799,10 @@ export const ui = {
                     exportOptions[o] = v;
                 };
 
+                LX.makeElement( 'span', 'h-4 mx-1 border-right border-color text-muted-foreground self-center items-center', '', panel );
+
                 panel.sameLine();
-                const container = LX.makeContainer( [ 'auto', 'auto' ], 'flex flex-row ml-auto' );
+                const container = LX.makeContainer( [ 'auto', 'auto' ], 'flex flex-row gap-1 ml-auto' );
                 this._recordButton = new LX.Button( null, 'RecordButton', ( name, event ) => {
                     if ( this.captureInProgress )
                     {
@@ -2824,10 +2849,9 @@ export const ui = {
                             } )
                         }
                     ], { side: 'bottom', align: 'end' } );
-                }, { icon: 'ChevronDown', className: 'p-0', buttonClass: 'bg-none' } );
+                }, { icon: 'ChevronDown', className: 'p-0', buttonClass: 'ghost' } );
                 container.appendChild( b.root );
                 panel.addContent( null, container );
-                panel.addButton( null, 'Fullscreen', () => ShaderHub.requestFullscreen(), { icon: 'Fullscreen', title: 'Fullscreen', tooltip: true } );
                 panel.endLine( 'items-center h-full ml-auto' );
             }
 

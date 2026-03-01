@@ -19,7 +19,7 @@ const fps = new FPSCounter();
 const Query = Appwrite.Query;
 
 const ShaderHub = {
-    version: '0.17.2',
+    version: '0.18',
 
     keyState: new Map(),
     keyToggleState: new Map(),
@@ -37,6 +37,7 @@ const ShaderHub = {
     generateKbTexture: true,
     timePaused: false,
     manualCompile: false,
+    debugPass: null,
     previewNamePrefix: '_preview_',
     imagesRootPath: '/images/',
 
@@ -151,7 +152,9 @@ const ShaderHub = {
 
             if ( !this._lastShaderCompilationWithErrors && !this._compilingShader )
             {
-                await pass.execute( this.renderer );
+                const debugPass = pass.name === this.debugPass;
+                await pass.execute( this.renderer, debugPass );
+                if( debugPass ) break;
             }
         }
 
@@ -755,6 +758,7 @@ const ShaderHub = {
         if( name == 'iFrame' ) return `${typeGen( 'i32' )} ${valueGen( this.frameCount.toString() )}`;
         if( name == 'iResolution' ) return `${typeGen( 'vec2f' )} ${valueGen( `${this.resolutionX}, ${this.resolutionY}` )}`;
         if( name == 'iDate' ) return `${typeGen( 'vec4f' )} ${valueGen( `${this.date[0]}, ${this.date[1]}, ${this.date[2]}, ${this.date[3]}` )}`;
+        if( /^iChannel[0-9]$/.test( name ) ) return `${typeGen( 'texture_2d' )}`;
         if( name == 'iMouse' )
         {
             return [

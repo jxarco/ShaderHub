@@ -1,3 +1,6 @@
+# 0.18
+- Debug Render Pass buffers.
+
 # 0.17.2
 - Updated LexGUI to `8.4.1`.
 - Minor UI improvements.

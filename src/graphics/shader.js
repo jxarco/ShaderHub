@@ -85,7 +85,7 @@ class ShaderPass
         }
     }
 
-    async execute( renderer )
+    async execute( renderer, debugPass )
     {
         if ( this.type === 'common' )
         {
@@ -101,7 +101,7 @@ class ShaderPass
             }
         }
 
-        if ( this.type === 'image' )
+        if ( this.type === 'image' || debugPass )
         {
             const commandEncoder = this.device.createCommandEncoder();
             const textureView = renderer.webGPUContext.getCurrentTexture().createView();
