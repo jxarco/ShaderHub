@@ -4106,149 +4106,81 @@ vec3 triangle_normal(vec3 v0, vec3 v1, vec3 v2) { return normalize(cross(v1 - v0
         }]
 }];
 export const GLSL_SHADER_FUNCTIONS = [{
-    name: "sin",
-    signature: "sin(x)",
-    description: "Sine of angle in radians"
-}, {
-    name: "cos",
-    signature: "cos(x)",
-    description: "Cosine of angle in radians"
-}, {
-    name: "tan",
-    signature: "tan(x)",
-    description: "Tangent of angle in radians"
-}, {
-    name: "asin",
-    signature: "asin(x)",
-    description: "Arc sine, returns radians"
+    name: "abs",
+    signature: "abs(x)",
+    description: "Absolute value"
 }, {
     name: "acos",
     signature: "acos(x)",
     description: "Arc cosine, returns radians"
 }, {
+    name: "acosh",
+    signature: "acosh(x)",
+    description: "Hyperbolic arc cosine"
+}, {
+    name: "all",
+    signature: "all(bvec)",
+    description: "Returns true if all components of a boolean vector are true"
+}, {
+    name: "any",
+    signature: "any(bvec)",
+    description: "Returns true if any component of a boolean vector is true"
+}, {
+    name: "asin",
+    signature: "asin(x)",
+    description: "Arc sine, returns radians"
+}, {
+    name: "asinh",
+    signature: "asinh(x)",
+    description: "Hyperbolic arc sine"
+}, {
+    name: "atan",
+    signature: "atan(x)",
+    description: "Arc tangent, returns radians"
+}, {
     name: "atan",
     signature: "atan(y, x)",
-    description: "Arc tangent of y/x"
+    description: "Arc tangent of y/x, handles quadrants"
 }, {
-    name: "radians",
-    signature: "radians(degrees)",
-    description: "Convert degrees to radians"
+    name: "atanh",
+    signature: "atanh(x)",
+    description: "Hyperbolic arc tangent"
 }, {
-    name: "degrees",
-    signature: "degrees(radians)",
-    description: "Convert radians to degrees"
+    name: "bitCount",
+    signature: "bitCount(x)",
+    description: "Number of 1 bits in the binary representation (popcount)"
 }, {
-    name: "pow",
-    signature: "pow(x, y)",
-    description: "x raised to the power y"
+    name: "bitfieldExtract",
+    signature: "bitfieldExtract(value, offset, bits)",
+    description: "Extract bits from value starting at offset"
 }, {
-    name: "exp",
-    signature: "exp(x)",
-    description: "e raised to the power x"
+    name: "bitfieldInsert",
+    signature: "bitfieldInsert(base, insert, offset, bits)",
+    description: "Insert bits into base at offset"
 }, {
-    name: "exp2",
-    signature: "exp2(x)",
-    description: "2 raised to the power x"
-}, {
-    name: "log",
-    signature: "log(x)",
-    description: "Natural logarithm"
-}, {
-    name: "log2",
-    signature: "log2(x)",
-    description: "Base-2 logarithm"
-}, {
-    name: "sqrt",
-    signature: "sqrt(x)",
-    description: "Square root"
-}, {
-    name: "inversesqrt",
-    signature: "inversesqrt(x)",
-    description: "1 / sqrt(x)"
-}, {
-    name: "abs",
-    signature: "abs(x)",
-    description: "Absolute value"
-}, {
-    name: "sign",
-    signature: "sign(x)",
-    description: "Returns -1, 0, or 1"
-}, {
-    name: "floor",
-    signature: "floor(x)",
-    description: "Round down to integer"
+    name: "bitfieldReverse",
+    signature: "bitfieldReverse(x)",
+    description: "Reverse the bits of an integer"
 }, {
     name: "ceil",
     signature: "ceil(x)",
     description: "Round up to integer"
 }, {
-    name: "fract",
-    signature: "fract(x)",
-    description: "Fractional part (x - floor(x))"
-}, {
-    name: "mod",
-    signature: "mod(x, y)",
-    description: "Modulo (x - y * floor(x/y))"
-}, {
-    name: "min",
-    signature: "min(x, y)",
-    description: "Minimum of x and y"
-}, {
-    name: "max",
-    signature: "max(x, y)",
-    description: "Maximum of x and y"
-}, {
     name: "clamp",
     signature: "clamp(x, min, max)",
     description: "Clamp x between min and max"
 }, {
-    name: "mix",
-    signature: "mix(a, b, t)",
-    description: "Linear interpolation: a*(1-t) + b*t"
+    name: "cos",
+    signature: "cos(x)",
+    description: "Cosine of angle in radians"
 }, {
-    name: "step",
-    signature: "step(edge, x)",
-    description: "0.0 if x < edge, else 1.0"
-}, {
-    name: "smoothstep",
-    signature: "smoothstep(a, b, x)",
-    description: "Hermite interpolation between a and b"
-}, {
-    name: "length",
-    signature: "length(v)",
-    description: "Length of vector"
-}, {
-    name: "distance",
-    signature: "distance(a, b)",
-    description: "Distance between two points"
-}, {
-    name: "dot",
-    signature: "dot(a, b)",
-    description: "Dot product"
+    name: "cosh",
+    signature: "cosh(x)",
+    description: "Hyperbolic cosine"
 }, {
     name: "cross",
     signature: "cross(a, b)",
     description: "Cross product (vec3)"
-}, {
-    name: "normalize",
-    signature: "normalize(v)",
-    description: "Unit vector in same direction"
-}, {
-    name: "reflect",
-    signature: "reflect(I, N)",
-    description: "Reflection of incident vector"
-}, {
-    name: "refract",
-    signature: "refract(I, N, eta)",
-    description: "Refraction of incident vector"
-}, {
-    name: "faceforward",
-    signature: "faceforward(N, I, Nref)",
-    description: "Flip N if facing away from I"
-}, {
-    name: "texture",
-    signature: "texture(sampler, uv)",
-    description: "Sample a texture at UV coordinates"
 }, {
     name: "dFdx",
     signature: "dFdx(p)",
@@ -4258,7 +4190,327 @@ export const GLSL_SHADER_FUNCTIONS = [{
     signature: "dFdy(p)",
     description: "Partial derivative in y"
 }, {
+    name: "degrees",
+    signature: "degrees(radians)",
+    description: "Convert radians to degrees"
+}, {
+    name: "determinant",
+    signature: "determinant(m)",
+    description: "Determinant of a square matrix"
+}, {
+    name: "distance",
+    signature: "distance(a, b)",
+    description: "Distance between two points"
+}, {
+    name: "dot",
+    signature: "dot(a, b)",
+    description: "Dot product"
+}, {
+    name: "equal",
+    signature: "equal(a, b)",
+    description: "Component-wise equality, returns bvec"
+}, {
+    name: "exp",
+    signature: "exp(x)",
+    description: "e raised to the power x"
+}, {
+    name: "exp2",
+    signature: "exp2(x)",
+    description: "2 raised to the power x"
+}, {
+    name: "faceforward",
+    signature: "faceforward(N, I, Nref)",
+    description: "Flip N if facing away from I"
+}, {
+    name: "findLSB",
+    signature: "findLSB(x)",
+    description: "Index of the least significant 1 bit"
+}, {
+    name: "findMSB",
+    signature: "findMSB(x)",
+    description: "Index of the most significant 1 bit"
+}, {
+    name: "floatBitsToInt",
+    signature: "floatBitsToInt(x)",
+    description: "Reinterpret float bits as int"
+}, {
+    name: "floatBitsToUint",
+    signature: "floatBitsToUint(x)",
+    description: "Reinterpret float bits as uint"
+}, {
+    name: "floor",
+    signature: "floor(x)",
+    description: "Round down to integer"
+}, {
+    name: "fma",
+    signature: "fma(a, b, c)",
+    description: "Fused multiply-add: a*b + c"
+}, {
+    name: "fract",
+    signature: "fract(x)",
+    description: "Fractional part (x - floor(x))"
+}, {
+    name: "frexp",
+    signature: "frexp(x, out exp)",
+    description: "Splits x into mantissa and exponent"
+}, {
     name: "fwidth",
     signature: "fwidth(p)",
     description: "abs(dFdx(p)) + abs(dFdy(p))"
+}, {
+    name: "greaterThan",
+    signature: "greaterThan(a, b)",
+    description: "Component-wise greater-than, returns bvec"
+}, {
+    name: "greaterThanEqual",
+    signature: "greaterThanEqual(a, b)",
+    description: "Component-wise greater-than-or-equal, returns bvec"
+}, {
+    name: "intBitsToFloat",
+    signature: "intBitsToFloat(x)",
+    description: "Reinterpret int bits as float"
+}, {
+    name: "inverse",
+    signature: "inverse(m)",
+    description: "Inverse of a square matrix"
+}, {
+    name: "inversesqrt",
+    signature: "inversesqrt(x)",
+    description: "1 / sqrt(x)"
+}, {
+    name: "isinf",
+    signature: "isinf(x)",
+    description: "Returns true if x is positive or negative infinity"
+}, {
+    name: "isnan",
+    signature: "isnan(x)",
+    description: "Returns true if x is NaN"
+}, {
+    name: "ldexp",
+    signature: "ldexp(x, exp)",
+    description: "x * 2^exp"
+}, {
+    name: "length",
+    signature: "length(v)",
+    description: "Length of vector"
+}, {
+    name: "lessThan",
+    signature: "lessThan(a, b)",
+    description: "Component-wise less-than, returns bvec"
+}, {
+    name: "lessThanEqual",
+    signature: "lessThanEqual(a, b)",
+    description: "Component-wise less-than-or-equal, returns bvec"
+}, {
+    name: "log",
+    signature: "log(x)",
+    description: "Natural logarithm"
+}, {
+    name: "log2",
+    signature: "log2(x)",
+    description: "Base-2 logarithm"
+}, {
+    name: "matrixCompMult",
+    signature: "matrixCompMult(a, b)",
+    description: "Component-wise matrix multiplication"
+}, {
+    name: "max",
+    signature: "max(x, y)",
+    description: "Maximum of x and y"
+}, {
+    name: "min",
+    signature: "min(x, y)",
+    description: "Minimum of x and y"
+}, {
+    name: "mix",
+    signature: "mix(a, b, t)",
+    description: "Linear interpolation: a*(1-t) + b*t"
+}, {
+    name: "mod",
+    signature: "mod(x, y)",
+    description: "Modulo (x - y * floor(x/y))"
+}, {
+    name: "modf",
+    signature: "modf(x, out i)",
+    description: "Returns fractional part, stores whole part in i"
+}, {
+    name: "normalize",
+    signature: "normalize(v)",
+    description: "Unit vector in same direction"
+}, {
+    name: "not",
+    signature: "not(bvec)",
+    description: "Component-wise boolean NOT"
+}, {
+    name: "notEqual",
+    signature: "notEqual(a, b)",
+    description: "Component-wise inequality, returns bvec"
+}, {
+    name: "outerProduct",
+    signature: "outerProduct(c, r)",
+    description: "Outer product of two vectors, returns matrix"
+}, {
+    name: "packHalf2x16",
+    signature: "packHalf2x16(v)",
+    description: "Pack vec2 to uint as two f16 values"
+}, {
+    name: "packSnorm2x16",
+    signature: "packSnorm2x16(v)",
+    description: "Pack vec2 to uint as two snorm16 values"
+}, {
+    name: "packSnorm4x8",
+    signature: "packSnorm4x8(v)",
+    description: "Pack vec4 to uint as four snorm8 values"
+}, {
+    name: "packUnorm2x16",
+    signature: "packUnorm2x16(v)",
+    description: "Pack vec2 to uint as two unorm16 values"
+}, {
+    name: "packUnorm4x8",
+    signature: "packUnorm4x8(v)",
+    description: "Pack vec4 to uint as four unorm8 values"
+}, {
+    name: "pow",
+    signature: "pow(x, y)",
+    description: "x raised to the power y"
+}, {
+    name: "radians",
+    signature: "radians(degrees)",
+    description: "Convert degrees to radians"
+}, {
+    name: "reflect",
+    signature: "reflect(I, N)",
+    description: "Reflection of incident vector"
+}, {
+    name: "refract",
+    signature: "refract(I, N, eta)",
+    description: "Refraction of incident vector"
+}, {
+    name: "round",
+    signature: "round(x)",
+    description: "Round to nearest integer"
+}, {
+    name: "roundEven",
+    signature: "roundEven(x)",
+    description: "Round to nearest even integer (banker's rounding)"
+}, {
+    name: "sign",
+    signature: "sign(x)",
+    description: "Returns -1, 0, or 1"
+}, {
+    name: "sin",
+    signature: "sin(x)",
+    description: "Sine of angle in radians"
+}, {
+    name: "sinh",
+    signature: "sinh(x)",
+    description: "Hyperbolic sine"
+}, {
+    name: "smoothstep",
+    signature: "smoothstep(a, b, x)",
+    description: "Hermite interpolation between a and b"
+}, {
+    name: "sqrt",
+    signature: "sqrt(x)",
+    description: "Square root"
+}, {
+    name: "step",
+    signature: "step(edge, x)",
+    description: "0.0 if x < edge, else 1.0"
+}, {
+    name: "tan",
+    signature: "tan(x)",
+    description: "Tangent of angle in radians"
+}, {
+    name: "tanh",
+    signature: "tanh(x)",
+    description: "Hyperbolic tangent"
+}, {
+    name: "texelFetch",
+    signature: "texelFetch(sampler, coords, lod)",
+    description: "Fetch a texel using integer coordinates without filtering"
+}, {
+    name: "texelFetchOffset",
+    signature: "texelFetchOffset(sampler, coords, lod, offset)",
+    description: "Fetch a texel with integer coordinates and offset"
+}, {
+    name: "texture",
+    signature: "texture(sampler, uv)",
+    description: "Sample a texture at UV coordinates"
+}, {
+    name: "textureGather",
+    signature: "textureGather(sampler, uv)",
+    description: "Gather one component from the four texels used in bilinear filtering"
+}, {
+    name: "textureGatherOffset",
+    signature: "textureGatherOffset(sampler, uv, offset)",
+    description: "Gather with texel offset"
+}, {
+    name: "textureLod",
+    signature: "textureLod(sampler, uv, lod)",
+    description: "Sample a texture at an explicit mip level"
+}, {
+    name: "textureLodOffset",
+    signature: "textureLodOffset(sampler, uv, lod, offset)",
+    description: "Sample at explicit mip level with texel offset"
+}, {
+    name: "textureOffset",
+    signature: "textureOffset(sampler, uv, offset)",
+    description: "Sample a texture with a texel offset"
+}, {
+    name: "textureProj",
+    signature: "textureProj(sampler, P)",
+    description: "Project the texture coordinate before sampling"
+}, {
+    name: "textureProjLod",
+    signature: "textureProjLod(sampler, P, lod)",
+    description: "Projective sample at explicit mip level"
+}, {
+    name: "textureProjLodOffset",
+    signature: "textureProjLodOffset(sampler, P, lod, offset)",
+    description: "Projective sample at explicit mip level with offset"
+}, {
+    name: "textureQueryLevels",
+    signature: "textureQueryLevels(sampler)",
+    description: "Number of accessible mip levels"
+}, {
+    name: "textureQueryLod",
+    signature: "textureQueryLod(sampler, uv)",
+    description: "Returns the computed LOD for given UV coordinates"
+}, {
+    name: "textureSize",
+    signature: "textureSize(sampler, lod)",
+    description: "Returns the dimensions of a texture at a given mip level"
+}, {
+    name: "transpose",
+    signature: "transpose(m)",
+    description: "Transpose of a matrix"
+}, {
+    name: "trunc",
+    signature: "trunc(x)",
+    description: "Round toward zero"
+}, {
+    name: "uintBitsToFloat",
+    signature: "uintBitsToFloat(x)",
+    description: "Reinterpret uint bits as float"
+}, {
+    name: "unpackHalf2x16",
+    signature: "unpackHalf2x16(v)",
+    description: "Unpack uint to vec2 from two f16 values"
+}, {
+    name: "unpackSnorm2x16",
+    signature: "unpackSnorm2x16(v)",
+    description: "Unpack uint to vec2 from two snorm16 values"
+}, {
+    name: "unpackSnorm4x8",
+    signature: "unpackSnorm4x8(v)",
+    description: "Unpack uint to vec4 from four snorm8 values"
+}, {
+    name: "unpackUnorm2x16",
+    signature: "unpackUnorm2x16(v)",
+    description: "Unpack uint to vec2 from two unorm16 values"
+}, {
+    name: "unpackUnorm4x8",
+    signature: "unpackUnorm4x8(v)",
+    description: "Unpack uint to vec4 from four unorm8 values"
 }];
