@@ -807,7 +807,17 @@ const ShaderHub = {
         // API Code library
         const usingWebGPU = this.backend === 'webgpu';
         const library = usingWebGPU ? ShaderCode.WGSL_CODE_LIBRARY : ShaderCode.GLSL_CODE_LIBRARY;
+        const availableFunctions = usingWebGPU ? ShaderCode.WGSL_SHADER_FUNCTIONS : ShaderCode.GLSL_SHADER_FUNCTIONS;
         let iGetSuggestion = null;
+
+        customSuggestions.push( ...ShaderCode.COMMON_SHADER_CONSTANTS.map( c => {
+            return { label: c.name, insertText: c.value, detail: c.detail, kind: 'constant' }
+        } ) );
+
+        customSuggestions.push( ...availableFunctions.map( f => {
+            const firstParam = f.signature.match( /\(([^,)]+)/ )?.[1]?.trim() ?? '';
+            return { label: f.name, detail: f.signature, kind: 'function', insertText: f.signature, cursorOffset: f.name.length + 1, selectLength: firstParam.length }
+        } ) );
 
         if( usingWebGPU )
         {
@@ -815,14 +825,6 @@ const ShaderHub = {
         }
         else
         {
-            customSuggestions.push( ...ShaderCode.GLSL_SHADER_CONSTANTS.map( c => {
-                return { label: c.name, detail: c.detail, kind: 'constant' }
-            } ) );
-            customSuggestions.push( ...ShaderCode.GLSL_SHADER_FUNCTIONS.map( f => {
-                const firstParam = f.signature.match( /\(([^,)]+)/ )?.[1]?.trim() ?? '';
-                return { label: f.name, detail: f.signature, kind: 'function', insertText: f.signature, cursorOffset: f.name.length + 1, selectLength: firstParam.length }
-            } ) );
-
             // Extract function signatures from snippet code
             const l = c => [...c.matchAll(/(?:float|vec[234]|mat[234]|int|uint|void|bool)\s+(\w+)\s*\(/g)];
             // Get last signature

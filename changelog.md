@@ -1,5 +1,6 @@
 # 0.18
 - Debug Render Pass buffers.
+- More WGSL function autocomplete constants and utils.
 - Fixed show shader code in mobile.
 
 # 0.17.2
