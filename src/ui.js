@@ -2135,16 +2135,19 @@ export const ui = {
 
                 contentArea.root.innerHTML = "";
 
+                let panelHeight = '100%';
+
                 if( category && parentSnippet )
                 {
-                    const contentTop = LX.makeElement( 'div', 'w-full h-auto flex flex-row gap-2 pl-2 pt-2', '', contentArea );
+                    const contentTop = LX.makeElement( 'div', 'w-full h-auto flex flex-row flex-auto-keep gap-2 pl-2 pt-2', '', contentArea );
                     contentTop.appendChild( new LX.Button( null, "Back", () => {
                         this.renderLibraryCategory( library, category );
                     }, { className: 'w-auto', buttonClass: 'link', icon: 'ArrowLeft', iconPosition: 'start' } ).root );
                     contentTop.appendChild( new LX.TextInput( null, `${category} / ${parentSnippet.name}`, null, { disabled: true, inputClass: 'font-semibold bg-none' } ).root );
+                    panelHeight = 'calc(100% - 52px)';
                 }
 
-                const contentPanel = contentArea.addPanel( { className: 'grid grid-cols-2 auto-rows-max p-2 items-center justify-center' } );
+                const contentPanel = contentArea.addPanel( { height: panelHeight, className: 'grid grid-cols-2 auto-rows-max p-2 items-center justify-center' } );
                 contentPanel.root.classList.remove( 'scrollbar-hidden' );
 
                 if( !snippets )

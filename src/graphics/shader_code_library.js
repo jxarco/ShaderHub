@@ -128,10 +128,10 @@ const GOLDEN_ROT3 = mat3x3f(
                 label: "1D → 1D",
                 code: `fn rand1(p: f32) -> f32
 {
-    p = fract(p * 0.1031);
-    p *= p + 33.33;
-    p *= p + p;
-    return fract(p);
+    var p1: f32 = fract(p * 0.1031);
+    p1 *= p1 + 33.33;
+    p1 *= p1 + p1;
+    return fract(p1);
 }`
             }, {
                 label: "2D → 1D",
@@ -143,51 +143,51 @@ const GOLDEN_ROT3 = mat3x3f(
 }`
             }, {
                 label: "2D → 2D",
-                code: `vec2 rand2(vec2 p)
+                code: `fn rand2(p: vec2f) -> vec2f
 {
-    vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+    var p3 = fract(vec3f(p.xyx) * vec3f(0.1031, 0.1030, 0.0973));
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.xx + p3.yz) * p3.zy);
 }`
             }, {
                 label: "2D → 3D",
-                code: `vec3 rand3(vec2 p)
+                code: `fn rand3(p: vec2f) -> vec3f
 {
-    vec4 p4 = fract(vec4(p.xyx, p.y) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(vec4f(p.xyx, p.y) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
     return fract((p4.xxz + p4.yww) * p4.zyx);
 }`
             }, {
                 label: "3D → 1D",
-                code: `float rand1(vec3 p)
+                code: `fn rand1(p: vec3f) -> f32
 {
-    vec4 p4 = fract(vec4(p.xyzx) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(vec4f(p.xyzx) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
     return fract((p4.x + p4.y + p4.z) * p4.w);
 }`
             }, {
                 label: "3D → 2D",
-                code: `vec2 rand2(vec3 p)
+                code: `fn rand2(p: vec3f) -> vec2f
 {
-    vec4 p4 = fract(vec4(p.xyzx) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(vec4f(p.xyzx) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
     return fract((p4.xx + p4.yz) * p4.zy);
 }`
             }, {
                 label: "3D → 3D",
-                code: `vec3 rand3(vec3 p)
+                code: `fn rand3(p: vec3f) -> vec3f
 {
-    vec4 p4 = fract(vec4(p.xyzx) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(vec4f(p.xyzx) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
     return fract((p4.xxz + p4.yww) * p4.zyx);
 }`
             }, {
                 label: "1D → 4D",
-                code: `vec4 rand4(float p)
+                code: `fn rand4(p: f32) -> vec4f
 {
-    vec4 p4 = fract(vec4(p) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(vec4f(p) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
-    return fract(vec4(
+    return fract(vec4f(
         (p4.x + p4.y) * p4.z,
         (p4.y + p4.z) * p4.w,
         (p4.z + p4.w) * p4.x,
@@ -196,11 +196,11 @@ const GOLDEN_ROT3 = mat3x3f(
 }`
             }, {
                 label: "4D → 4D",
-                code: `vec4 rand4(vec4 p)
+                code: `fn rand4(p: vec4f) -> vec4f
 {
-    vec4 p4 = fract(p * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(p * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
-    return fract(vec4(
+    return fract(vec4f(
         (p4.x + p4.y) * p4.z,
         (p4.y + p4.z) * p4.w,
         (p4.z + p4.w) * p4.x,
@@ -210,110 +210,110 @@ const GOLDEN_ROT3 = mat3x3f(
             }]
         }, {
             name: "Integer Hash",
-            description: "Pseudorandom from int/ivec2/ivec3 seed (GLSL 300 es)",
+            description: "Pseudorandom from i32/vec2i/vec3i seed",
             options: [{
-                label: "int → float",
-                code: `uint hash_u(uint n)
+                label: "i32 → f32",
+                code: `fn hash_u(x: u32) -> u32
 {
-    n = (n ^ 61u) ^ (n >> 16u);
+    var n: u32 = (x ^ 61u) ^ (x >> 16u);
     n *= 9u;
     n = n ^ (n >> 4u);
     n *= 0x27d4eb2du;
     return n ^ (n >> 15u);
 }
 
-float hash_i(int n)
+fn hash_i(x: i32) -> f32
 {
-    return float(hash_u(uint(n))) / 4294967295.0;
+    return f32(hash_u(u32(x))) / 4294967295.0;
 }`
             }, {
-                label: "ivec2 → float",
-                code: `uint hash_u(uint n)
+                label: "vec2i → f32",
+                code: `fn hash_u(x: u32) -> u32
 {
-    n = (n ^ 61u) ^ (n >> 16u);
+    var n: u32 = (x ^ 61u) ^ (x >> 16u);
     n *= 9u;
     n = n ^ (n >> 4u);
     n *= 0x27d4eb2du;
     return n ^ (n >> 15u);
 }
 
-float hash_i(ivec2 p)
+fn hash_i(p: vec2i) -> f32
 {
-    uint n = hash_u(uint(p.x)) + hash_u(uint(p.y)) * 57u;
-    return float(hash_u(n)) / 4294967295.0;
+    let n: u32 = hash_u(u32(p.x)) + hash_u(u32(p.y)) * 57u;
+    return f32(hash_u(n)) / 4294967295.0;
 }`
             }, {
-                label: "ivec2 → vec2",
-                code: `uint hash_u(uint n)
+                label: "vec2i → vec2f",
+                code: `fn hash_u(x: u32) -> u32
 {
-    n = (n ^ 61u) ^ (n >> 16u);
+    var n: u32 = (x ^ 61u) ^ (x >> 16u);
     n *= 9u;
     n = n ^ (n >> 4u);
     n *= 0x27d4eb2du;
     return n ^ (n >> 15u);
 }
 
-vec2 hash_i2(ivec2 p)
+fn hash_i2(p: vec2i) -> vec2f
 {
-    uint n = hash_u(uint(p.x)) + hash_u(uint(p.y)) * 57u;
-    return vec2(
-        float(hash_u(n)) / 4294967295.0,
-        float(hash_u(n + 1u)) / 4294967295.0
+    let n: u32 = hash_u(u32(p.x)) + hash_u(u32(p.y)) * 57u;
+    return vec2f(
+        f32(hash_u(n)) / 4294967295.0,
+        f32(hash_u(n + 1u)) / 4294967295.0
     );
 }`
             }, {
-                label: "ivec3 → float",
-                code: `uint hash_u(uint n)
+                label: "vec3i → f32",
+                code: `fn hash_u(x: u32) -> u32
 {
-    n = (n ^ 61u) ^ (n >> 16u);
+    var n: u32 = (x ^ 61u) ^ (x >> 16u);
     n *= 9u;
     n = n ^ (n >> 4u);
     n *= 0x27d4eb2du;
     return n ^ (n >> 15u);
 }
 
-float hash_i(ivec3 p)
+fn hash_i(p: vec3i) -> f32
 {
-    uint n = hash_u(uint(p.x)) + hash_u(uint(p.y)) * 57u + hash_u(uint(p.z)) * 131u;
-    return float(hash_u(n)) / 4294967295.0;
+    let n: u32 = hash_u(u32(p.x)) + hash_u(u32(p.y)) * 57u + hash_u(u32(p.z)) * 131u;
+    return f32(hash_u(n)) / 4294967295.0;
 }`
             }, {
-                label: "ivec3 → vec2",
-                code: `uint hash_u(uint n)
+                label: "vec3i → vec2f",
+                code: `fn hash_u(x: u32) -> u32
 {
-    n = (n ^ 61u) ^ (n >> 16u);
+    var n: u32 = (x ^ 61u) ^ (x >> 16u);
     n *= 9u;
     n = n ^ (n >> 4u);
     n *= 0x27d4eb2du;
     return n ^ (n >> 15u);
 }
 
-vec2 hash_i2(ivec3 p)
+fn hash_i2(p: vec3i) -> vec2f
 {
-    uint n = hash_u(uint(p.x)) + hash_u(uint(p.y)) * 57u + hash_u(uint(p.z)) * 131u;
-    return vec2(
-        float(hash_u(n)) / 4294967295.0,
-        float(hash_u(n + 1u)) / 4294967295.0
+    let n: u32 = hash_u(u32(p.x)) + hash_u(u32(p.y)) * 57u + hash_u(u32(p.z)) * 131u;
+    return vec2f(
+        f32(hash_u(n)) / 4294967295.0,
+        f32(hash_u(n + 1u)) / 4294967295.0
     );
 }`
             }, {
-                label: "ivec3 → vec3",
-                code: `uint hash_u(uint n)
+                label: "vec3i → vec3f",
+                code: `fn hash_u(x: u32) -> u32
 {
-    n = (n ^ 61u) ^ (n >> 16u);
+    var n: u32 = (x ^ 61u) ^ (x >> 16u);
     n *= 9u;
     n = n ^ (n >> 4u);
     n *= 0x27d4eb2du;
     return n ^ (n >> 15u);
 }
 
-vec3 hash_i3(ivec3 p)
+fn hash_i3(p: vec3i) -> vec3f
 {
-    uint n = hash_u(uint(p.x)) + hash_u(uint(p.y)) * 57u + hash_u(uint(p.z)) * 131u;
-    return vec3(
-        float(hash_u(n)) / 4294967295.0,
-        float(hash_u(n + 1u)) / 4294967295.0,
-        float(hash_u(n + 2u)) / 4294967295.0
+    let n: u32 = hash_u(u32(p.x)) + hash_u(u32(p.y)) * 57u + hash_u(u32(p.z)) * 131u;
+    return vec3f(
+        f32(hash_u(n)) / 4294967295.0,
+        f32(hash_u(n + 1u)) / 4294967295.0,
+        f32(hash_u(n + 2u)) / 4294967295.0
     );
 }`
             }]
@@ -322,46 +322,46 @@ vec3 hash_i3(ivec3 p)
             description: "Smooth interpolated value noise",
             options: [{
                 label: "2D",
-                code: `float rand1(vec2 p)
+                code: `fn rand1(p: vec2f) -> f32
 {
-    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    var p3: vec3f = fract(vec3f(p.xyx) * 0.1031);
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.x + p3.y) * p3.z);
 }
 
-float value_noise(vec2 p)
+fn value_noise(p: vec2f) -> f32
 {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
+    let i: vec2f = floor(p);
+    var f: vec2f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    float a = rand1(i);
-    float b = rand1(i + vec2(1.0, 0.0));
-    float c = rand1(i + vec2(0.0, 1.0));
-    float d = rand1(i + vec2(1.0, 1.0));
+    let a: f32 = rand1(i);
+    let b: f32 = rand1(i + vec2(1.0, 0.0));
+    let c: f32 = rand1(i + vec2(0.0, 1.0));
+    let d: f32 = rand1(i + vec2(1.0, 1.0));
     return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
 }`
             }, {
                 label: "3D",
-                code: `float rand1(vec3 p)
+                code: `fn rand1(p: vec3f) -> f32
 {
-    vec4 p4 = fract(vec4(p.xyzx) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(vec4f(p.xyzx) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
     return fract((p4.x + p4.y + p4.z) * p4.w);
 }
 
-float value_noise(vec3 p)
+fn value_noise(p: vec3f) -> f32
 {
-    vec3 i = floor(p);
-    vec3 f = fract(p);
+    let i: vec3f = floor(p);
+    var f: vec3f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    float a = rand1(i);
-    float b = rand1(i + vec3(1.0, 0.0, 0.0));
-    float c = rand1(i + vec3(0.0, 1.0, 0.0));
-    float d = rand1(i + vec3(1.0, 1.0, 0.0));
-    float e = rand1(i + vec3(0.0, 0.0, 1.0));
-    float f0 = rand1(i + vec3(1.0, 0.0, 1.0));
-    float g = rand1(i + vec3(0.0, 1.0, 1.0));
-    float h = rand1(i + vec3(1.0, 1.0, 1.0));
+    let a: f32 = rand1(i);
+    let b: f32 = rand1(i + vec3(1.0, 0.0, 0.0));
+    let c: f32 = rand1(i + vec3(0.0, 1.0, 0.0));
+    let d: f32 = rand1(i + vec3(1.0, 1.0, 0.0));
+    let e: f32 = rand1(i + vec3(0.0, 0.0, 1.0));
+    let f0: f32 = rand1(i + vec3(1.0, 0.0, 1.0));
+    let g: f32 = rand1(i + vec3(0.0, 1.0, 1.0));
+    let h: f32 = rand1(i + vec3(1.0, 1.0, 1.0));
     return mix(
         mix(mix(a, b, f.x), mix(c, d, f.x), f.y),
         mix(mix(e, f0, f.x), mix(g, h, f.x), f.y),
@@ -370,11 +370,11 @@ float value_noise(vec3 p)
 }`
             }, {
                 label: "4D",
-                code: `vec4 rand4(vec4 p)
+                code: `fn rand4(p: vec4f) -> vec4f
 {
-    vec4 p4 = fract(p * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(p * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
-    return fract(vec4(
+    return fract(vec4f(
         (p4.x + p4.y) * p4.z,
         (p4.y + p4.z) * p4.w,
         (p4.z + p4.w) * p4.x,
@@ -382,27 +382,27 @@ float value_noise(vec3 p)
     ));
 }
 
-float value_noise(vec4 p)
+fn value_noise(p: vec4f) -> f32
 {
-    vec4 i = floor(p);
-    vec4 f = fract(p);
+    let i: vec4f = floor(p);
+    var f: vec4f = fract(p);
     f = f * f * (3.0 - 2.0 * f);
-    float n0000 = rand4(i).x;
-    float n1000 = rand4(i + vec4(1, 0, 0, 0)).x;
-    float n0100 = rand4(i + vec4(0, 1, 0, 0)).x;
-    float n1100 = rand4(i + vec4(1, 1, 0, 0)).x;
-    float n0010 = rand4(i + vec4(0, 0, 1, 0)).x;
-    float n1010 = rand4(i + vec4(1, 0, 1, 0)).x;
-    float n0110 = rand4(i + vec4(0, 1, 1, 0)).x;
-    float n1110 = rand4(i + vec4(1, 1, 1, 0)).x;
-    float n0001 = rand4(i + vec4(0, 0, 0, 1)).x;
-    float n1001 = rand4(i + vec4(1, 0, 0, 1)).x;
-    float n0101 = rand4(i + vec4(0, 1, 0, 1)).x;
-    float n1101 = rand4(i + vec4(1, 1, 0, 1)).x;
-    float n0011 = rand4(i + vec4(0, 0, 1, 1)).x;
-    float n1011 = rand4(i + vec4(1, 0, 1, 1)).x;
-    float n0111 = rand4(i + vec4(0, 1, 1, 1)).x;
-    float n1111 = rand4(i + vec4(1, 1, 1, 1)).x;
+    let n0000: f32 = rand4(i).x;
+    let n1000: f32 = rand4(i + vec4(1, 0, 0, 0)).x;
+    let n0100: f32 = rand4(i + vec4(0, 1, 0, 0)).x;
+    let n1100: f32 = rand4(i + vec4(1, 1, 0, 0)).x;
+    let n0010: f32 = rand4(i + vec4(0, 0, 1, 0)).x;
+    let n1010: f32 = rand4(i + vec4(1, 0, 1, 0)).x;
+    let n0110: f32 = rand4(i + vec4(0, 1, 1, 0)).x;
+    let n1110: f32 = rand4(i + vec4(1, 1, 1, 0)).x;
+    let n0001: f32 = rand4(i + vec4(0, 0, 0, 1)).x;
+    let n1001: f32 = rand4(i + vec4(1, 0, 0, 1)).x;
+    let n0101: f32 = rand4(i + vec4(0, 1, 0, 1)).x;
+    let n1101: f32 = rand4(i + vec4(1, 1, 0, 1)).x;
+    let n0011: f32 = rand4(i + vec4(0, 0, 1, 1)).x;
+    let n1011: f32 = rand4(i + vec4(1, 0, 1, 1)).x;
+    let n0111: f32 = rand4(i + vec4(0, 1, 1, 1)).x;
+    let n1111: f32 = rand4(i + vec4(1, 1, 1, 1)).x;
     return mix(
         mix(mix(mix(n0000, n1000, f.x), mix(n0100, n1100, f.x), f.y),
             mix(mix(n0010, n1010, f.x), mix(n0110, n1110, f.x), f.y), f.z),
@@ -413,7 +413,7 @@ float value_noise(vec4 p)
 }`
             }]
         }, {
-            name: "Simplex Noise",
+            name: "(TODO) Simplex Noise",
             description: "Classic simplex noise",
             author: "Ashima Arts, Stefan Gustavson (webgl-noise)",
             options: [{
@@ -571,7 +571,7 @@ float simplex_noise(vec4 v)
 }`
             }]
         }, {
-            name: "FBM (Fractal Brownian Motion)",
+            name: "(TODO) FBM (Fractal Brownian Motion)",
             description: "Layered noise with configurable octaves",
             options: [{
                 label: "2D",
@@ -605,7 +605,7 @@ float simplex_noise(vec4 v)
 }`
             }]
         }, {
-            name: "Voronoi",
+            name: "(TODO) Voronoi",
             description: "Distance to nearest cell center; Voronoi diagram–style cell noise",
             author: "Georgy Voronoi (Voronoi diagrams)",
             options: [{
@@ -653,7 +653,7 @@ float simplex_noise(vec4 v)
 }`
             }]
         }, {
-            name: "Worley Noise",
+            name: "(TODO) Worley Noise",
             description: "Cellular texture basis function; F1 distance to nearest feature point",
             author: "Steven Worley (SIGGRAPH 1996)",
             options: [{
@@ -701,7 +701,7 @@ float simplex_noise(vec4 v)
 }`
             }]
         }, {
-            name: "Turbulence",
+            name: "(TODO) Turbulence",
             description: "Fake fluid dynamics via layered rotated sine waves",
             author: "Xor (mini.gmshaders.com/p/turbulence)",
             options: [{
@@ -767,41 +767,42 @@ vec3 turbulence(vec3 pos, float time)
 // noise.  Uses a gyroid formula with golden‑ratio rotation so
 // the pattern never repeats.  Returns a value in [‑3, +3].
 
-float dot_noise(vec3 p)
+fn dot_noise(p: vec3f) -> f32
 {
-    const float PHI = 1.618033988;
+    const PHI: f32 = 1.618033988;
 
     // Golden‑angle rotation on the vec3(1, φ, φ²) axis
-    const mat3 GOLD = mat3(
-        -0.571464913, +0.814921382, +0.096597072,
-        -0.278044873, -0.303026659, +0.911518454,
-        +0.772087367, +0.494042493, +0.399753815);
+    const GOLD: mat3x3f = mat3x3f(
+        -0.571464913,  0.814921382,  0.096597072,
+        -0.278044873, -0.303026659,  0.911518454,
+         0.772087367,  0.494042493,  0.399753815);
 
     return dot(cos(GOLD * p), sin(PHI * p * GOLD));
 }
 
 // Fractal layering for richer detail (returns ~[‑1, +1])
-float dot_noise_fbm(vec3 p)
+fn dot_noise_fbm(p: vec3f) -> f32
 {
-    const float PHI = 1.618033988;
-    const mat3 GOLD = mat3(
-        -0.571464913, +0.814921382, +0.096597072,
-        -0.278044873, -0.303026659, +0.911518454,
-        +0.772087367, +0.494042493, +0.399753815);
+    const PHI: f32 = 1.618033988;
+    const GOLD: mat3x3f = mat3x3f(
+        -0.571464913,  0.814921382,  0.096597072,
+        -0.278044873, -0.303026659,  0.911518454,
+         0.772087367,  0.494042493,  0.399753815);
 
-    float value = 0.0;
-    float amplitude = 0.5;
-    for (int i = 0; i < 5; i++)
+    var value: f32 = 0.0;
+    var amplitude: f32 = 0.5;
+    var p1: vec3f = p;
+    for (var i: i32 = 0; i < 5; i++)
     {
-        value += amplitude * dot(cos(GOLD * p), sin(PHI * p * GOLD)) / 3.0;
-        p = GOLD * p * 2.0;
+        value += amplitude * dot(cos(GOLD * p1), sin(PHI * p1 * GOLD)) / 3.0;
+        p1 = GOLD * p1 * 2.0;
         amplitude *= 0.5;
     }
     return value;
 }`
         }]
     }, {
-        name: "Color",
+        name: "(TODO) Color",
         icon: "Contrast",
         snippets: [{
             name: "HSV ↔ RGB",
@@ -996,7 +997,7 @@ vec3 oklab_mix(vec3 colA, vec3 colB, float h)
 }`
         }]
     }, {
-        name: "Coordinates",
+        name: "(TODO) Coordinates",
         icon: "Grid3x2",
         snippets: [{
             name: "Rotation",
@@ -1222,7 +1223,7 @@ vec2 uv_fit_ratio(vec2 pixel, vec2 res, vec2 ratio)
             }]
         }]
     }, {
-        name: "Math",
+        name: "(TODO) Math",
         icon: "Function",
         snippets: [{
             name: "Remap",
@@ -1442,7 +1443,7 @@ vec2 ccos(vec2 z)
             }]
         }]
     }, {
-        name: "SDF",
+        name: "(TODO) SDF",
         icon: "Hexagon",
         snippets: [{
             name: "2D Shapes",
@@ -1780,7 +1781,7 @@ vec3 get_normal(vec3 p)
             }]
         }]
     }, {
-        name: "Raytracing",
+        name: "(TODO) Raytracing",
         icon: "Globe",
         snippets: [{
             name: "Ray Setup",
@@ -2357,51 +2358,51 @@ const mat3 GOLDEN_ROT3 = mat3(
 }`
             }, {
                 label: "2D → 2D",
-                code: `vec2 rand2(vec2 p)
+                code: `fn rand2(p: vec2f) -> vec2f
 {
-    vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+    var p3 = fract(vec3f(p.xyx) * vec3f(0.1031, 0.1030, 0.0973));
     p3 += dot(p3, p3.yzx + 33.33);
     return fract((p3.xx + p3.yz) * p3.zy);
 }`
             }, {
                 label: "2D → 3D",
-                code: `vec3 rand3(vec2 p)
+                code: `fn rand3(p: vec2f) -> vec3f
 {
-    vec4 p4 = fract(vec4(p.xyx, p.y) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(vec4f(p.xyx, p.y) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
     return fract((p4.xxz + p4.yww) * p4.zyx);
 }`
             }, {
                 label: "3D → 1D",
-                code: `float rand1(vec3 p)
+                code: `fn rand1(p: vec3f) -> f32
 {
-    vec4 p4 = fract(vec4(p.xyzx) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(vec4f(p.xyzx) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
     return fract((p4.x + p4.y + p4.z) * p4.w);
 }`
             }, {
                 label: "3D → 2D",
-                code: `vec2 rand2(vec3 p)
+                code: `fn rand2(p: vec3f) -> vec2f
 {
-    vec4 p4 = fract(vec4(p.xyzx) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(vec4f(p.xyzx) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
     return fract((p4.xx + p4.yz) * p4.zy);
 }`
             }, {
                 label: "3D → 3D",
-                code: `vec3 rand3(vec3 p)
+                code: `fn rand3(p: vec3f) -> vec3f
 {
-    vec4 p4 = fract(vec4(p.xyzx) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(vec4f(p.xyzx) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
     return fract((p4.xxz + p4.yww) * p4.zyx);
 }`
             }, {
                 label: "1D → 4D",
-                code: `vec4 rand4(float p)
+                code: `fn rand4(p: f32) -> vec4f
 {
-    vec4 p4 = fract(vec4(p) * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(vec4f(p) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
-    return fract(vec4(
+    return fract(vec4f(
         (p4.x + p4.y) * p4.z,
         (p4.y + p4.z) * p4.w,
         (p4.z + p4.w) * p4.x,
@@ -2410,11 +2411,11 @@ const mat3 GOLDEN_ROT3 = mat3(
 }`
             }, {
                 label: "4D → 4D",
-                code: `vec4 rand4(vec4 p)
+                code: `fn rand4(p: vec4f) -> vec4f
 {
-    vec4 p4 = fract(p * vec4(0.1031, 0.1030, 0.0973, 0.1099));
+    var p4 = fract(p * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
     p4 += dot(p4, p4.wzxy + 33.33);
-    return fract(vec4(
+    return fract(vec4f(
         (p4.x + p4.y) * p4.z,
         (p4.y + p4.z) * p4.w,
         (p4.z + p4.w) * p4.x,
