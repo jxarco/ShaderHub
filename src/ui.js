@@ -2788,14 +2788,14 @@ export const ui = {
                 panel.endLine( 'items-center h-full ml-auto' );
             }
 
-            LX.makeElement( 'span', 'h-4 mx-1 border-right border-color text-muted-foreground self-center items-center', '', panel );
-
-            panel.sameLine();
-            panel.addButton( null, 'Fullscreen', () => ShaderHub.requestFullscreen(), { icon: 'Fullscreen', title: 'Fullscreen', tooltip: true } );
-            panel.endLine( 'items-center h-full ml-auto' );
-
             if ( !mobile )
             {
+                LX.makeElement( 'span', 'h-4 mx-1 border-right border-color text-muted-foreground self-center items-center', '', panel );
+
+                panel.sameLine();
+                panel.addButton( null, 'Fullscreen', () => ShaderHub.requestFullscreen(), { icon: 'Fullscreen', title: 'Fullscreen', tooltip: true } );
+                panel.endLine( 'items-center h-full ml-auto' );
+
                 let exportOptions = {
                     format: 'gif',
                     frames: '120',
