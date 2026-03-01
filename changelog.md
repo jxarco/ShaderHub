@@ -1,5 +1,6 @@
 # 0.18
 - Debug Render Pass buffers.
+- Fixed show shader code in mobile.
 
 # 0.17.2
 - Updated LexGUI to `8.4.1`.

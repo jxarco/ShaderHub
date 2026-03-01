@@ -1454,7 +1454,7 @@ export const ui = {
                                             Utils.toast( `✅ Added to ${v} Collection`, `Shader: ${shaderInfo.name}` );
                                         }, { required: true } );
                                     }
-                                } );
+                                }, null );
 
                                 const mOptions = [{
                                     name: 'Add to Collection',
@@ -2717,7 +2717,7 @@ export const ui = {
                             disableEdition: true,
                             allowClosingTabs: false,
                             allowLoadingFiles: false,
-                            // allowAddScripts: false,
+                            allowAddScripts: false,
                             fileExplorer: false,
                             defaultTab: false,
                             statusShowEditorIndentation: false,
@@ -2726,15 +2726,12 @@ export const ui = {
                             statusShowFontSizeZoom: false,
                             statusShowEditorSelection: false,
                             onCreateFile: ( editor ) => null,
-                            // onNewTab: ( e ) => {
-                            //     new LX.DropdownMenu( e.target, [], { side: "bottom", align: "start" });
+                            // onSelectTab: async ( name, editor ) => {
+                            //     ShaderHub.onShaderPassSelected( name );
                             // },
-                            onSelectTab: async ( name, editor ) => {
-                                ShaderHub.onShaderPassSelected( name );
-                            },
                             onReady: async ( editor ) => {
                                 this.shader.passes.forEach( ( pass, index ) => {
-                                    editor.addTab( pass.name, { selected: true, title: pass.name, codeLines: pass.codeLines.join( '\n' ), language: 'WGSL' } );
+                                    editor.addTab( pass.name, { selected: true, title: pass.name, text: pass.codeLines.join( '\n' ), language: 'WGSL' } );
                                 } );
                             }
                         } );
