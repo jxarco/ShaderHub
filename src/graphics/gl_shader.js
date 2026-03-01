@@ -10,7 +10,7 @@ class GLShaderPass extends ShaderPass
         this.uniformLocations = {};
     }
 
-    async execute( renderer, debugPass )
+    async execute( renderer )
     {
         if ( this.type === 'common' )
         {
@@ -28,7 +28,7 @@ class GLShaderPass extends ShaderPass
 
         const gl = renderer.gl;
 
-        if ( this.type === 'image' || debugPass )
+        if ( this.type === 'image' || this.forceScreen )
         {
             // default swapchain
             gl.bindFramebuffer( gl.FRAMEBUFFER, null );
@@ -285,7 +285,7 @@ class GLShaderPass extends ShaderPass
             if ( flipYIndex > -1 )
             {
                 const utils = [
-                    this.type === 'buffer' ? `  v_uv.y = 1.0 - v_uv.y;` : ``
+                    this.type === 'buffer' && !this.forceScreen ? `  v_uv.y = 1.0 - v_uv.y;` : ``
                 ];
                 templateCodeLines.splice( flipYIndex, 1, ...utils );
             }

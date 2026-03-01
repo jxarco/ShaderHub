@@ -85,7 +85,7 @@ class ShaderPass
         }
     }
 
-    async execute( renderer, debugPass )
+    async execute( renderer )
     {
         if ( this.type === 'common' )
         {
@@ -101,7 +101,7 @@ class ShaderPass
             }
         }
 
-        if ( this.type === 'image' || debugPass )
+        if ( this.type === 'image' || this.forceScreen )
         {
             const commandEncoder = this.device.createCommandEncoder();
             const textureView = renderer.webGPUContext.getCurrentTexture().createView();
@@ -678,7 +678,7 @@ class ShaderPass
             if ( flipYIndex > -1 )
             {
                 const utils = [
-                    this.type === 'buffer' ? `  output.fragUV.y = 1.0 - output.fragUV.y;` : ``
+                    this.type === 'buffer' && !this.forceScreen ? `  output.fragUV.y = 1.0 - output.fragUV.y;` : ``
                 ];
                 templateCodeLines.splice( flipYIndex, 1, ...utils );
             }

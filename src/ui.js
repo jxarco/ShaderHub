@@ -2766,13 +2766,23 @@ export const ui = {
 
             // Debug Pass controls
             {
+                const iDebugRenderPass = ( pName ) => {
+                    this.shader.passes.forEach( p => p.forceScreen = false );
+                    const p = this.shader.passes.find( p => p.name === pName );
+                    if( p )
+                    {
+                        p.forceScreen = true;
+                    }
+                    ShaderHub.compileShader( true, null, true );
+                };
+
                 panel.sameLine();
                 const b = panel.addButton( null, LX.makeIcon( 'Layers' ).innerHTML, ( name, event ) => {
 
                     const passes = [
-                        { name: "None", callback: () => ShaderHub.debugPass = null },
+                        { name: "None", callback: () => iDebugRenderPass() },
                         ...this.shader.passes.filter( p => p.type == 'buffer' ).map( p => {
-                        return { name: p.name, callback: ( v ) => ShaderHub.debugPass = v }
+                        return { name: p.name, callback: ( v ) => iDebugRenderPass( v ) }
                     } ) ];
 
                     LX.addDropdownMenu( b.root, passes, { side: 'bottom', align: 'end' } );

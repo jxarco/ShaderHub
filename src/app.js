@@ -37,7 +37,6 @@ const ShaderHub = {
     generateKbTexture: true,
     timePaused: false,
     manualCompile: false,
-    debugPass: null,
     previewNamePrefix: '_preview_',
     imagesRootPath: '/images/',
 
@@ -152,9 +151,8 @@ const ShaderHub = {
 
             if ( !this._lastShaderCompilationWithErrors && !this._compilingShader )
             {
-                const debugPass = pass.name === this.debugPass;
-                await pass.execute( this.renderer, debugPass );
-                if( debugPass ) break;
+                await pass.execute( this.renderer );
+                if( pass.forceScreen ) break;
             }
         }
 
