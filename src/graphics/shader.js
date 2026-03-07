@@ -1452,6 +1452,8 @@ Shader.COMMON = `struct MouseData {
     delta : vec2f,
     press : f32,
     click : f32,
+    scroll : f32,
+    _pad : f32
 }
 `;
 

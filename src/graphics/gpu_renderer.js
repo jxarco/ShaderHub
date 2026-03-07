@@ -73,7 +73,7 @@ class GPURenderer extends Renderer
             } );
 
             this.gpuBuffers['iMouse'] = this.createBuffer( {
-                size: 32,
+                size: 40,
                 usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
             } );
 
@@ -252,6 +252,9 @@ class GPURenderer extends Renderer
         {
             return;
         }
+
+        // padding to 40 bytes
+        data.push( 0 );
 
         this.device.queue.writeBuffer(
             this.gpuBuffers['iMouse'],

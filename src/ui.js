@@ -2906,7 +2906,8 @@ export const ui = {
 <span class="text-foreground">iMouse.start: vec2f</span> <span class="text-muted-foreground">// Mouse down position</span><br>
 <span class="text-foreground">iMouse.delta: vec2f</span> <span class="text-muted-foreground">// Delta since last mouse move position</span><br>
 <span class="text-foreground">iMouse.press: f32</span> <span class="text-muted-foreground">// Mouse button down (none = -1, left = 0, middle: 1, right = 2)</span><br>
-<span class="text-foreground">iMouse.click: f32</span> <span class="text-muted-foreground">// Mouse button clicked (none = -1, left = 0, middle: 1, right = 2)</span>`, p );
+<span class="text-foreground">iMouse.click: f32</span> <span class="text-muted-foreground">// Mouse button clicked (none = -1, left = 0, middle: 1, right = 2)</span>
+<span class="text-foreground">iMouse.scroll: f32</span> <span class="text-muted-foreground">// Mouse scroll value</span><br>`, p );
 
                 makeParagraph( `Screen information:`, p );
                 makeParagraph( `<span class="text-foreground">iResolution: vec2f</span> <span class="text-muted-foreground">// Viewport resolution</span><br>`, p );
@@ -3154,6 +3155,10 @@ export const ui = {
 
         canvas.addEventListener( 'mousemove', ( e ) => {
             ShaderHub.onMouseMove( e.offsetX, e.offsetY );
+        } );
+
+        canvas.addEventListener( 'wheel', ( e ) => {
+            ShaderHub.onMouseWheel( e.deltaY );
         } );
 
         // Touch events

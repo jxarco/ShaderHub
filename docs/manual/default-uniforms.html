@@ -25,6 +25,7 @@ Mouse input is accessible through the <span class="font-bold">iMouse</span> stru
         ["iMouse.delta", "vec2f", "Change in position since last frame (useful for drag calculations)"],
         ["iMouse.press", "f32", "Currently pressed button: -1=none, 0=left, 1=middle, 2=right"],
         ["iMouse.click", "f32", "Last clicked button: -1=none, 0=left, 1=middle, 2=right"],
+        ["iMouse.scroll", "f32", "Current scroll value"],
     ]);
 
     docMaker.paragraph(`
@@ -126,6 +127,7 @@ Time-related uniforms provide the current time and frame information:
         ["iTime", "f32", "Elapsed time in seconds since shader start"],
         ["iTimeDelta", "f32", "Time in seconds between current and previous frame"],
         ["iFrame", "f32", "Current frame number (increments each frame)"],
+        ["iDate", "vec4f", "Current date (year, month, day, seconds)"],
     ]);
 
     docMaker.paragraph(`

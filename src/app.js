@@ -27,6 +27,7 @@ const ShaderHub = {
     audioPlaying: {},
     mousePosition: [ 0, 0 ],
     lastMousePosition: [ 0, 0 ],
+    mouseScroll: 0,
 
     frameCount: 0,
     lastTime: 0,
@@ -98,7 +99,8 @@ const ShaderHub = {
                 this.lastMousePosition[0] - this.mousePosition[0],
                 this.lastMousePosition[1] - this.mousePosition[1], // delta position
                 this._mouseDown ?? -1.0,
-                this._mousePressed ?? -1.0 // button clicks
+                this._mousePressed ?? -1.0, // button clicks
+                this.mouseScroll
             ];
 
             this.renderer.updateMouse( data, this.shader );
@@ -243,6 +245,11 @@ const ShaderHub = {
         {
             this.mousePosition = [ x, this.resolutionY - y ];
         }
+    },
+
+    async onMouseWheel( deltaY )
+    {
+        this.mouseScroll -= deltaY * 0.001;
     },
 
     async onShaderCanvasResized( xResolution, yResolution )
@@ -579,8 +586,9 @@ const ShaderHub = {
                 this.lastMousePosition[1], // start position
                 this.lastMousePosition[0] - this.mousePosition[0],
                 this.lastMousePosition[1] - this.mousePosition[1], // delta position
-                this._mouseDown ?? -1,
-                this._mousePressed ?? -1.0 // button clicks
+                this._mouseDown ?? -1.0,
+                this._mousePressed ?? -1.0, // button clicks
+                this.mouseScroll
             ];
 
             this.renderer.updateMouse( data, this.shader );
@@ -765,6 +773,7 @@ const ShaderHub = {
                 `${typeGen( 'vec2f' )} delta: ${valueGen( `${this.lastMousePosition[0] - this.mousePosition[0]}, ${this.lastMousePosition[1] - this.mousePosition[1]}` )}`,
                 `${typeGen( 'f32' )} press: ${valueGen( `${this._mouseDown ?? -1.0}` )}`,
                 `${typeGen( 'f32' )} click: ${valueGen( `${this._mousePressed ?? -1.0}` )}`,
+                `${typeGen( 'f32' )} scroll: ${valueGen( `${this.mouseScroll}` )}`,
             ].join( '<br>' );
         }
         if( !this.currentPass ) return null;

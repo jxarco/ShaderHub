@@ -519,6 +519,7 @@ GLShader.COMMON = `struct MouseData {
     vec2 delta;
     float press;
     float click;
+    float scroll;
 };`;
 
 GLShader.RENDER_VS_SHADER_TEMPLATE = `#version 300 es

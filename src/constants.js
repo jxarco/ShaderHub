@@ -32,7 +32,7 @@ export const DEFAULT_UNIFORMS_LIST = [
     { name: 'iFrame', type: { webgpu: 'i32', webgl: 'int' }, info: 'Shader playback frame' },
     { name: 'iResolution', type: { webgpu: 'vec2f', webgl: 'vec2' }, info: 'Viewport resolution (px)' },
     { name: 'iDate', type: { webgpu: 'vec4f', webgl: 'vec4' }, info: 'Year, month, day, seconds' },
-    { name: 'iMouse', type: { webgpu: 'MouseData', webgl: 'MouseData' }, info: '{ pos, start, delta, press, click }' },
+    { name: 'iMouse', type: { webgpu: 'MouseData', webgl: 'MouseData' }, info: '{ pos, start, delta, press, click, scroll }' },
     { name: 'iChannel0..3', type: { webgpu: 'texture_2d<f32>', webgl: 'sampler2D' }, info: 'Texture input channel', skipBindings: true }
 ];
 export const DEFAULT_UNIFORM_NAMES = DEFAULT_UNIFORMS_LIST.map( ( u ) => u.name );
@@ -42,7 +42,8 @@ export const DEFAULT_UNIFORM_FIELDS = {
         { name: 'start', size: 2 }, // Initial/last mouse position (x, y)
         { name: 'delta', size: 2 }, // Delta movement (dx, dy)
         { name: 'press', size: 1 }, // Mouse down state (-1 or button)
-        { name: 'click', size: 1 } // Mouse pressed/clicked state
+        { name: 'click', size: 1 }, // Mouse pressed/clicked state
+        { name: 'scroll', size: 1 }, // Mouse scroll
     ]
 };
 
