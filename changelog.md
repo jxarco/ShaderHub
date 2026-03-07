@@ -3,6 +3,7 @@
 - More WGSL function autocomplete constants and utils.
 - Fixed show shader code in mobile.
 - `iMouse.scroll` uniform.
+- `iRefreshRate` uniform.
 
 # 0.17.2
 - Updated LexGUI to `8.4.1`.

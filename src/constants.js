@@ -30,6 +30,7 @@ export const DEFAULT_UNIFORMS_LIST = [
     { name: 'iTime', type: { webgpu: 'f32', webgl: 'float' }, info: 'Shader playback time (s)' },
     { name: 'iTimeDelta', type: { webgpu: 'f32', webgl: 'float' }, info: 'Render time (s)' },
     { name: 'iFrame', type: { webgpu: 'i32', webgl: 'int' }, info: 'Shader playback frame' },
+    { name: 'iRefreshRate', type: { webgpu: 'i32', webgl: 'int' }, info: 'Rendered frames per second' },
     { name: 'iResolution', type: { webgpu: 'vec2f', webgl: 'vec2' }, info: 'Viewport resolution (px)' },
     { name: 'iDate', type: { webgpu: 'vec4f', webgl: 'vec4' }, info: 'Year, month, day, seconds' },
     { name: 'iMouse', type: { webgpu: 'MouseData', webgl: 'MouseData' }, info: '{ pos, start, delta, press, click, scroll }' },

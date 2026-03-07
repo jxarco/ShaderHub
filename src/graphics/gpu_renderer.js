@@ -67,6 +67,11 @@ class GPURenderer extends Renderer
                 usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
             } );
 
+            this.gpuBuffers['iRefreshRate'] = this.createBuffer( {
+                size: 4,
+                usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
+            } );
+
             this.gpuBuffers['iResolution'] = this.createBuffer( {
                 size: 8,
                 usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.UNIFORM
@@ -203,7 +208,7 @@ class GPURenderer extends Renderer
         return texture;
     }
 
-    updateFrame( timeDelta, elapsedTime, frameCount, shader )
+    updateFrame( timeDelta, elapsedTime, frameCount, fps, shader )
     {
         if ( !this.device )
         {
@@ -226,6 +231,12 @@ class GPURenderer extends Renderer
             this.gpuBuffers['iFrame'],
             0,
             new Int32Array( [ frameCount ] )
+        );
+
+        this.device.queue.writeBuffer(
+            this.gpuBuffers['iRefreshRate'],
+            0,
+            new Int32Array( [ fps ] )
         );
     }
 

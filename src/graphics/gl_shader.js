@@ -434,7 +434,7 @@ class GLShaderPass extends ShaderPass
         if ( !loc ) return;
 
         // Handle scalar and vector types
-        if ( typeof value === 'number' ) gl.uniform1f( loc, value );
+        if ( typeof value === 'number' ) Number.isInteger( value ) ? gl.uniform1i( loc, value ) : gl.uniform1f( loc, value );
         else if ( value.length === 2 ) gl.uniform2fv( loc, value );
         else if ( value.length === 3 ) gl.uniform3fv( loc, value );
         else if ( value.length === 4 ) gl.uniform4fv( loc, value );

@@ -77,7 +77,7 @@ const ShaderHub = {
 
         if ( !this.timePaused )
         {
-            this.renderer.updateFrame( this.timeDelta, this.elapsedTime, this.frameCount, this.shader );
+            this.renderer.updateFrame( this.timeDelta, this.elapsedTime, this.frameCount, fps.get(), this.shader );
 
             this.elapsedTime += this.timeDelta;
 

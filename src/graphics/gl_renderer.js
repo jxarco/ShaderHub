@@ -326,7 +326,7 @@ class GLRenderer extends Renderer
         return texture;
     }
 
-    updateFrame( timeDelta, elapsedTime, frameCount, shader )
+    updateFrame( timeDelta, elapsedTime, frameCount, fps, shader )
     {
         const gl = this.gl;
         if ( !gl )
@@ -339,6 +339,7 @@ class GLRenderer extends Renderer
             pass.setUniform( gl, 'iTime', elapsedTime );
             pass.setUniform( gl, 'iTimeDelta', timeDelta );
             pass.setUniform( gl, 'iFrame', frameCount );
+            pass.setUniform( gl, 'iRefreshRate', fps );
         }
     }
 
