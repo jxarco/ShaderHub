@@ -137,7 +137,7 @@ const ShaderHub = {
                     // Texture, cubemap or sound
                     else
                     {
-                        await this.createTextureFromFile( channelId );
+                        await this.createTextureFromFile( channel );
                     }
                 }
 
@@ -185,7 +185,28 @@ const ShaderHub = {
                 const usedChannel = pass.channels.findIndex( ( c ) => c?.id === id );
                 if ( usedChannel > -1 )
                 {
-                    await this.createAudioTexture( null, id, audio.name );
+                    const tex = await this.createAudioTexture( null, id, audio.name );
+                    pass.setChannelTexture( usedChannel, tex );
+                }
+            }
+        }
+
+        for ( const idx in this.videoPlaying )
+        {
+            const { video, ready } = this.videoPlaying[idx];
+            const id = idx;
+            if ( !ready || video.paused ) continue;
+
+            for ( let i = 0; i < this.shader.passes.length; ++i )
+            {
+                const pass = this.shader.passes[i];
+                if ( pass.type === 'common' ) continue;
+
+                const usedChannel = pass.channels.findIndex( ( c ) => c?.id === id );
+                if ( usedChannel > -1 )
+                {
+                    const tex = await this.createVideoTexture( video.src, id );
+                    pass.setChannelTexture( usedChannel, tex );
                 }
             }
         }
@@ -692,10 +713,11 @@ const ShaderHub = {
                 name = d.name;
                 category = d.category;
 
-                const preview = category === 'sound' ? `${ShaderHub.imagesRootPath}/sound.png` : d['preview'];
+                const preview = category === 'sound' ? `${ShaderHub.imagesRootPath}/sound.png` : 
+                    ( category === 'video' ? `${ShaderHub.imagesRootPath}/video.png` : d['preview']);
                 if ( preview )
                 {
-                    url = preview.includes( '/' ) ? preview : await fs.getFileUrl( preview );
+                    url = d['resource_url'] ?? ( preview.includes( '/' ) ? preview : await fs.getFileUrl( preview ) );
                 }
                 else
                 {
@@ -1374,29 +1396,50 @@ const ShaderHub = {
         return j;
     },
 
-    async createTextureFromFile( channelName )
+    async createTextureFromFile( channel )
     {
-        const result = await fs.listDocuments( FS.ASSETS_COLLECTION_ID, [ Query.equal( 'file_id', channelName ) ] );
-        // console.assert( result.total == 1, `Inconsistent asset list for file id ${ channelName }` );
-        if ( result.total == 0 ) return;
+        const channelName = channel.id;
 
-        const url = await fs.getFileUrl( channelName );
-        const data = await fs.requestFile( url );
+        let result = await fs.listDocuments( FS.ASSETS_COLLECTION_ID, [ Query.equal( 'file_id', channelName ) ] );
+        // console.assert( result.total == 1, `Inconsistent asset list for file id ${ channelName }` );
+        if ( result.total == 0 )
+        {
+            // channelName is literally a name and doesn't have a file id, so
+            // we must look for the DB row and take resource_url from the asset
+            result = await fs.listDocuments( FS.ASSETS_COLLECTION_ID, [ Query.equal( 'name', channelName ) ] );
+            if ( result.total == 0 ) return;
+        }
+
         const asset = result.documents[0];
+        let url = null, resource = null;
+        
+        if( asset['resource_url'] )
+        {
+            url = resource = asset['resource_url'];
+        }
+        else
+        {
+            url = await fs.getFileUrl( channelName );
+            resource = await fs.requestFile( url );
+        }
 
         let texture = null;
 
         if ( asset.category === 'cubemap' )
         {
-            texture = await this.renderer.createCubemapTextureFromImage( data, channelName, asset.name );
+            texture = await this.renderer.createCubemapTextureFromImage( resource, channelName, asset.name );
         }
         else if ( asset.category === 'sound' )
         {
-            texture = await this.createAudioTexture( data, channelName, asset.name );
+            texture = await this.createAudioTexture( resource, channelName, asset.name );
+        }
+        else if ( asset.category === 'video' )
+        {
+            texture = await this.createVideoTexture( resource, channelName, asset.name );
         }
         else
         {
-            texture = await this.renderer.createTextureFromImage( data, channelName, asset.name );
+            texture = await this.renderer.createTextureFromImage( resource, channelName, asset.name );
         }
 
         return texture;
@@ -1544,6 +1587,70 @@ const ShaderHub = {
             imageTexture.texture ?? imageTexture,
             imageBitmap
         );
+
+        imageBitmap.close(); // free the intermediate bitmap
+
+        return imageTexture;
+    },
+
+    async createVideoTexture( url, id, label = '' )
+    {
+        this.videoPlaying ??= {};
+
+        // Create and start the video element once
+        if ( !this.videoPlaying[id] )
+        {
+            const video = document.createElement( 'video' );
+            video.src = url;
+            video.loop = true;
+            video.muted = true;
+            video.playsInline = true;
+            video.crossOrigin = 'anonymous';
+            video.play().catch( () => {} );
+            this.videoPlaying[id] = { video, ready: false };
+
+            video.addEventListener( 'loadeddata', async () =>
+            {
+                this.videoPlaying[id].ready = true;
+                delete this.renderer.gpuTextures[id]; // discard 1×1 placeholder; full-size will be created on next frame
+                this.compileShader();
+            }, { once: true } );
+        }
+
+        const { video, ready } = this.videoPlaying[id];
+        if ( !ready )
+        {
+            // Return a 1×1 black placeholder until the first frame is decoded
+            return this.renderer.gpuTextures[id] ??= this.renderer.createTexture( {
+                label: label || `video:${id}`,
+                size: [ 1, 1, 1 ],
+                format: 'rgba8unorm',
+                usage: GPUTextureUsage.TEXTURE_BINDING
+                    | GPUTextureUsage.COPY_DST
+                    | GPUTextureUsage.RENDER_ATTACHMENT
+            } );
+        }
+
+        const imageName = id;
+        const imageBitmap = await createImageBitmap( video );
+
+        const imageTexture = this.renderer.gpuTextures[imageName]
+            ?? this.renderer.createTexture( {
+                label: label || `video:${id}`,
+                size: [ imageBitmap.width, imageBitmap.height, 1 ],
+                format: 'rgba8unorm',
+                usage: GPUTextureUsage.TEXTURE_BINDING
+                    | GPUTextureUsage.COPY_DST
+                    | GPUTextureUsage.RENDER_ATTACHMENT
+            } );
+
+        this.renderer.gpuTextures[imageName] = this.renderer.updateTexture(
+            imageTexture.texture ?? imageTexture,
+            imageBitmap,
+            { flipY: true }
+        );
+
+        imageBitmap.close(); // free the intermediate bitmap
 
         return imageTexture;
     },

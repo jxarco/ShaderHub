@@ -3718,6 +3718,18 @@ export const ui = {
             tabs.add( 'Sound', this.soundsContainer );
         }
 
+        {
+            if ( !this.videosContainer )
+            {
+                this.videosContainer = LX.makeContainer( [ '100%', '100%' ], 'grid channel-server-list gap-3 p-2 rounded-lg justify-center overflow-scroll' );
+            }
+
+            this.videosContainer.innerHTML = '';
+            await _createChannelItems( 'video', this.videosContainer );
+            this.videosContainer.style.display = 'grid';
+            tabs.add( 'Video', this.videosContainer );
+        }
+
         this._currentChannelIndex = channelIndex;
 
         let dialog = new LX.Dialog( `[${pass.name}] Channel${channelIndex}`, ( p ) => {

@@ -805,6 +805,7 @@ class ShaderPass
                     const binding = bindingIndex++;
                     textureBindings[channel.id] = binding;
                     const texture = this.channelTextures[index];
+                    if ( !texture ) return;
                     return `@group(0) @binding(${binding}) var ${channelIndexName} : ${texture.depthOrArrayLayers > 1 ? 'texture_cube' : 'texture_2d'}<f32>;`;
                 } ).filter( ( u ) => u !== undefined );
 

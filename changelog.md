@@ -1,4 +1,5 @@
 # 0.18
+- Video channels.
 - Debug Render Pass buffers.
 - More WGSL function autocomplete constants and utils.
 - Translated Noise and Color WGSL Snippets.

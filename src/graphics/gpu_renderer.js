@@ -117,10 +117,10 @@ class GPURenderer extends Renderer
         return texture;
     }
 
-    updateTexture( texture, bitmap )
+    updateTexture( texture, bitmap, options = {} )
     {
         this.device.queue.copyExternalImageToTexture(
-            { source: bitmap },
+            { source: bitmap, ...options },
             { texture },
             [ bitmap.width, bitmap.height ]
         );
