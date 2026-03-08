@@ -656,14 +656,16 @@ const ShaderHub = {
             const ownShader = fs.user && ( authorId === fs.getUserId() );
             if ( ownShader )
             {
-                shaderData.author = ui.dbUser.user_name;
+                shaderData.author = ui.dbUser.display_name;
+                shaderData.authorUsername = ui.dbUser.user_name;
                 shaderData.authorId = ui.dbUser.user_id;
             }
             else if ( authorId )
             {
                 const users = await fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_id', authorId ) ] );
-                const authorName = users.documents[0]['user_name'];
-                shaderData.author = authorName;
+                const authorDoc = users.documents[0];
+                shaderData.author = authorDoc['display_name'];
+                shaderData.authorUsername = authorDoc['user_name'];
                 shaderData.authorId = authorId;
             }
             else
@@ -677,7 +679,7 @@ const ShaderHub = {
             shaderData = {
                 name: 'New Shader',
                 uid: 'EMPTY_ID',
-                author: fs.user?.name ?? 'Anonymous',
+                authorUsername: fs.user?.name ?? 'Anonymous',
                 authorId: fs.user ? fs.getUserId() : undefined,
                 anonAuthor: !fs.user,
                 creationDate: Utils.getDate(),

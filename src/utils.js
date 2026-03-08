@@ -117,6 +117,25 @@ export function decodeUID( base62 )
     return hex;
 }
 
+export function parsePathSegment( param = '' )
+{
+    let value = window.location.pathname.split( `/${param}/` )[1];
+
+    if ( !value || value === '' )
+    {
+        const params = new URLSearchParams( document.location.search );
+        value = params.get( param );
+    }
+
+    if ( !value )
+    {
+        console.warn( `No ${param} specified` );
+        return;
+    }
+
+    return decodeURIComponent( value );
+}
+
 export function parsePathUid( param = '' )
 {
     let encodedUid = window.location.pathname.split( `/${param}/` )[1];

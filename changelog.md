@@ -7,6 +7,7 @@
 - SDF Font template.
 - `iMouse.scroll` uniform.
 - `iRefreshRate` uniform.
+- Profile page uses usernames.
 - Fixed show shader code in mobile.
 
 # 0.17.2

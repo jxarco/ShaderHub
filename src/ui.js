@@ -95,7 +95,7 @@ export const ui = {
             const sidebarCallback = ( m ) => {
                 if ( fs.user )
                 {
-                    m.add( 'Profile', { icon: 'User', callback: () => this._openUserProfile( fs.getUserId() ) } );
+                    m.add( 'Profile', { icon: 'User', callback: () => this._openUserProfile( this.dbUser.user_name ) } );
                     m.add( 'Liked', { icon: 'Heart', callback: () => this._openPage( 'liked/' ) } );
                 }
                 else
@@ -169,7 +169,7 @@ export const ui = {
                     new LX.DropdownMenu( loginOptionsButton.root, [
                         fs.user.name,
                         null,
-                        { name: 'Profile', icon: 'User', callback: () => this._openUserProfile( fs.getUserId() ) },
+                        { name: 'Profile', icon: 'User', callback: () => this._openUserProfile( this.dbUser.user_name ) },
                         { name: 'Liked', icon: 'Heart', callback: () => this._openPage( 'liked/' ) },
                         null,
                         { name: 'Logout', icon: 'LogOut', className: 'destructive', callback: async () => {
@@ -275,13 +275,13 @@ export const ui = {
         }
         else if ( path.startsWith( '/user' ) )
         {
-            const userUid = Utils.parsePathUid( 'user' );
-            if ( !userUid )
+            const username = Utils.parsePathSegment( 'user' );
+            if ( !username )
             {
                 return;
             }
 
-            await this.renderUserView( userUid );
+            await this.renderUserView( username );
         }
         else if ( path.startsWith( '/liked' ) )
         {
@@ -354,9 +354,9 @@ export const ui = {
         this.router();
     },
 
-    _openUserProfile( userID, e )
+    _openUserProfile( username, e )
     {
-        const url = `${ShaderHub.getFullPath( false )}/user/${Utils.encodeUID( userID )}`;
+        const url = `${ShaderHub.getFullPath( false )}/user/${encodeURIComponent( username )}`;
 
         if ( e?.button === 1 || e?.ctrlKey || e?.metaKey )
         {
@@ -582,8 +582,8 @@ export const ui = {
                 if ( authorId )
                 {
                     const userDocument = usersDocuments.documents.find( ( d ) => d['user_id'] === authorId );
-                    const author = userDocument['user_name'];
-                    shaderInfo.author = author;
+                    shaderInfo.author = userDocument['display_name'];
+                    shaderInfo.authorUsername = userDocument['user_name'];
                     shaderInfo.authorId = authorId;
                 }
                 else
@@ -621,8 +621,8 @@ export const ui = {
                     <div class="flex flex-row w-full items-center gap-2">
                         <span class="text-base font-medium text-nowrap truncate">${shader.name}</span>
                         <span class="text-base font-light text-muted-foreground flex-auto-keep">by ${
-                    !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${shader.authorId}")' class='hub-link font-medium'>` : ''
-                }<span>${shader.author}</span>${!shader.anonAuthor ? '</a>' : ''}</span>
+                    !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${shader.authorUsername}")' class='hub-link font-medium'>` : ''
+                }<span>${shader.authorUsername}</span>${!shader.anonAuthor ? '</a>' : ''}</span>
                         <div class="flex flex-row gap-2 items-center ml-auto flex-auto-keep text-sm">
                             <div class="flex flex-row gap-1 items-center">
                                 ${LX.makeIcon( 'Heart', { svgClass: `${shader.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current` } ).innerHTML}
@@ -844,8 +844,8 @@ export const ui = {
                 if ( authorId )
                 {
                     const userDocument = usersDocuments.documents.find( ( d ) => d['user_id'] === authorId );
-                    const author = userDocument['user_name'];
-                    shaderInfo.author = author;
+                    shaderInfo.author = userDocument['display_name'];
+                    shaderInfo.authorUsername = userDocument['user_name'];
                     shaderInfo.authorId = authorId;
                 }
                 else
@@ -887,8 +887,8 @@ export const ui = {
                     <div class="flex flex-row w-full items-center gap-2">
                         <span class="text-sm font-medium text-nowrap truncate">${shader.name}</span>
                         <span class="text-sm font-light text-muted-foreground flex-auto-keep">by ${
-                    !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${shader.authorId}")' class='hub-link font-medium'>` : ''
-                }<span>${shader.author}</span>${!shader.anonAuthor ? '</a>' : ''}</span>
+                    !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${shader.authorUsername}")' class='hub-link font-medium'>` : ''
+                }<span>${shader.authorUsername}</span>${!shader.anonAuthor ? '</a>' : ''}</span>
                         <div class="flex flex-row gap-2 items-center ml-auto flex-auto-keep">
                             <div class="flex flex-row gap-1 items-center">
                                 ${
@@ -1024,7 +1024,7 @@ export const ui = {
             this.compileLogContainerPanel.refresh();
         }
 
-        document.title = `${shader.name} (${shader.author}) - ShaderHub`;
+        document.title = `${shader.name} (${shader.authorUsername}) - ShaderHub`;
 
         // Manage code area resize when channels are collapsed
         {
@@ -1127,7 +1127,7 @@ export const ui = {
         } );
     },
 
-    async renderUserView( userID )
+    async renderUserView( userName )
     {
         this._clearContent();
 
@@ -1140,10 +1140,10 @@ export const ui = {
 
         this._makeFooter( bottomArea );
 
-        const ownProfile = this.fs.user && ( userID === this.fs.getUserId() );
+        const ownProfile = this.dbUser && ( userName === this.dbUser.user_name );
         if ( !ownProfile )
         {
-            const users = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_id', userID ) ] );
+            const users = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_name', userName ) ] );
             if ( users.total === 0 )
             {
                 LX.makeContainer( [ '100%', 'auto' ], 'mt-8 text-2xl font-medium justify-center text-center', 'No user found.', topArea );
@@ -1153,8 +1153,8 @@ export const ui = {
 
         const PAGE_LIMIT = 8;
         const usersDocuments = await this.fs.listDocuments( FS.USERS_COLLECTION_ID );
-        const user = usersDocuments.documents.find( ( d ) => d.user_id === userID );
-        const userName = user['user_name'];
+        const user = usersDocuments.documents.find( ( d ) => d.user_name === userName );
+        const userID = user['user_id'];
         const isPublicProfile = user['public'];
         const params = new URLSearchParams( document.location.search );
         const queryOrderBy = params.get( 'order_by' );
@@ -1853,8 +1853,8 @@ export const ui = {
                     if ( authorId )
                     {
                         const userDocument = usersDocuments.documents.find( ( d ) => d['user_id'] === authorId );
-                        const author = userDocument['user_name'];
-                        shaderInfo.author = author;
+                        shaderInfo.author = userDocument['display_name'];
+                        shaderInfo.authorUsername = userDocument['user_name'];
                         shaderInfo.authorId = authorId;
                     }
                     else
@@ -1879,8 +1879,8 @@ export const ui = {
                         <div class="flex flex-row w-full items-center gap-2">
                             <span class="text-sm font-medium text-nowrap truncate">${shaderInfo.name}</span>
                             <span class="text-sm font-light text-muted-foreground flex-auto-keep">by ${
-                        !shaderInfo.anonAuthor ? `<a onclick='ui._openUserProfile("${shaderInfo.authorId}")' class='hub-link font-medium'>` : ''
-                    }<span>${shaderInfo.author}</span>${!shaderInfo.anonAuthor ? '</a>' : ''}</span>
+                        !shaderInfo.anonAuthor ? `<a onclick='ui._openUserProfile("${shaderInfo.authorUsername}")' class='hub-link font-medium'>` : ''
+                    }<span>${shaderInfo.authorUsername}</span>${!shaderInfo.anonAuthor ? '</a>' : ''}</span>
                             <div class="flex flex-row gap-1 items-center ml-auto flex-auto-keep">
                                 ${LX.makeIcon( 'Heart', { svgClass: `${shaderInfo.liked ? 'text-orange-600 shadow-primary' : 'text-muted-foreground'} fill-current sm` } ).innerHTML}
                                 <span class="text-sm">${shaderInfo.likeCount ?? 0}</span>
@@ -2222,11 +2222,11 @@ export const ui = {
                 isNewShader
                     ? ''
                     : `<div class="text-muted-foreground text-sm">Created by ${
-                        !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${shader.authorId}")' class='hub-link font-medium'>` : ``
-                    }<span>${shader.author}</span>${!shader.anonAuthor ? '</a>' : ''} on ${shader.creationDate}
+                        !shader.anonAuthor ? `<a onclick='ui._openUserProfile("${shader.authorUsername}")' class='hub-link font-medium'>` : ``
+                    }<span>${shader.authorUsername}</span>${!shader.anonAuthor ? '</a>' : ''} on ${shader.creationDate}
                     ${
                         originalShader
-                            ? `(remixed from <a onclick='ui._openShader("${shader.originalId}")' class='hub-link font-medium'>${originalShader.name}</a> by <a onclick='ui._openUserProfile("${originalShader.authorId}")' class='hub-link font-medium'>${originalShader.author}</a>)`
+                            ? `(remixed from <a onclick='ui._openShader("${shader.originalId}")' class='hub-link font-medium'>${originalShader.name}</a> by <a onclick='ui._openUserProfile("${originalShader.authorUsername}")' class='hub-link font-medium'>${originalShader.author}</a>)`
                             : ``
                     } `
             }
@@ -2546,7 +2546,7 @@ export const ui = {
                                         if ( dbMentionedUsers.total === 0 ) continue;
                                         commentText = commentText.substring( 0, m.index )
                                             + commentText.substring( m.index ).replace( m[0],
-                                                ` <span onclick='ui._openUserProfile("${dbMentionedUsers.documents[0].user_id}")' class="hub-mention">${m[0]}</span>` );
+                                                ` <span onclick='ui._openUserProfile("${dbMentionedUsers.documents[0].user_name}")' class="hub-mention">${m[0]}</span>` );
                                     }
                                 }
 
@@ -2646,7 +2646,7 @@ export const ui = {
                                             if ( dbMentionedUsers.total === 0 ) continue;
                                             replyText = replyText.substring( 0, m.index )
                                                 + replyText.substring( m.index ).replace( m[0],
-                                                    ` <span onclick='ui._openUserProfile("${dbMentionedUsers.documents[0].user_id}")' class="hub-mention">${m[0]}</span>` );
+                                                    ` <span onclick='ui._openUserProfile("${dbMentionedUsers.documents[0].user_name}")' class="hub-mention">${m[0]}</span>` );
                                         }
                                     }
 
@@ -3234,13 +3234,13 @@ export const ui = {
         }
         else if ( path.startsWith( '/user' ) )
         {
-            const userUid = Utils.parsePathUid( 'user' );
-            if ( !userUid )
+            const username = Utils.parsePathSegment( 'user' );
+            if ( !username )
             {
                 return;
             }
 
-            await this.renderUserView( userUid );
+            await this.renderUserView( username );
         }
         else
         {
@@ -3406,6 +3406,13 @@ export const ui = {
                 if ( errors.length > 0 )
                 {
                     errorMsg.set( errors.map( ( e ) => `${e.entry}: ${e.messages.join( '\n' )}` ).join( '\n\n' ) );
+                    return;
+                }
+
+                const existing = await this.fs.listDocuments( FS.USERS_COLLECTION_ID, [ Query.equal( 'user_name', value.userName ) ] );
+                if ( existing.total > 0 )
+                {
+                    errorMsg.set( `❌ Username "${value.userName}" is already taken.` );
                     return;
                 }
 

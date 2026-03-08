@@ -1360,7 +1360,8 @@ class Shader
         this.tags = data.tags ?? [];
         this.backend = data.backend;
 
-        this.author = data.author ?? 'anonymous';
+        this.author = data.author;
+        this.authorUsername = data.authorUsername ?? 'anonymous';
         this.authorId = data.authorId;
         this.originalId = data.originalId;
         this.anonAuthor = data.anonAuthor ?? false;
