@@ -710,6 +710,52 @@ GLShader.RENDER_KEYBOARD_TEMPLATE = {
 }`.split( '\n' )
 };
 
+Shader.RENDER_FONT_TEMPLATE = {
+    channels: [ { index: 0, id: '69a016f70033957390db', category: 'texture' } ],
+    code: `// Character index in the atlas follows ASCII ordering.
+//   Uppercase: A=65 B=66 ... Z=90
+//   Lowercase: a=97 b=98 ... z=122
+//   Digits:    0=48 1=49 ... 9=57
+
+int   _char_id  = -1;
+vec2  _char_pos, _char_ddx, _char_ddy;
+
+// Test if fragcoord U hits this character cell; if so, records the hit.
+void char_hit(vec2 U, int c) {
+    vec2 ddx = dFdx(U / 16.0);
+    vec2 ddy = dFdy(U / 16.0);
+    if (U.x > 0.25 && U.x < 0.75 && U.y > 0.1 && U.y < 0.85)
+        _char_id = c, _char_pos = U, _char_ddx = ddx, _char_ddy = ddy;
+}
+
+// Sample the atlas for the winning character.
+float draw_char() {
+    if (_char_id < 0) return 0.0;
+    int c = _char_id;
+    vec2 atlas_uv = _char_pos / 16.0 + fract(vec2(float(c % 16), float(15 - c / 16)) / 16.0);
+    return textureGrad(iChannel0, atlas_uv, _char_ddx, _char_ddy).r;
+}
+
+vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
+    vec2 uv = fragCoord / iResolution.y;
+
+    // Scale UV into character-grid space (each cell = 0.5 units wide).
+    // Adjust the origin vec2(x, y) to position the text on screen.
+    vec2 U = (uv - vec2(0.5, 0.5)) * 8.0;
+
+    // Advance U.x by -0.5 per character (moves cursor rightward in UV space).
+    // Use ASCII indices: 'A'=65  'a'=97  ' '=32  '0'=48
+    U.x -= 0.5; char_hit(U, 72);   // H
+    U.x -= 0.5; char_hit(U, 101);  // e
+    U.x -= 0.5; char_hit(U, 108);  // l
+    U.x -= 0.5; char_hit(U, 108);  // l
+    U.x -= 0.5; char_hit(U, 111);  // o
+
+    float v = draw_char();
+    return vec4(vec3(v), 1.0);
+}`.split( '\n' )
+};
+
 GLShader.RENDER_COMMON_TEMPLATE = `float someFunc(float a, float b) {
     return a + b;
 }`.split( '\n' );

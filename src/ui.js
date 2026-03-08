@@ -3041,7 +3041,8 @@ export const ui = {
                         { name: 'Texture', callback: ( v ) => iSetLines( v ) },
                         { name: 'Mouse', callback: ( v ) => iSetLines( v ) },
                         { name: 'Animated', callback: ( v ) => iSetLines( v ) },
-                        { name: 'Keyboard', callback: ( v ) => iSetLines( v ) }
+                        { name: 'Keyboard', callback: ( v ) => iSetLines( v ) },
+                        { name: 'Font', callback: ( v ) => iSetLines( v ) },
                     ]
                 },
                 {

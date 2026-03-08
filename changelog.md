@@ -1,15 +1,13 @@
-# 0.18.1
-- Math snippets for WGSL.
-- WGSL library based suggestions.
-
 # 0.18
 - Video channels.
 - Debug Render Pass buffers.
 - More WGSL function autocomplete constants and utils.
-- Translated Noise and Color WGSL Snippets.
-- Fixed show shader code in mobile.
+- WGSL library based suggestions.
+- Translated Noise, Math and Color WGSL Snippets.
+- SDF Font template.
 - `iMouse.scroll` uniform.
 - `iRefreshRate` uniform.
+- Fixed show shader code in mobile.
 
 # 0.17.2
 - Updated LexGUI to `8.4.1`.

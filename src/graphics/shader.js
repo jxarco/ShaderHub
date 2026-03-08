@@ -1640,6 +1640,56 @@ Shader.RENDER_KEYBOARD_TEMPLATE = {
 }`.split( '\n' )
 };
 
+Shader.RENDER_FONT_TEMPLATE = {
+    channels: [ { index: 0, id: '69a016f70033957390db', category: 'texture' } ],
+    code: `// Character index in the atlas follows ASCII ordering.
+//   Uppercase: A=65 B=66 ... Z=90
+//   Lowercase: a=97 b=98 ... z=122
+//   Digits:    0=48 1=49 ... 9=57
+
+struct CharInfo { id: i32, pos: vec2f, ddx: vec2f, ddy: vec2f }
+
+// Test if fragcoord U hits this character cell; if so, records the hit.
+fn char_hit(info: CharInfo, U: vec2f, c: i32) -> CharInfo {
+    // Derivatives must be in uniform control flow — compute before any branch on U.
+    let ddx = dpdx(U / 16.0);
+    let ddy = dpdy(U / 16.0);
+    if (U.x > 0.25 && U.x < 0.75 && U.y > 0.1 && U.y < 0.85) {
+        return CharInfo(c, U, ddx, ddy);
+    }
+    return info;
+}
+
+// Sample the atlas for the winning character.
+fn draw_char(info: CharInfo) -> f32 {
+    if (info.id < 0) { return 0.0; }
+    let c = info.id;
+    let atlas_uv = info.pos / 16.0 + fract(vec2f(f32(c % 16), f32(15 - c / 16)) / 16.0);
+    return textureSampleGrad(iChannel0, bilinearSampler, atlas_uv, info.ddx, info.ddy).r;
+}
+
+fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    var uv: vec2f = fragCoord / iResolution.y;  
+
+    // Scale UV into character-grid space (each cell = 0.5 units wide).
+    // Adjust the origin vec2f(x, y) to position the text on screen.
+    var U = (uv - vec2f(0.5, 0.5)) * 8.0;
+    var ch = CharInfo(-1, vec2f(0.0), vec2f(0.0), vec2f(0.0));
+
+    // Advance U.x by -0.5 per character (moves cursor rightward in UV space).
+    // Use ASCII indices: 'A'=65  'a'=97  ' '=32  '0'=48
+    U.x -= 0.5; ch = char_hit(ch, U, 72);   // H
+    U.x -= 0.5; ch = char_hit(ch, U, 101);  // e
+    U.x -= 0.5; ch = char_hit(ch, U, 108);  // l
+    U.x -= 0.5; ch = char_hit(ch, U, 108);  // l
+    U.x -= 0.5; ch = char_hit(ch, U, 111);  // o
+
+    let sdf = draw_char(ch);
+    let v = smoothstep(0.4, 0.6, sdf);
+    return vec4f(vec3f(v), 1.0);
+}`.split( '\n' )
+};
+
 Shader.RENDER_COMMON_TEMPLATE = `fn someFunc(a: f32, b: f32) -> f32 {
     return a + b;
 }`.split( '\n' );
