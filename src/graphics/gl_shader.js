@@ -50,6 +50,10 @@ class GLShaderPass extends ShaderPass
                 {
                     texture = texture[this.frameCount % 2].texture;
                 }
+                else if( texture.constructor !== WebGLTexture )
+                {
+                    texture = texture.texture; // get the inner texture.. well
+                }
                 gl.activeTexture( gl.TEXTURE0 + i );
                 gl.bindTexture( channel.category === 'cubemap' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D, texture );
                 gl.uniform1i( this.uniformLocations[name], i );

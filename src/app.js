@@ -704,9 +704,13 @@ const ShaderHub = {
             else if ( assetFileId.startsWith( 'Compute' ) ) url = `${ShaderHub.imagesRootPath}/buffer.png`; // TODO: Change preview image for computes
             else
             {
-                const result = await fs.listDocuments( FS.ASSETS_COLLECTION_ID, [ Query.equal( 'file_id', assetFileId ) ] );
-                // console.assert( result.total == 1, `Inconsistent asset list for file id ${ assetFileId }` );
-                if ( result.total == 0 ) return;
+                let result = await fs.listDocuments( FS.ASSETS_COLLECTION_ID, [ Query.equal( 'file_id', assetFileId ) ] );
+                if ( result.total == 0 )
+                {
+                    // assetFileId is literally a name and doesn't have a file id
+                    result = await fs.listDocuments( FS.ASSETS_COLLECTION_ID, [ Query.equal( 'name', assetFileId ) ] );
+                    if ( result.total == 0 ) return;
+                }
 
                 const d = result.documents[0];
 
@@ -714,10 +718,10 @@ const ShaderHub = {
                 category = d.category;
 
                 const preview = category === 'sound' ? `${ShaderHub.imagesRootPath}/sound.png` : 
-                    ( category === 'video' ? `${ShaderHub.imagesRootPath}/video.png` : d['preview']);
+                    ( category === 'video' ? d['preview'] ?? `${ShaderHub.imagesRootPath}/video.png` : d['preview']);
                 if ( preview )
                 {
-                    url = d['resource_url'] ?? ( preview.includes( '/' ) ? preview : await fs.getFileUrl( preview ) );
+                    url = preview.includes( '/' ) ? preview : await fs.getFileUrl( preview );
                 }
                 else
                 {
@@ -1632,7 +1636,9 @@ const ShaderHub = {
         }
 
         const imageName = id;
-        const imageBitmap = await createImageBitmap( video );
+        const imageBitmap = await createImageBitmap( video, {
+            imageOrientation: 'flipY'
+        } );
 
         const imageTexture = this.renderer.gpuTextures[imageName]
             ?? this.renderer.createTexture( {
@@ -1647,7 +1653,7 @@ const ShaderHub = {
         this.renderer.gpuTextures[imageName] = this.renderer.updateTexture(
             imageTexture.texture ?? imageTexture,
             imageBitmap,
-            { flipY: true }
+            // { flipY: true }
         );
 
         imageBitmap.close(); // free the intermediate bitmap
