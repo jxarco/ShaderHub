@@ -3395,7 +3395,7 @@ export const ui = {
 
         const dialog = new LX.Dialog( 'Create account', ( p ) => {
             const formData = {
-                userName: { label: 'Username', value: '', icon: 'User', pattern: { minLength: Constants.USERNAME_MIN_LENGTH } },
+                userName: { label: 'Username', value: '', icon: 'User', pattern: { noSpaces: true, minLength: Constants.USERNAME_MIN_LENGTH } },
                 name: { label: 'Display Name (optional)', value: '' },
                 email: { label: 'Email', value: '', icon: 'AtSign', pattern: { email: true } },
                 password: { label: 'Password', value: '', type: 'password', icon: 'Key', pattern: { minLength: Constants.PASSWORD_MIN_LENGTH, digit: true } },
