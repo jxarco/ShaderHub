@@ -1314,6 +1314,7 @@ const ShaderHub = {
             elapsedTime: 0.0,
             frameCount: 0,
             lastTime: 0.0,
+            date: [ 0, 0, 0, 0 ],
             clean: function()
             {
                 this.mustClean = true;
@@ -1332,8 +1333,13 @@ const ShaderHub = {
                     this.mustClean = false;
                 }
 
-                renderer.updateFrame( this.timeDelta, this.elapsedTime, this.frameCount, shader );
+                renderer.updateFrame( this.timeDelta, this.elapsedTime, this.frameCount, fps.get(), shader );
                 renderer.updateResolution( W, H, shader );
+
+                {
+                    this.date[3] = Date.now() % 864e5 / 1e3;
+                    renderer.updateDate( this.date, shader );
+                }
 
                 this.elapsedTime += this.timeDelta;
                 this.frameCount++;
@@ -1366,7 +1372,7 @@ const ShaderHub = {
                             // Texture, cubemap or sound
                             else
                             {
-                                await that.createTextureFromFile( channelId );
+                                await that.createTextureFromFile( channel );
                             }
                         }
 
