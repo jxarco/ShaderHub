@@ -1,3 +1,7 @@
+# 0.18.1
+- Math snippets for WGSL.
+- WGSL library based suggestions.
+
 # 0.18
 - Video channels.
 - Debug Render Pass buffers.

@@ -841,7 +841,6 @@ const ShaderHub = {
         const usingWebGPU = this.backend === 'webgpu';
         const library = usingWebGPU ? ShaderCode.WGSL_CODE_LIBRARY : ShaderCode.GLSL_CODE_LIBRARY;
         const availableFunctions = usingWebGPU ? ShaderCode.WGSL_SHADER_FUNCTIONS : ShaderCode.GLSL_SHADER_FUNCTIONS;
-        let iGetSuggestion = null;
 
         customSuggestions.push( ...ShaderCode.COMMON_SHADER_CONSTANTS.map( ( c ) => {
             return { label: c.name, insertText: c.value, detail: c.detail, kind: 'constant' };
@@ -852,55 +851,45 @@ const ShaderHub = {
             return { label: f.name, detail: f.signature, kind: 'function', insertText: f.signature, cursorOffset: f.name.length + 1, selectLength: firstParam.length };
         } ) );
 
-        if ( usingWebGPU )
-        {
-        }
-        else
-        {
-            // Extract function signatures from snippet code
-            const l = ( c ) => [ ...c.matchAll( /(?:float|vec[234]|mat[234]|int|uint|void|bool)\s+(\w+)\s*\(/g ) ];
-            // Get last signature
-            const c = ( d ) => {
-                var u;
-                return ( ( u = l( d ).pop() ) == null ? void 0 : u[1] ) ?? '';
-            };
+        const fnRegex = usingWebGPU
+            ? /fn\s+(\w+)\s*\(/g
+            : /(?:float|vec[234]|mat[234]|int|uint|void|bool)\s+(\w+)\s*\(/g;
 
-            iGetSuggestion = ( d, f, u ) => {
-                const g = c( f.code );
-                const m = g ? f.label ? `${g} (${f.label})` : g : f.label ? `${u.name} (${f.label})` : u.name;
-                const w = [ 'lib', g, u.name, f.label, d.name ].filter( Boolean ).join( ' ' );
-                return {
-                    label: `${m}`,
-                    detail: u.description,
-                    insertText: f.code,
-                    icon: 'BookOpenText',
-                    filterText: w,
-                    sortText: `3_${d.name}_${u.name}_${f.label}`
-                };
-            };
-        }
+        // Extract the last function name from snippet code
+        const lastFnName = ( code ) => [ ...code.matchAll( fnRegex ) ].pop()?.[1] ?? '';
 
-        if ( iGetSuggestion !== null )
+        const iGetSuggestion = ( d, f, u ) => {
+            const g = lastFnName( f.code );
+            const m = g ? f.label ? `${g} (${f.label})` : g : f.label ? `${u.name} (${f.label})` : u.name;
+            const w = [ 'lib', g, u.name, f.label, d.name ].filter( Boolean ).join( ' ' );
+            return {
+                label: m,
+                detail: u.description,
+                insertText: f.code,
+                icon: 'BookOpenText',
+                filterText: w,
+                sortText: `3_${d.name}_${u.name}_${f.label}`
+            };
+        };
+
+        const results = [];
+        for ( const cat of library )
         {
-            const results = [];
-            for ( const cat of library )
+            for ( const snippet of cat.snippets )
             {
-                for ( const snippet of cat.snippets )
-                {
-                    const options = snippet.options ?? [ {
-                        label: '',
-                        code: snippet.code ?? ''
-                    } ];
+                const options = snippet.options ?? [ {
+                    label: '',
+                    code: snippet.code ?? ''
+                } ];
 
-                    for ( const o of options )
-                    {
-                        results.push( iGetSuggestion( cat, o, snippet ) );
-                    }
+                for ( const o of options )
+                {
+                    results.push( iGetSuggestion( cat, o, snippet ) );
                 }
             }
-
-            customSuggestions.push( ...results );
         }
+
+        customSuggestions.push( ...results );
 
         return customSuggestions;
     },

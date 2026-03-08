@@ -940,38 +940,35 @@ fn oklab_mix(colA: vec3f, colB: vec3f, h: f32) -> vec3f
 }`
         }]
     }, {
-        name: "(TODO) Coordinates",
+        name: "Coordinates",
         icon: "Grid3x2",
         snippets: [{
             name: "Rotation",
             description: "Rotate vec2 or vec3 by angle(s)",
             options: [{
                 label: "2D",
-                code: `mat2 rotate_2d(float angle)
+                code: `// Usage: p.xy *= rotate_2d(angle);
+fn rotate_2d(angle: f32) -> mat2x2f
 {
-    float s = sin(angle);
-    float c = cos(angle);
-    return mat2(c, -s, s, c);
-}
-
-// Usage: p.xy *= rotate_2d(angle);`
+    let s: f32 = sin(angle);
+    let c: f32 = cos(angle);
+    return mat2x2f(c, -s, s, c);
+}`
             }, {
                 label: "3D (Euler)",
-                code: `mat2 rotate_2d(float a)
+                dependencies: ["Coordinates/Rotation/2D"],
+                code: `fn euler_rotate(v: vec3f, roll: f32, pitch: f32, yaw: f32) -> vec3f
 {
-    return mat2(cos(a), -sin(a), sin(a), cos(a));
-}
-vec3 euler_rotate(vec3 v, float roll, float pitch, float yaw)
-{
-    v.yz *= rotate_2d(roll);
-    v.xz *= rotate_2d(pitch);
-    v.xy *= rotate_2d(yaw);
-    return v;
+    var p = v;
+    let yz = rotate_2d(roll)   * vec2f(p.y, p.z); p = vec3f(p.x,  yz.x, yz.y);
+    let xz = rotate_2d(pitch)  * vec2f(p.x, p.z); p = vec3f(xz.x, p.y,  xz.y);
+    let xy = rotate_2d(yaw)    * vec2f(p.x, p.y); p = vec3f(xy.x, xy.y, p.z );
+    return p;
 }`
             }, {
                 label: "3D (Axis-Angle)",
                 author: "Xor / Fabrice Neyret (mini.gmshaders.com/p/3d-rotation)",
-                code: `vec3 axis_rotate(vec3 v, vec3 axis, float angle)
+                code: `fn axis_rotate(v: vec3f, axis: vec3f, angle: f32) -> vec3f
 {
     return mix(dot(v, axis) * axis, v, cos(angle))
          + sin(angle) * cross(v, axis);
@@ -982,9 +979,9 @@ vec3 euler_rotate(vec3 v, float roll, float pitch, float yaw)
             description: "Quaternion rotation (vec4: x,y,z,w)",
             options: [{
                 label: "Multiply",
-                code: `vec4 qmul(vec4 a, vec4 b)
+                code: `fn qmul(a: vec4f, b: vec4f) -> vec4f
 {
-    return vec4(
+    return vec4f(
         a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
         a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
         a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w,
@@ -993,29 +990,30 @@ vec3 euler_rotate(vec3 v, float roll, float pitch, float yaw)
 }`
             }, {
                 label: "Slerp",
-                code: `vec4 qslerp(vec4 a, vec4 b, float t)
+                code: `fn qslerp(a: vec4f, b: vec4f, t: f32) -> vec4f
 {
-    float d = dot(a, b);
-    if (d < 0.0) { b = -b; d = -d; }
-    if (d > 0.9995) return normalize(mix(a, b, t));
-    float theta = acos(d);
-    float st = sin(theta);
-    return (sin((1.0 - t) * theta) / st) * a + (sin(t * theta) / st) * b;
+    var bb: vec4f = b;
+    var d: f32 = dot(a, bb);
+    if (d < 0.0) { bb = -bb; d = -d; }
+    if (d > 0.9995) { return normalize(mix(a, bb, t)); }
+    let theta: f32 = acos(d);
+    let st: f32 = sin(theta);
+    return (sin((1.0 - t) * theta) / st) * a + (sin(t * theta) / st) * bb;
 }`
             }, {
                 label: "From Axis-Angle",
-                code: `vec4 qfrom_axis_angle(vec3 axis, float angle)
+                code: `fn qfrom_axis_angle(axis: vec3f, angle: f32) -> vec4f
 {
-    float ha = angle * 0.5;
-    float s = sin(ha);
-    return vec4(normalize(axis) * s, cos(ha));
+    let ha: f32 = angle * 0.5;
+    let s: f32 = sin(ha);
+    return vec4f(normalize(axis) * s, cos(ha));
 }`
             }, {
                 label: "To Mat3",
-                code: `mat3 qto_mat3(vec4 q)
+                code: `fn qto_mat3(q: vec4f) -> mat3x3f
 {
-    float x = q.x, y = q.y, z = q.z, w = q.w;
-    return mat3(
+    let x: f32 = q.x; let y: f32 = q.y; let z: f32 = q.z; let w: f32 = q.w;
+    return mat3x3f(
         1.0 - 2.0*(y*y + z*z), 2.0*(x*y - z*w), 2.0*(x*z + y*w),
         2.0*(x*y + z*w), 1.0 - 2.0*(x*x + z*z), 2.0*(y*z - x*w),
         2.0*(x*z - y*w), 2.0*(y*z + x*w), 1.0 - 2.0*(x*x + y*y)
@@ -1023,7 +1021,7 @@ vec3 euler_rotate(vec3 v, float roll, float pitch, float yaw)
 }`
             }, {
                 label: "Rotate Vec3",
-                code: `vec3 qrotate(vec4 q, vec3 v)
+                code: `fn qrotate(q: vec4f, v: vec3f) -> vec3f
 {
     return v + 2.0 * cross(q.xyz, cross(q.xyz, v) + q.w * v);
 }`
@@ -1033,35 +1031,34 @@ vec3 euler_rotate(vec3 v, float roll, float pitch, float yaw)
             description: "Convert between cartesian and polar/spherical coords",
             options: [{
                 label: "2D: Cartesian → Polar",
-                code: `vec2 to_polar(vec2 p)
+                code: `fn to_polar(p: vec2f) -> vec2f
 {
-    return vec2(length(p), atan(p.y, p.x));
+    return vec2f(length(p), atan2(p.y, p.x));
 }`
             }, {
                 label: "2D: Polar → Cartesian",
-                code: `vec2 to_cartesian(vec2 polar)
+                code: `fn to_cartesian(polar: vec2f) -> vec2f
 {
-    return vec2(polar.x * cos(polar.y), polar.x * sin(polar.y));
+    return vec2f(polar.x * cos(polar.y), polar.x * sin(polar.y));
 }`
             }, {
                 label: "3D: Cartesian → Spherical",
                 code: `// spherical = (r, theta, phi): r=radius, theta=azimuth (xy), phi=polar from +z.
-
-vec3 to_spherical(vec3 p)
+fn to_spherical(p: vec3f) -> vec3f
 {
-    float r = length(p);
-    float theta = atan(p.y, p.x);
-    float phi = (r > 0.0) ? acos(clamp(p.z / r, -1.0, 1.0)) : 0.0;
-    return vec3(r, theta, phi);
+    let r: f32 = length(p);
+    let theta: f32 = atan2(p.y, p.x);
+    let phi: f32 = select(0.0, acos(clamp(p.z / r, -1.0, 1.0)), r > 0.0);
+    return vec3f(r, theta, phi);
 }`
             }, {
                 label: "3D: Spherical → Cartesian",
-                code: `vec3 to_cartesian(vec3 spherical)
+                code: `fn to_cartesian(spherical: vec3f) -> vec3f
 {
-    float r = spherical.x;
-    float theta = spherical.y;
-    float phi = spherical.z;
-    return r * vec3(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
+    let r: f32 = spherical.x;
+    let theta: f32 = spherical.y;
+    let phi: f32 = spherical.z;
+    return r * vec3f(sin(phi) * cos(theta), sin(phi) * sin(theta), cos(phi));
 }`
             }]
         }, {
@@ -1069,28 +1066,27 @@ vec3 to_spherical(vec3 p)
             description: "Repeat space for infinite tiling",
             options: [{
                 label: "Cartesian",
-                code: `vec2 repeat(vec2 p, vec2 size)
+                code: `fn repeat(p: vec2f, size: vec2f) -> vec2f
 {
-    return mod(p + size * 0.5, size) - size * 0.5;
+    return (p + size * 0.5) % size - size * 0.5;
 }`
             }, {
                 label: "Mirror",
-                code: `vec2 mirror_repeat(vec2 p, vec2 size)
+                code: `fn mirror_repeat(p: vec2f, size: vec2f) -> vec2f
 {
-    vec2 half = size * 0.5;
-    vec2 q = mod(p + half, size * 2.0) - size;
+    let half = size * 0.5;
+    let q = (p + half) % (size * 2.0) - size;
     return half - abs(q);
 }`
             }, {
                 label: "Angular",
                 code: `// Repeat by angle; n = number of segments (e.g. 6 for hexagon).
-
-vec2 angular_repeat(vec2 p, float n)
+fn angular_repeat(p: vec2f, n: f32) -> vec2f
 {
-    float a = atan(p.y, p.x);
-    float r = length(p);
-    a = mod(a, 6.28318530718 / n) - 0.5 * 6.28318530718 / n;
-    return vec2(cos(a), sin(a)) * r;
+    var a: f32 = atan2(p.y, p.x);
+    let r: f32 = length(p);
+    a = a % (6.28318530718 / n) - 0.5 * 6.28318530718 / n;
+    return vec2f(cos(a), sin(a)) * r;
 }`
             }]
         }, {
@@ -1100,96 +1096,87 @@ vec2 angular_repeat(vec2 p, float n)
             options: [{
                 label: "Stretched",
                 code: `// Stretched: full resolution to 0–1, non-square screens stretched.
-
-vec2 uv_stretched(vec2 pixel, vec2 res)
+fn uv_stretched(pixel: vec2f, res: vec2f) -> vec2f
 {
     return (pixel - res * 0.5) / res + 0.5;
 }`
             }, {
                 label: "Fit",
                 code: `// Fit: uniform scale, full area visible (letterboxing).
-
-vec2 uv_fit(vec2 pixel, vec2 res)
+fn uv_fit(pixel: vec2f, res: vec2f) -> vec2f
 {
-    vec2 center = pixel - res * 0.5;
+    let center = pixel - res * 0.5;
     return center / max(res.x, res.y) + 0.5;
 }`
             }, {
                 label: "Fill",
                 code: `// Fill: uniform scale, screen fully covered (edges may crop).
-
-vec2 uv_fill(vec2 pixel, vec2 res)
+fn uv_fill(pixel: vec2f, res: vec2f) -> vec2f
 {
-    vec2 center = pixel - res * 0.5;
+    let center = pixel - res * 0.5;
     return center / min(res.x, res.y) + 0.5;
 }`
             }, {
                 label: "Custom Origin",
-                code: `// Custom origin (e.g. vec2(0.5, 1.0) for middle-bottom).
-
-vec2 uv_center_origin(vec2 pixel, vec2 res, vec2 origin)
+                code: `// Custom origin (e.g. vec2f(0.5, 1.0) for middle-bottom).
+fn uv_center_origin(pixel: vec2f, res: vec2f, origin: vec2f) -> vec2f
 {
-    vec2 center = pixel - res * origin;
+    let center = pixel - res * origin;
     return center / min(res.x, res.y) + origin;
 }`
             }, {
                 label: "Aspect Ratio",
                 code: `// Correct aspect ratio so circles stay circular.
-
-vec2 uv_aspect(vec2 uv, vec2 res)
+fn uv_aspect(uv_in: vec2f, res: vec2f) -> vec2f
 {
-    uv -= 0.5;
+    var uv = uv_in - 0.5;
     uv.x *= res.x / res.y;
     return uv + 0.5;
 }`
             }, {
                 label: "Aspect Centered",
                 code: `// Aspect correction, origin at 0,0.
-
-vec2 uv_aspect_centered(vec2 uv, vec2 res)
+fn uv_aspect_centered(uv_in: vec2f, res: vec2f) -> vec2f
 {
-    uv -= 0.5;
+    var uv = uv_in - 0.5;
     uv.x *= res.x / res.y;
     return uv;
 }`
             }, {
                 label: "Fit Texture",
-                code: `// Fit texture with ratio (e.g. vec2(2,1)) to screen, no cropping.
-
-vec2 uv_fit_ratio(vec2 pixel, vec2 res, vec2 ratio)
+                code: `// Fit texture with ratio (e.g. vec2f(2,1)) to screen, no cropping.
+fn uv_fit_ratio(pixel: vec2f, res: vec2f, ratio: vec2f) -> vec2f
 {
-    vec2 res_ratio = res / ratio;
-    vec2 origin = vec2(0.5);
-    vec2 center = pixel - res * origin;
+    let res_ratio = res / ratio;
+    let origin = vec2f(0.5);
+    let center = pixel - res * origin;
     return center / max(res_ratio.x, res_ratio.y) / ratio + origin;
 }`
             }]
         }]
     }, {
-        name: "(TODO) Math",
+        name: "Math",
         icon: "Function",
         snippets: [{
             name: "Remap",
             description: "Map a value from one range to another",
             options: [{
                 label: "Remap",
-                code: `float remap(float value, float in_min, float in_max, float out_min, float out_max)
+                code: `fn remap(value: f32, in_min: f32, in_max: f32, out_min: f32, out_max: f32) -> f32
 {
     return out_min + (out_max - out_min) * (value - in_min) / (in_max - in_min);
 }`
             }, {
                 label: "To Unit",
                 code: `// Linear map [in_min, in_max] → [0, 1]; no clamp (values outside range extrapolate).
-
-float to_unit(float value, float in_min, float in_max)
+fn to_unit(value: f32, in_min: f32, in_max: f32) -> f32
 {
     return (value - in_min) / (in_max - in_min);
 }`
             }, {
                 label: "From Unit",
                 code: `// Linear map [0, 1] → [out_min, out_max]; no clamp (values outside range extrapolate).
-
-float from_unit(float value, float out_min, float out_max)
+fn from_unit(value: f32, out_min: f32, out_max: f32) -> f32
 {
     return out_min + value * (out_max - out_min);
 }`
@@ -1200,16 +1187,16 @@ float from_unit(float value, float out_min, float out_max)
             author: "Inigo Quilez (iquilezles.org/articles/smin)",
             options: [{
                 label: "Smooth Min",
-                code: `float smin(float a, float b, float k)
+                code: `fn smin(a: f32, b: f32, k: f32) -> f32
 {
-    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    let h: f32 = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(b, a, h) - k * h * (1.0 - h);
 }`
             }, {
                 label: "Smooth Max",
-                code: `float smax(float a, float b, float k)
+                code: `fn smax(a: f32, b: f32, k: f32) -> f32
 {
-    float h = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
+    let h: f32 = clamp(0.5 + 0.5 * (b - a) / k, 0.0, 1.0);
     return mix(a, b, h) + k * h * (1.0 - h);
 }`
             }]
@@ -1218,72 +1205,76 @@ float from_unit(float value, float out_min, float out_max)
             description: "Easing curves for animations (t in [0,1])",
             options: [{
                 label: "Quadratic",
-                code: `float ease_in_quad(float t) { return t * t; }
-float ease_out_quad(float t) { return t * (2.0 - t); }
-float ease_in_out_quad(float t) { return t < 0.5 ? 2.0 * t * t : -1.0 + (4.0 - 2.0 * t) * t; }`
+                code: `fn ease_in_quad(t: f32) -> f32 { return t * t; }
+fn ease_out_quad(t: f32) -> f32 { return t * (2.0 - t); }
+fn ease_in_out_quad(t: f32) -> f32 { return select(-1.0 + (4.0 - 2.0 * t) * t, 2.0 * t * t, t < 0.5); }`
             }, {
                 label: "Cubic",
-                code: `float ease_in_cubic(float t) { return t * t * t; }
-float ease_out_cubic(float t) { float u = 1.0 - t; return 1.0 - u * u * u; }
-float ease_in_out_cubic(float t) { return t < 0.5 ? 4.0 * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 3.0) * 0.5; }`
+                code: `fn ease_in_cubic(t: f32) -> f32 { return t * t * t; }
+fn ease_out_cubic(t: f32) -> f32 { let u = 1.0 - t; return 1.0 - u * u * u; }
+fn ease_in_out_cubic(t: f32) -> f32 { return select(1.0 - pow(-2.0 * t + 2.0, 3.0) * 0.5, 4.0 * t * t * t, t < 0.5); }`
             }, {
                 label: "Quartic",
-                code: `float ease_in_quart(float t) { return t * t * t * t; }
-float ease_out_quart(float t) { float u = 1.0 - t; return 1.0 - u * u * u * u; }
-float ease_in_out_quart(float t) { return t < 0.5 ? 8.0 * t * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 4.0) * 0.5; }`
+                code: `fn ease_in_quart(t: f32) -> f32 { return t * t * t * t; }
+fn ease_out_quart(t: f32) -> f32 { let u = 1.0 - t; return 1.0 - u * u * u * u; }
+fn ease_in_out_quart(t: f32) -> f32 { return select(1.0 - pow(-2.0 * t + 2.0, 4.0) * 0.5, 8.0 * t * t * t * t, t < 0.5); }`
             }, {
                 label: "Quintic",
-                code: `float ease_in_quint(float t) { return t * t * t * t * t; }
-float ease_out_quint(float t) { float u = 1.0 - t; return 1.0 - u * u * u * u * u; }
-float ease_in_out_quint(float t) { return t < 0.5 ? 16.0 * t * t * t * t * t : 1.0 - pow(-2.0 * t + 2.0, 5.0) * 0.5; }`
+                code: `fn ease_in_quint(t: f32) -> f32 { return t * t * t * t * t; }
+fn ease_out_quint(t: f32) -> f32 { let u = 1.0 - t; return 1.0 - u * u * u * u * u; }
+fn ease_in_out_quint(t: f32) -> f32 { return select(1.0 - pow(-2.0 * t + 2.0, 5.0) * 0.5, 16.0 * t * t * t * t * t, t < 0.5); }`
             }, {
                 label: "Exponential",
-                code: `float ease_in_expo(float t) { return t <= 0.0 ? 0.0 : pow(2.0, 10.0 * t - 10.0); }
-float ease_out_expo(float t) { return t >= 1.0 ? 1.0 : 1.0 - pow(2.0, -10.0 * t); }
-float ease_in_out_expo(float t)
+                code: `fn ease_in_expo(t: f32) -> f32 { return select(pow(2.0, 10.0 * t - 10.0), 0.0, t <= 0.0); }
+fn ease_out_expo(t: f32) -> f32 { return select(1.0 - pow(2.0, -10.0 * t), 1.0, t >= 1.0); }
+fn ease_in_out_expo(t: f32) -> f32
 {
-    if (t <= 0.0) return 0.0;
-    if (t >= 1.0) return 1.0;
-    return t < 0.5 ? pow(2.0, 20.0 * t - 10.0) * 0.5 : 1.0 - pow(2.0, -20.0 * t + 10.0) * 0.5;
+    if (t <= 0.0) { return 0.0; }
+    if (t >= 1.0) { return 1.0; }
+    return select(1.0 - pow(2.0, -20.0 * t + 10.0) * 0.5, pow(2.0, 20.0 * t - 10.0) * 0.5, t < 0.5);
 }`
             }, {
                 label: "Sine",
-                code: `float ease_in_sine(float t) { return 1.0 - cos(1.57079632679 * t); }
-float ease_out_sine(float t) { return sin(1.57079632679 * t); }
-float ease_in_out_sine(float t) { return -0.5 * (cos(3.14159265359 * t) - 1.0); }`
+                code: `fn ease_in_sine(t: f32) -> f32 { return 1.0 - cos(1.57079632679 * t); }
+fn ease_out_sine(t: f32) -> f32 { return sin(1.57079632679 * t); }
+fn ease_in_out_sine(t: f32) -> f32 { return -0.5 * (cos(3.14159265359 * t) - 1.0); }`
             }, {
                 label: "Circular",
-                code: `float ease_in_circ(float t) { return 1.0 - sqrt(1.0 - t * t); }
-float ease_out_circ(float t) { return sqrt(1.0 - (t - 1.0) * (t - 1.0)); }
-float ease_in_out_circ(float t)
+                code: `fn ease_in_circ(t: f32) -> f32 { return 1.0 - sqrt(1.0 - t * t); }
+fn ease_out_circ(t: f32) -> f32 { return sqrt(1.0 - (t - 1.0) * (t - 1.0)); }
+fn ease_in_out_circ(t: f32) -> f32
 {
-    return t < 0.5
-        ? 0.5 * (1.0 - sqrt(1.0 - 4.0 * t * t))
-        : 0.5 * (sqrt(1.0 - (2.0 * t - 2.0) * (2.0 * t - 2.0)) + 1.0);
+    return select(
+        0.5 * (sqrt(1.0 - (2.0 * t - 2.0) * (2.0 * t - 2.0)) + 1.0),
+        0.5 * (1.0 - sqrt(1.0 - 4.0 * t * t)),
+        t < 0.5
+    );
 }`
             }, {
                 label: "Back",
-                code: `float c1 = 1.70158;
-float c3 = c1 + 1.0;
+                code: `const c1: f32 = 1.70158;
+const c3: f32 = c1 + 1.0;
 
-float ease_in_back(float t) { return c3 * t * t * t - c1 * t * t; }
-float ease_out_back(float t) { float u = 1.0 - t; return 1.0 + c3 * u * u * u + c1 * u * u; }
-float ease_in_out_back(float t)
+fn ease_in_back(t: f32) -> f32 { return c3 * t * t * t - c1 * t * t; }
+fn ease_out_back(t: f32) -> f32 { let u = 1.0 - t; return 1.0 + c3 * u * u * u + c1 * u * u; }
+fn ease_in_out_back(t: f32) -> f32
 {
-    float c2 = c1 * 1.525;
-    return t < 0.5
-        ? (pow(2.0 * t, 2.0) * ((c2 + 1.0) * 2.0 * t - c2)) * 0.5
-        : 0.5 * (pow(2.0 * t - 2.0, 2.0) * ((c2 + 1.0) * (2.0 * t - 2.0) + c2) + 2.0);
+    let c2 = c1 * 1.525;
+    return select(
+        0.5 * (pow(2.0 * t - 2.0, 2.0) * ((c2 + 1.0) * (2.0 * t - 2.0) + c2) + 2.0),
+        (pow(2.0 * t, 2.0) * ((c2 + 1.0) * 2.0 * t - c2)) * 0.5,
+        t < 0.5
+    );
 }`
             }]
         }, {
             name: "Smootherstep",
             description: "Improved smoothstep (C2 continuous)",
             author: "Ken Perlin",
-            code: `float smootherstep(float edge0, float edge1, float x)
+            code: `fn smootherstep(edge0: f32, edge1: f32, x: f32) -> f32
 {
-    x = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
-    return x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
+    let v: f32 = clamp((x - edge0) / (edge1 - edge0), 0.0, 1.0);
+    return v * v * v * (v * (v * 6.0 - 15.0) + 10.0);
 }`
         }, {
             name: "Anti-Aliasing",
@@ -1293,33 +1284,33 @@ float ease_in_out_back(float t)
                 label: "SDF",
                 code: `// For SDFs with known pixel scale (texel size).
 
-float antialias_sdf(float dist, float texel)
+fn antialias_sdf(dist: f32, texel: f32) -> f32
 {
     return clamp(dist / texel + 0.5, 0.0, 1.0);
 }`
             }, {
                 label: "Derivative (fwidth)",
-                code: `float antialias(float d)
+                code: `fn antialias(d: f32) -> f32
 {
-    float w = fwidth(d);
-    float scale = w > 0.0 ? 1.0 / w : 1e7;
+    let w = fwidth(d);
+    let scale = select(1e7, 1.0 / w, w > 0.0);
     return clamp(0.5 + 0.5 * scale * d, 0.0, 1.0);
 }`
             }, {
                 label: "Derivative (L2)",
-                code: `float antialias_l2(float d)
+                code: `fn antialias_l2(d: f32) -> f32
 {
-    vec2 dxy = vec2(dFdx(d), dFdy(d));
-    float w = length(dxy);
-    float scale = w > 0.0 ? 1.0 / w : 1e7;
+    let dxy = vec2f(dpdx(d), dpdy(d));
+    let w = length(dxy);
+    let scale = select(1e7, 1.0 / w, w > 0.0);
     return clamp(0.5 + 0.7 * scale * d, 0.0, 1.0);
 }`
             }, {
                 label: "Derivative (L2 manual)",
-                code: `float antialias_l2_dxy(float d, vec2 dxy)
+                code: `fn antialias_l2_dxy(d: f32, dxy: vec2f) -> f32
 {
-    float w = length(dxy);
-    float scale = w > 0.0 ? 1.0 / w : 1e7;
+    let w = length(dxy);
+    let scale = select(1e7, 1.0 / w, w > 0.0);
     return clamp(0.5 + 0.7 * scale * d, 0.0, 1.0);
 }`
             }]
@@ -3546,60 +3537,60 @@ float antialias_sdf(float dist, float texel)
             description: "Complex number arithmetic (vec2 = real + imaginary)",
             options: [{
                 label: "Multiply / Divide",
-                code: `vec2 cmul(vec2 a, vec2 b)
+                code: `fn cmul(a: vec2f, b: vec2f) -> vec2f
 {
-    return vec2(a.x * b.x - a.y * b.y,
-                a.x * b.y + a.y * b.x);
+    return vec2f(a.x * b.x - a.y * b.y,
+                 a.x * b.y + a.y * b.x);
 }
 
-vec2 cdiv(vec2 a, vec2 b)
+fn cdiv(a: vec2f, b: vec2f) -> vec2f
 {
-    float d = dot(b, b);
-    return vec2(dot(a, b), a.y * b.x - a.x * b.y) / d;
+    let d = dot(b, b);
+    return vec2f(dot(a, b), a.y * b.x - a.x * b.y) / d;
 }
 
-vec2 cconj(vec2 z)
+fn cconj(z: vec2f) -> vec2f
 {
-    return vec2(z.x, -z.y);
+    return vec2f(z.x, -z.y);
 }`
             }, {
                 label: "Exp / Log / Power",
-                code: `float cabs(vec2 z) { return length(z); }
-float carg(vec2 z) { return atan(z.y, z.x); }
+                code: `fn cabs(z: vec2f) -> f32 { return length(z); }
+fn carg(z: vec2f) -> f32 { return atan2(z.y, z.x); }
 
-vec2 cexp(vec2 z)
+fn cexp(z: vec2f) -> vec2f
 {
-    return exp(z.x) * vec2(cos(z.y), sin(z.y));
+    return exp(z.x) * vec2f(cos(z.y), sin(z.y));
 }
 
-vec2 clog(vec2 z)
+fn clog(z: vec2f) -> vec2f
 {
-    return vec2(log(length(z)), atan(z.y, z.x));
+    return vec2f(log(length(z)), atan2(z.y, z.x));
 }
 
-vec2 cpow(vec2 z, float n)
+fn cpow(z: vec2f, n: f32) -> vec2f
 {
-    float r = length(z);
-    float theta = atan(z.y, z.x);
-    return pow(r, n) * vec2(cos(n * theta), sin(n * theta));
+    let r = length(z);
+    let theta = atan2(z.y, z.x);
+    return pow(r, n) * vec2f(cos(n * theta), sin(n * theta));
 }
 
-vec2 csqrt(vec2 z)
+fn csqrt(z: vec2f) -> vec2f
 {
-    float r = length(z);
-    float theta = atan(z.y, z.x);
-    return sqrt(r) * vec2(cos(theta * 0.5), sin(theta * 0.5));
+    let r = length(z);
+    let theta = atan2(z.y, z.x);
+    return sqrt(r) * vec2f(cos(theta * 0.5), sin(theta * 0.5));
 }`
             }, {
                 label: "Trigonometry",
-                code: `vec2 csin(vec2 z)
+                code: `fn csin(z: vec2f) -> vec2f
 {
-    return vec2(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y));
+    return vec2f(sin(z.x) * cosh(z.y), cos(z.x) * sinh(z.y));
 }
 
-vec2 ccos(vec2 z)
+fn ccos(z: vec2f) -> vec2f
 {
-    return vec2(cos(z.x) * cosh(z.y), -sin(z.x) * sinh(z.y));
+    return vec2f(cos(z.x) * cosh(z.y), -sin(z.x) * sinh(z.y));
 }`
             }]
         }]
