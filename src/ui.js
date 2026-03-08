@@ -3792,15 +3792,16 @@ export const ui = {
                 channelOptions.appendChild( panel.root );
                 panel.sameLine();
 
-                if ( channel.category === 'sound' )
+                if ( channel.category === 'sound' || channel.category === 'video' )
                 {
-                    panel.addButton( null, 'PlayButton', ( name, e ) => ShaderHub.playSoundUniformChannel( channelIndex ), { icon: 'Pause', swap: 'Play', title: 'Play/Pause Channel', tooltip: true,
+                    const cat = channel.category[0].toUpperCase() + channel.category.slice( 1 );
+                    panel.addButton( null, 'PlayButton', () => ShaderHub[`play${cat}UniformChannel`]( channelIndex ), { icon: 'Pause', swap: 'Play', title: 'Play/Pause Channel', tooltip: true,
                         className: 'p-0', buttonClass: 'sm ghost' } );
 
-                    panel.addButton( null, 'RewindButton', ( name, e ) => ShaderHub.rewindSoundUniformChannel( channelIndex ), { icon: 'Rewind', title: 'Rewind Channel', tooltip: true,
+                    panel.addButton( null, 'RewindButton', () => ShaderHub[`rewind${cat}UniformChannel`]( channelIndex ), { icon: 'Rewind', title: 'Rewind Channel', tooltip: true,
                         className: 'p-0', buttonClass: 'sm ghost' } );
 
-                    panel.addButton( null, 'MuteButton', ( name, e ) => ShaderHub.muteSoundUniformChannel( channelIndex ), { icon: 'Volume2', swap: 'VolumeOff', title: 'Mute Channel', tooltip: true,
+                    panel.addButton( null, 'MuteButton', () => ShaderHub[`mute${cat}UniformChannel`]( channelIndex ), { icon: 'Volume2', swap: 'VolumeOff', title: 'Mute Channel', tooltip: true,
                         className: 'p-0', buttonClass: 'sm ghost' } );
                 }
 

@@ -1987,6 +1987,54 @@ const ShaderHub = {
         audioData.gain.gain.value = audioData.muted ? 0.0 : 1.0; // mute output
     },
 
+    playVideoUniformChannel( channelIndex )
+    {
+        const pass = this.currentPass;
+        const channel = pass.channels[channelIndex];
+        if ( !channel || channel.category !== 'video' )
+        {
+            return;
+        }
+
+        const videoData = this.videoPlaying[channel.id];
+        const video = videoData.video;
+        if ( video.paused )
+        {
+            video.play();
+        }
+        else
+        {
+            video.pause();
+        }
+    },
+
+    rewindVideoUniformChannel( channelIndex )
+    {
+        const pass = this.currentPass;
+        const channel = pass.channels[channelIndex];
+        if ( !channel || channel.category !== 'video' )
+        {
+            return;
+        }
+
+        const videoData = this.videoPlaying[channel.id];
+        videoData.video.currentTime = 0;
+    },
+
+    muteVideoUniformChannel( channelIndex )
+    {
+        const pass = this.currentPass;
+        const channel = pass.channels[channelIndex];
+        if ( !channel || channel.category !== 'video' )
+        {
+            return;
+        }
+
+        const videoData = this.videoPlaying[channel.id];
+        videoData.muted = !videoData.muted;
+        videoData.video.muted = videoData.muted;
+    },
+
     startCapture( options )
     {
         this.exportFramesCount = parseInt( options.frames ?? 120 );
