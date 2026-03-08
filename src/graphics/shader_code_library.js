@@ -32,7 +32,7 @@ const CONSTANTS_LIBRARY_SNIPPETS = [
 #define G3 0.16666666667
 #define F4 0.30901699437
 #define G4 0.13819660113`
-}];
+    }];
 export const COMMON_SHADER_CONSTANTS = [{
     name: "PI",
     value: "3.14159265359",
@@ -95,6 +95,25 @@ export const COMMON_SHADER_CONSTANTS = [{
     detail: "4D simplex unskew: (1−1/√5)/4"
 }]
 
+export const WGSL_CODE_UTILS = {
+    "hash_u": `fn hash_u(x: u32) -> u32
+{
+    var n: u32 = (x ^ 61u) ^ (x >> 16u);
+    n *= 9u;
+    n = n ^ (n >> 4u);
+    n *= 0x27d4eb2du;
+    return n ^ (n >> 15u);
+}`,
+    "mod289_f": `fn mod289_f(x: f32) -> f32 { return x - floor(x * (1.0 / 289.0)) * 289.0; }`,
+    "mod289_v2": `fn mod289_v2(x: vec2f) -> vec2f { return x - floor(x * (1.0 / 289.0)) * 289.0; }`,
+    "mod289_v3": `fn mod289_v3(x: vec3f) -> vec3f { return x - floor(x * (1.0 / 289.0)) * 289.0; }`,
+    "mod289_v4": `fn mod289_v4(x: vec4f) -> vec4f { return x - floor(x * (1.0 / 289.0)) * 289.0; }`,
+    "permute_f": `fn permute_f(x: f32) -> f32 { return mod289_f(((x * 34.0) + 1.0) * x); }`,
+    "permute_v3": `fn permute_v3(x: vec3f) -> vec3f { return mod289_v3(((x * 34.0) + 1.0) * x); }`,
+    "permute_v4": `fn permute_v4(x: vec4f) -> vec4f { return mod289_v4(((x * 34.0) + 1.0) * x); }`,
+    "taylorInvSqrt_f": `fn taylorInvSqrt_f(r: f32) -> f32 { return 1.79284291400159 - 0.85373472095314 * r; }`,
+    "taylorInvSqrt_v4": `fn taylorInvSqrt_v4(r: vec4f) -> vec4f { return 1.79284291400159 - 0.85373472095314 * r; }`,
+};
 export const WGSL_CODE_LIBRARY = [
     {
         name: "Constants",
@@ -117,8 +136,7 @@ const GOLDEN_ROT3 = mat3x3f(
      0.772087367,  0.494042493,  0.399753815);`
             }
         ]
-    },
-    {
+    }, {
         name: "Noise",
         icon: "Hash",
         snippets: [{
@@ -213,47 +231,23 @@ const GOLDEN_ROT3 = mat3x3f(
             description: "Pseudorandom from i32/vec2i/vec3i seed",
             options: [{
                 label: "i32 → f32",
-                code: `fn hash_u(x: u32) -> u32
-{
-    var n: u32 = (x ^ 61u) ^ (x >> 16u);
-    n *= 9u;
-    n = n ^ (n >> 4u);
-    n *= 0x27d4eb2du;
-    return n ^ (n >> 15u);
-}
-
-fn hash_i(x: i32) -> f32
+                dependencies: ["hash_u"],
+                code: `fn hash_i(x: i32) -> f32
 {
     return f32(hash_u(u32(x))) / 4294967295.0;
 }`
             }, {
                 label: "vec2i → f32",
-                code: `fn hash_u(x: u32) -> u32
-{
-    var n: u32 = (x ^ 61u) ^ (x >> 16u);
-    n *= 9u;
-    n = n ^ (n >> 4u);
-    n *= 0x27d4eb2du;
-    return n ^ (n >> 15u);
-}
-
-fn hash_i(p: vec2i) -> f32
+                dependencies: ["hash_u"],
+                code: `fn hash_i(p: vec2i) -> f32
 {
     let n: u32 = hash_u(u32(p.x)) + hash_u(u32(p.y)) * 57u;
     return f32(hash_u(n)) / 4294967295.0;
 }`
             }, {
                 label: "vec2i → vec2f",
-                code: `fn hash_u(x: u32) -> u32
-{
-    var n: u32 = (x ^ 61u) ^ (x >> 16u);
-    n *= 9u;
-    n = n ^ (n >> 4u);
-    n *= 0x27d4eb2du;
-    return n ^ (n >> 15u);
-}
-
-fn hash_i2(p: vec2i) -> vec2f
+                dependencies: ["hash_u"],
+                code: `fn hash_i2(p: vec2i) -> vec2f
 {
     let n: u32 = hash_u(u32(p.x)) + hash_u(u32(p.y)) * 57u;
     return vec2f(
@@ -263,32 +257,16 @@ fn hash_i2(p: vec2i) -> vec2f
 }`
             }, {
                 label: "vec3i → f32",
-                code: `fn hash_u(x: u32) -> u32
-{
-    var n: u32 = (x ^ 61u) ^ (x >> 16u);
-    n *= 9u;
-    n = n ^ (n >> 4u);
-    n *= 0x27d4eb2du;
-    return n ^ (n >> 15u);
-}
-
-fn hash_i(p: vec3i) -> f32
+                dependencies: ["hash_u"],
+                code: `fn hash_i(p: vec3i) -> f32
 {
     let n: u32 = hash_u(u32(p.x)) + hash_u(u32(p.y)) * 57u + hash_u(u32(p.z)) * 131u;
     return f32(hash_u(n)) / 4294967295.0;
 }`
             }, {
                 label: "vec3i → vec2f",
-                code: `fn hash_u(x: u32) -> u32
-{
-    var n: u32 = (x ^ 61u) ^ (x >> 16u);
-    n *= 9u;
-    n = n ^ (n >> 4u);
-    n *= 0x27d4eb2du;
-    return n ^ (n >> 15u);
-}
-
-fn hash_i2(p: vec3i) -> vec2f
+                dependencies: ["hash_u"],
+                code: `fn hash_i2(p: vec3i) -> vec2f
 {
     let n: u32 = hash_u(u32(p.x)) + hash_u(u32(p.y)) * 57u + hash_u(u32(p.z)) * 131u;
     return vec2f(
@@ -298,16 +276,8 @@ fn hash_i2(p: vec3i) -> vec2f
 }`
             }, {
                 label: "vec3i → vec3f",
-                code: `fn hash_u(x: u32) -> u32
-{
-    var n: u32 = (x ^ 61u) ^ (x >> 16u);
-    n *= 9u;
-    n = n ^ (n >> 4u);
-    n *= 0x27d4eb2du;
-    return n ^ (n >> 15u);
-}
-
-fn hash_i3(p: vec3i) -> vec3f
+                dependencies: ["hash_u"],
+                code: `fn hash_i3(p: vec3i) -> vec3f
 {
     let n: u32 = hash_u(u32(p.x)) + hash_u(u32(p.y)) * 57u + hash_u(u32(p.z)) * 131u;
     return vec3f(
@@ -322,14 +292,8 @@ fn hash_i3(p: vec3i) -> vec3f
             description: "Smooth interpolated value noise",
             options: [{
                 label: "2D",
-                code: `fn rand1(p: vec2f) -> f32
-{
-    var p3: vec3f = fract(vec3f(p.xyx) * 0.1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
-}
-
-fn value_noise(p: vec2f) -> f32
+                dependencies: ["Noise/Random/2D → 1D"],
+                code: `fn value_noise(p: vec2f) -> f32
 {
     let i: vec2f = floor(p);
     var f: vec2f = fract(p);
@@ -342,14 +306,8 @@ fn value_noise(p: vec2f) -> f32
 }`
             }, {
                 label: "3D",
-                code: `fn rand1(p: vec3f) -> f32
-{
-    var p4 = fract(vec4f(p.xyzx) * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
-    p4 += dot(p4, p4.wzxy + 33.33);
-    return fract((p4.x + p4.y + p4.z) * p4.w);
-}
-
-fn value_noise(p: vec3f) -> f32
+                dependencies: ["Noise/Random/3D → 1D"],
+                code: `fn value_noise(p: vec3f) -> f32
 {
     let i: vec3f = floor(p);
     var f: vec3f = fract(p);
@@ -370,19 +328,8 @@ fn value_noise(p: vec3f) -> f32
 }`
             }, {
                 label: "4D",
-                code: `fn rand4(p: vec4f) -> vec4f
-{
-    var p4 = fract(p * vec4f(0.1031, 0.1030, 0.0973, 0.1099));
-    p4 += dot(p4, p4.wzxy + 33.33);
-    return fract(vec4f(
-        (p4.x + p4.y) * p4.z,
-        (p4.y + p4.z) * p4.w,
-        (p4.z + p4.w) * p4.x,
-        (p4.w + p4.x) * p4.y
-    ));
-}
-
-fn value_noise(p: vec4f) -> f32
+                dependencies: ["Noise/Random/4D → 4D"],
+                code: `fn value_noise(p: vec4f) -> f32
 {
     let i: vec4f = floor(p);
     var f: vec4f = fract(p);
@@ -413,174 +360,169 @@ fn value_noise(p: vec4f) -> f32
 }`
             }]
         }, {
-            name: "(TODO) Simplex Noise",
+            name: "Simplex Noise",
             description: "Classic simplex noise",
             author: "Ashima Arts, Stefan Gustavson (webgl-noise)",
             options: [{
                 label: "2D",
-                code: `vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
-
-float simplex_noise(vec2 v)
+                dependencies: ["mod289_v2", "mod289_v3", "permute_v3"],
+                code: `fn simplex_noise(v: vec2f) -> f32
 {
-    const vec4 C = vec4(0.211324865405187, 0.366025403784439,
-                       -0.577350269189626, 0.024390243902439);
-    vec2 i = floor(v + dot(v, C.yy));
-    vec2 x0 = v - i + dot(i, C.xx);
-    vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-    vec4 x12 = x0.xyxy + C.xxzz;
-    x12.xy -= i1;
-    i = mod289(i);
-    vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0))
-                            + i.x + vec3(0.0, i1.x, 1.0));
-    vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy),
-                            dot(x12.zw, x12.zw)), 0.0);
+    const C: vec4f = vec4f(0.211324865405187, 0.366025403784439,
+                          -0.577350269189626, 0.024390243902439);
+    var i = floor(v + dot(v, C.yy));
+    let x0 = v - i + dot(i, C.xx);
+    let i1 = select(vec2f(0.0, 1.0), vec2f(1.0, 0.0), x0.x > x0.y);
+    var x12 = x0.xyxy + C.xxzz;
+    x12.x -= i1.x;
+    x12.y -= i1.y;
+    i = mod289_v2(i);
+    let p = permute_v3(permute_v3(i.y + vec3f(0.0, i1.y, 1.0))
+                                 + i.x + vec3f(0.0, i1.x, 1.0));
+    var m = max(0.5 - vec3f(dot(x0, x0), dot(x12.xy, x12.xy),
+                            dot(x12.zw, x12.zw)), vec3f(0.0));
     m = m * m;
     m = m * m;
-    vec3 x = 2.0 * fract(p * C.www) - 1.0;
-    vec3 h = abs(x) - 0.5;
-    vec3 ox = floor(x + 0.5);
-    vec3 a0 = x - ox;
+    let x = 2.0 * fract(p * C.www) - 1.0;
+    let h = abs(x) - 0.5;
+    let ox = floor(x + 0.5);
+    let a0 = x - ox;
     m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
-    vec3 g;
+    var g = vec3f(0.0);
     g.x = a0.x * x0.x + h.x * x0.y;
-    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+    g.y = a0.y * x12.x + h.y * x12.y;
+    g.z = a0.z * x12.z + h.z * x12.w;
     return 130.0 * dot(m, g);
 }`
             }, {
                 label: "3D",
-                code: `vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec4 permute(vec4 x) { return mod289(((x * 34.0) + 1.0) * x); }
-vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-
-float simplex_noise(vec3 v)
+                dependencies: ["mod289_v3", "mod289_v4", "permute_v4", "taylorInvSqrt_v4"],
+                code: `fn simplex_noise(v: vec3f) -> f32
 {
-    const vec2 C = vec2(1.0 / 6.0, 1.0 / 3.0);
-    const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-    vec3 i = floor(v + dot(v, C.yyy));
-    vec3 x0 = v - i + dot(i, C.xxx);
-    vec3 g = step(x0.yzx, x0.xyz);
-    vec3 l = 1.0 - g;
-    vec3 i1 = min(g.xyz, l.zxy);
-    vec3 i2 = max(g.xyz, l.zxy);
-    vec3 x1 = x0 - i1 + C.xxx;
-    vec3 x2 = x0 - i2 + C.yyy;
-    vec3 x3 = x0 - D.yyy;
-    i = mod289(i);
-    vec4 p = permute(permute(permute(
-        i.z + vec4(0.0, i1.z, i2.z, 1.0))
-        + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-        + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-    float n_ = 0.142857142857;
-    vec3 ns = n_ * D.wyz - D.xzx;
-    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
-    vec4 x_ = floor(j * ns.z);
-    vec4 y_ = floor(j - 7.0 * x_);
-    vec4 x = x_ * ns.x + ns.yyyy;
-    vec4 y = y_ * ns.x + ns.yyyy;
-    vec4 h = 1.0 - abs(x) - abs(y);
-    vec4 b0 = vec4(x.xy, y.xy);
-    vec4 b1 = vec4(x.zw, y.zw);
-    vec4 s0 = floor(b0) * 2.0 + 1.0;
-    vec4 s1 = floor(b1) * 2.0 + 1.0;
-    vec4 sh = -step(h, vec4(0.0));
-    vec4 a0 = b0.xzyw + s0.xzyw * sh.xxyy;
-    vec4 a1 = b1.xzyw + s1.xzyw * sh.zzww;
-    vec3 p0 = vec3(a0.xy, h.x);
-    vec3 p1 = vec3(a0.zw, h.y);
-    vec3 p2 = vec3(a1.xy, h.z);
-    vec3 p3 = vec3(a1.zw, h.w);
-    vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+    const C: vec2f = vec2f(1.0 / 6.0, 1.0 / 3.0);
+    const D: vec4f = vec4f(0.0, 0.5, 1.0, 2.0);
+    var i = floor(v + dot(v, C.yyy));
+    let x0 = v - i + dot(i, C.xxx);
+    let g = step(x0.yzx, x0.xyz);
+    let l = 1.0 - g;
+    let i1 = min(g.xyz, l.zxy);
+    let i2 = max(g.xyz, l.zxy);
+    let x1 = x0 - i1 + C.xxx;
+    let x2 = x0 - i2 + C.yyy;
+    let x3 = x0 - D.yyy;
+    i = mod289_v3(i);
+    let p = permute_v4(permute_v4(permute_v4(
+        i.z + vec4f(0.0, i1.z, i2.z, 1.0))
+        + i.y + vec4f(0.0, i1.y, i2.y, 1.0))
+        + i.x + vec4f(0.0, i1.x, i2.x, 1.0));
+    let n_ = 0.142857142857;
+    let ns = n_ * D.wyz - D.xzx;
+    let j = p - 49.0 * floor(p * ns.z * ns.z);
+    let x_ = floor(j * ns.z);
+    let y_ = floor(j - 7.0 * x_);
+    let x = x_ * ns.x + ns.yyyy;
+    let y = y_ * ns.x + ns.yyyy;
+    let h = 1.0 - abs(x) - abs(y);
+    let b0 = vec4f(x.xy, y.xy);
+    let b1 = vec4f(x.zw, y.zw);
+    let s0 = floor(b0) * 2.0 + 1.0;
+    let s1 = floor(b1) * 2.0 + 1.0;
+    let sh = -step(h, vec4f(0.0));
+    let a0 = b0.xzyw + s0.xzyw * sh.xxyy;
+    let a1 = b1.xzyw + s1.xzyw * sh.zzww;
+    var p0 = vec3f(a0.xy, h.x);
+    var p1 = vec3f(a0.zw, h.y);
+    var p2 = vec3f(a1.xy, h.z);
+    var p3 = vec3f(a1.zw, h.w);
+    let norm = taylorInvSqrt_v4(vec4f(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
     p0 *= norm.x;
     p1 *= norm.y;
     p2 *= norm.z;
     p3 *= norm.w;
-    vec4 m = max(0.5 - vec4(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), 0.0);
+    var m = max(0.5 - vec4f(dot(x0, x0), dot(x1, x1), dot(x2, x2), dot(x3, x3)), vec4f(0.0));
     m = m * m;
-    return 105.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
+    return 105.0 * dot(m * m, vec4f(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
 }`
             }, {
                 label: "4D",
-                code: `vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-float mod289(float x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec4 permute(vec4 x) { return mod289(((x * 34.0) + 1.0) * x); }
-float permute(float x) { return mod289(((x * 34.0) + 1.0) * x); }
-vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-float taylorInvSqrt(float r) { return 1.79284291400159 - 0.85373472095314 * r; }
-
-vec4 grad4(float j, vec4 ip)
+                dependencies: ["mod289_v4", "mod289_f", "permute_v4", "permute_f", "taylorInvSqrt_v4"],
+                code: `fn grad4(j: f32, ip: vec4f) -> vec4f
 {
-    const vec4 ones = vec4(1.0, 1.0, 1.0, -1.0);
-    vec4 p, s;
-    p.xyz = floor(fract(vec3(j) * ip.xyz) * 7.0) * ip.z - 1.0;
-    p.w = 1.5 - dot(abs(p.xyz), ones.xyz);
-    s = vec4(lessThan(p, vec4(0.0)));
-    p.xyz = p.xyz + (s.xyz * 2.0 - 1.0) * s.www;
+    const ones: vec4f = vec4f(1.0, 1.0, 1.0, -1.0);
+    var p = vec4f(0.0);
+    let pxyz = floor(fract(vec3f(j) * ip.xyz) * 7.0) * ip.z - 1.0;
+    p.x = pxyz.x; p.y = pxyz.y; p.z = pxyz.z;
+    p.w = 1.5 - dot(abs(pxyz), ones.xyz);
+    let s = select(vec4f(0.0), vec4f(1.0), p < vec4f(0.0));
+    let new_xyz = p.xyz + (s.xyz * 2.0 - 1.0) * s.www;
+    p.x = new_xyz.x; p.y = new_xyz.y; p.z = new_xyz.z;
     return p;
 }
 
-float simplex_noise(vec4 v)
+fn simplex_noise(v: vec4f) -> f32
 {
-    const float F4 = 0.309016994374947451;
-    const vec4 C = vec4(0.138196601125011, 0.276393202250021, 0.414589803375032, -0.447213595499958);
-    vec4 i = floor(v + dot(v, vec4(F4)));
-    vec4 x0 = v - i + dot(i, C.xxxx);
-    vec4 i0;
-    vec3 isX = step(x0.yzw, x0.xxx);
-    vec3 isYZ = step(x0.zww, x0.yyz);
+    const F4: f32 = 0.309016994374947451;
+    const C: vec4f = vec4f(0.138196601125011, 0.276393202250021, 0.414589803375032, -0.447213595499958);
+    var i = floor(v + dot(v, vec4f(F4)));
+    let x0 = v - i + dot(i, C.xxxx);
+    var i0 = vec4f(0.0);
+    let isX = step(x0.yzw, x0.xxx);
+    let isYZ = step(x0.zww, x0.yyz);
     i0.x = isX.x + isX.y + isX.z;
-    i0.yzw = 1.0 - isX;
+    i0.y = 1.0 - isX.x;
+    i0.z = 1.0 - isX.y;
+    i0.w = 1.0 - isX.z;
     i0.y += isYZ.x + isYZ.y;
-    i0.zw += 1.0 - isYZ.xy;
+    i0.z += 1.0 - isYZ.x;
+    i0.w += 1.0 - isYZ.y;
     i0.z += isYZ.z;
     i0.w += 1.0 - isYZ.z;
-    vec4 i3 = clamp(i0, 0.0, 1.0);
-    vec4 i2 = clamp(i0 - 1.0, 0.0, 1.0);
-    vec4 i1 = clamp(i0 - 2.0, 0.0, 1.0);
-    vec4 x1 = x0 - i1 + C.xxxx;
-    vec4 x2 = x0 - i2 + C.yyyy;
-    vec4 x3 = x0 - i3 + C.zzzz;
-    vec4 x4 = x0 + C.wwww;
-    i = mod289(i);
-    float j0 = permute(permute(permute(permute(i.w) + i.z) + i.y) + i.x);
-    vec4 j1 = permute(permute(permute(permute(
-        i.w + vec4(i1.w, i2.w, i3.w, 1.0))
-        + i.z + vec4(i1.z, i2.z, i3.z, 1.0))
-        + i.y + vec4(i1.y, i2.y, i3.y, 1.0))
-        + i.x + vec4(i1.x, i2.x, i3.x, 1.0));
-    vec4 ip = vec4(1.0 / 294.0, 1.0 / 49.0, 1.0 / 7.0, 0.0);
-    vec4 p0 = grad4(j0, ip);
-    vec4 p1 = grad4(j1.x, ip);
-    vec4 p2 = grad4(j1.y, ip);
-    vec4 p3 = grad4(j1.z, ip);
-    vec4 p4 = grad4(j1.w, ip);
-    vec4 norm = taylorInvSqrt(vec4(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
+    let i3 = clamp(i0, vec4f(0.0), vec4f(1.0));
+    let i2 = clamp(i0 - 1.0, vec4f(0.0), vec4f(1.0));
+    let i1 = clamp(i0 - 2.0, vec4f(0.0), vec4f(1.0));
+    let x1 = x0 - i1 + C.xxxx;
+    let x2 = x0 - i2 + C.yyyy;
+    let x3 = x0 - i3 + C.zzzz;
+    let x4 = x0 + C.wwww;
+    i = mod289_v4(i);
+    let j0 = permute_f(permute_f(permute_f(permute_f(i.w) + i.z) + i.y) + i.x);
+    let j1 = permute_v4(permute_v4(permute_v4(permute_v4(
+        i.w + vec4f(i1.w, i2.w, i3.w, 1.0))
+        + i.z + vec4f(i1.z, i2.z, i3.z, 1.0))
+        + i.y + vec4f(i1.y, i2.y, i3.y, 1.0))
+        + i.x + vec4f(i1.x, i2.x, i3.x, 1.0));
+    let ip = vec4f(1.0 / 294.0, 1.0 / 49.0, 1.0 / 7.0, 0.0);
+    var p0 = grad4(j0, ip);
+    var p1 = grad4(j1.x, ip);
+    var p2 = grad4(j1.y, ip);
+    var p3 = grad4(j1.z, ip);
+    var p4 = grad4(j1.w, ip);
+    let norm = taylorInvSqrt_v4(vec4f(dot(p0, p0), dot(p1, p1), dot(p2, p2), dot(p3, p3)));
     p0 *= norm.x;
     p1 *= norm.y;
     p2 *= norm.z;
     p3 *= norm.w;
-    p4 *= taylorInvSqrt(dot(p4, p4));
-    vec3 m0 = max(0.6 - vec3(dot(x0, x0), dot(x1, x1), dot(x2, x2)), 0.0);
-    vec2 m1 = max(0.6 - vec2(dot(x3, x3), dot(x4, x4)), 0.0);
+    p4 *= taylorInvSqrt_f(dot(p4, p4));
+    var m0 = max(0.6 - vec3f(dot(x0, x0), dot(x1, x1), dot(x2, x2)), vec3f(0.0));
+    var m1 = max(0.6 - vec2f(dot(x3, x3), dot(x4, x4)), vec2f(0.0));
     m0 = m0 * m0;
     m1 = m1 * m1;
-    return 49.0 * (dot(m0 * m0, vec3(dot(p0, x0), dot(p1, x1), dot(p2, x2)))
-        + dot(m1 * m1, vec2(dot(p3, x3), dot(p4, x4))));
+    return 49.0 * (dot(m0 * m0, vec3f(dot(p0, x0), dot(p1, x1), dot(p2, x2)))
+        + dot(m1 * m1, vec2f(dot(p3, x3), dot(p4, x4))));
 }`
             }]
         }, {
-            name: "(TODO) FBM (Fractal Brownian Motion)",
+            name: "FBM (Fractal Brownian Motion)",
             description: "Layered noise with configurable octaves",
             options: [{
                 label: "2D",
-                code: `float fbm(vec2 p)
+                dependencies: ["Noise/Value Noise/2D"],
+                code: `fn fbm(p: vec2f) -> f32
 {
-    float value = 0.0;
-    float amplitude = 0.5;
-    float frequency = 1.0;
-    for (int i = 0; i < 6; i++)
+    var value: f32 = 0.0;
+    var amplitude: f32 = 0.5;
+    var frequency: f32 = 1.0;
+    for (var i: i32 = 0; i < 6; i++)
     {
         value += amplitude * value_noise(p * frequency);
         frequency *= 2.0;
@@ -590,12 +532,13 @@ float simplex_noise(vec4 v)
 }`
             }, {
                 label: "3D",
-                code: `float fbm(vec3 p)
+                dependencies: ["Noise/Value Noise/3D"],
+                code: `fn fbm(p: vec3f) -> f32
 {
-    float value = 0.0;
-    float amplitude = 0.5;
-    float frequency = 1.0;
-    for (int i = 0; i < 6; i++)
+    var value: f32 = 0.0;
+    var amplitude: f32 = 0.5;
+    var frequency: f32 = 1.0;
+    for (var i: i32 = 0; i < 6; i++)
     {
         value += amplitude * value_noise(p * frequency);
         frequency *= 2.0;
@@ -605,95 +548,97 @@ float simplex_noise(vec4 v)
 }`
             }]
         }, {
-            name: "(TODO) Voronoi",
-            description: "Distance to nearest cell center; Voronoi diagram–style cell noise",
+            name: "Voronoi",
+            description: "Cell noise returning F1 distance, F2 distance, and cell ID (includes rand)",
             author: "Georgy Voronoi (Voronoi diagrams)",
             options: [{
                 label: "2D",
-                code: `float voronoi(vec2 p)
+                dependencies: ["Noise/Random/2D → 1D", "Noise/Random/2D → 2D"],
+                code: `fn voronoi(p: vec2f) -> vec3f
 {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    float min_dist = 1.0;
-    for (int y = -1; y <= 1; y++)
+    let i = floor(p);
+    let f = fract(p);
+    var f1 = 1.0; var f2 = 1.0;
+    var cell_id = vec2f(0.0);
+    for (var y: i32 = -1; y <= 1; y++)
     {
-        for (int x = -1; x <= 1; x++)
+        for (var x: i32 = -1; x <= 1; x++)
         {
-            vec2 neighbor = vec2(float(x), float(y));
-            vec2 point = rand2(i + neighbor);
-            vec2 diff = neighbor + point - f;
-            float dist = length(diff);
-            min_dist = min(min_dist, dist);
+            let neighbor = vec2f(f32(x), f32(y));
+            let point = rand2(i + neighbor);
+            let dist = length(neighbor + point - f);
+            if (dist < f1) { f2 = f1; f1 = dist; cell_id = i + neighbor; }
+            else if (dist < f2) { f2 = dist; }
         }
     }
-    return min_dist;
+    return vec3f(f1, f2, rand1(cell_id));
 }`
             }, {
                 label: "3D",
-                code: `float voronoi(vec3 p)
+                dependencies: ["Noise/Random/2D → 1D", "Noise/Random/3D → 3D"],
+                code: `fn voronoi(p: vec3f) -> vec3f
 {
-    vec3 i = floor(p);
-    vec3 f = fract(p);
-    float min_dist = 1.0;
-    for (int z = -1; z <= 1; z++)
+    let i = floor(p);
+    let f = fract(p);
+    var f1 = 1.0; var f2 = 1.0;
+    var cell_id = vec3f(0.0);
+    for (var z: i32 = -1; z <= 1; z++)
     {
-        for (int y = -1; y <= 1; y++)
+        for (var y: i32 = -1; y <= 1; y++)
         {
-            for (int x = -1; x <= 1; x++)
+            for (var x: i32 = -1; x <= 1; x++)
             {
-                vec3 neighbor = vec3(float(x), float(y), float(z));
-                vec3 point = rand3(i + neighbor);
-                vec3 diff = neighbor + point - f;
-                float dist = length(diff);
-                min_dist = min(min_dist, dist);
+                let neighbor = vec3f(f32(x), f32(y), f32(z));
+                let point = rand3(i + neighbor);
+                let dist = length(neighbor + point - f);
+                if (dist < f1) { f2 = f1; f1 = dist; cell_id = i + neighbor; }
+                else if (dist < f2) { f2 = dist; }
             }
         }
     }
-    return min_dist;
+    return vec3f(f1, f2, rand1(cell_id.xy + vec2f(cell_id.z * 31.0)));
 }`
             }]
         }, {
-            name: "(TODO) Worley Noise",
-            description: "Cellular texture basis function; F1 distance to nearest feature point",
+            name: "Worley Noise",
+            description: "F1 distance to nearest feature point (includes rand)",
             author: "Steven Worley (SIGGRAPH 1996)",
             options: [{
                 label: "2D",
-                code: `float worley(vec2 p)
+                dependencies: ["Noise/Random/2D → 2D"],
+                code: `fn worley(p: vec2f) -> f32
 {
-    vec2 i = floor(p);
-    vec2 f = fract(p);
-    float min_dist = 1.0;
-    for (int y = -1; y <= 1; y++)
+    let i: vec2f = floor(p);
+    let f: vec2f = fract(p);
+    var min_dist: f32 = 1.0;
+    for (var y: i32 = -1; y <= 1; y++)
     {
-        for (int x = -1; x <= 1; x++)
+        for (var x: i32 = -1; x <= 1; x++)
         {
-            vec2 neighbor = vec2(float(x), float(y));
-            vec2 point = rand2(i + neighbor);
-            vec2 diff = neighbor + point - f;
-            float dist = length(diff);
-            min_dist = min(min_dist, dist);
+            let neighbor: vec2f = vec2f(f32(x), f32(y));
+            let point: vec2f = rand2(i + neighbor);
+            min_dist = min(min_dist, length(neighbor + point - f));
         }
     }
     return min_dist;
 }`
             }, {
                 label: "3D",
-                code: `float worley(vec3 p)
+                dependencies: ["Noise/Random/3D → 3D"],
+                code: `fn worley(p: vec3f) -> f32
 {
-    vec3 i = floor(p);
-    vec3 f = fract(p);
-    float min_dist = 1.0;
-    for (int z = -1; z <= 1; z++)
+    let i: vec3f = floor(p);
+    let f: vec3f = fract(p);
+    var min_dist: f32 = 1.0;
+    for (var z: i32 = -1; z <= 1; z++)
     {
-        for (int y = -1; y <= 1; y++)
+        for (var y: i32 = -1; y <= 1; y++)
         {
-            for (int x = -1; x <= 1; x++)
+            for (var x: i32 = -1; x <= 1; x++)
             {
-                vec3 neighbor = vec3(float(x), float(y), float(z));
-                vec3 point = rand3(i + neighbor);
-                vec3 diff = neighbor + point - f;
-                float dist = length(diff);
-                min_dist = min(min_dist, dist);
+                let neighbor: vec3f = vec3f(f32(x), f32(y), f32(z));
+                let point: vec3f = rand3(i + neighbor);
+                min_dist = min(min_dist, length(neighbor + point - f));
             }
         }
     }
@@ -701,62 +646,65 @@ float simplex_noise(vec4 v)
 }`
             }]
         }, {
-            name: "(TODO) Turbulence",
+            name: "Turbulence",
             description: "Fake fluid dynamics via layered rotated sine waves",
             author: "Xor (mini.gmshaders.com/p/turbulence)",
             options: [{
                 label: "2D",
-                code: `// Turbulence: layered sine-wave displacements with golden-ratio rotation.
-// TURB_NUM, TURB_AMP, TURB_SPEED, TURB_FREQ, TURB_EXP – see Constants.
+                code: `// Turbulence — 2D | Xor (mini.gmshaders.com/p/turbulence)
+// Layered sine-wave displacements with golden-ratio rotation.
 #define TURB_NUM   10.0
 #define TURB_AMP   0.7
 #define TURB_SPEED 0.3
 #define TURB_FREQ  2.0
 #define TURB_EXP   1.4
 
-const mat2 GOLDEN_ROT2 = mat2(
+const GOLDEN_ROT2: mat2x2f = mat2x2f(
     -0.73736887808,  0.67549029426,
     -0.67549029426, -0.73736887808);
 
-vec2 turbulence(vec2 pos, float time)
+fn turbulence(pos: vec2f, time: f32) -> vec2f
 {
-    float freq = TURB_FREQ;
-    mat2 rot = GOLDEN_ROT2;
-    for (float i = 0.0; i < TURB_NUM; i++)
+    var p = pos;
+    var freq: f32 = TURB_FREQ;
+    var rot = GOLDEN_ROT2;
+    for (var i: f32 = 0.0; i < TURB_NUM; i += 1.0)
     {
-        float phase = freq * (pos * rot).y + TURB_SPEED * time + i;
-        pos += TURB_AMP * rot[0] * sin(phase) / freq;
+        let phase = freq * (p * rot).y + TURB_SPEED * time + i;
+        p += TURB_AMP * rot[0] * sin(phase) / freq;
         rot *= GOLDEN_ROT2;
         freq *= TURB_EXP;
     }
-    return pos;
+    return p;
 }`
             }, {
                 label: "3D",
-                code: `// Turbulence 3D: layered sine-wave displacements with golden-ratio rotation.
+                code: `// Turbulence — 3D | Xor (mini.gmshaders.com/p/turbulence)
+// Layered sine-wave displacements with golden-ratio rotation.
 #define TURB_NUM   10.0
 #define TURB_AMP   0.7
 #define TURB_SPEED 0.3
 #define TURB_FREQ  2.0
 #define TURB_EXP   1.4
 
-const mat3 GOLDEN_ROT3 = mat3(
-    -0.571464913, +0.814921382, +0.096597072,
-    -0.278044873, -0.303026659, +0.911518454,
-    +0.772087367, +0.494042493, +0.399753815);
+const GOLDEN_ROT3: mat3x3f = mat3x3f(
+    -0.571464913,  0.814921382,  0.096597072,
+    -0.278044873, -0.303026659,  0.911518454,
+     0.772087367,  0.494042493,  0.399753815);
 
-vec3 turbulence(vec3 pos, float time)
+fn turbulence(pos: vec3f, time: f32) -> vec3f
 {
-    float freq = TURB_FREQ;
-    mat3 rot = GOLDEN_ROT3;
-    for (float i = 0.0; i < TURB_NUM; i++)
+    var p = pos;
+    var freq: f32 = TURB_FREQ;
+    var rot = GOLDEN_ROT3;
+    for (var i: f32 = 0.0; i < TURB_NUM; i += 1.0)
     {
-        float phase = freq * (pos * rot).y + TURB_SPEED * time + i;
-        pos += TURB_AMP * rot[0] * sin(phase) / freq;
+        let phase = freq * (p * rot).y + TURB_SPEED * time + i;
+        p += TURB_AMP * rot[0] * sin(phase) / freq;
         rot *= GOLDEN_ROT3;
         freq *= TURB_EXP;
     }
-    return pos;
+    return p;
 }`
             }]
         }, {
@@ -802,7 +750,7 @@ fn dot_noise_fbm(p: vec3f) -> f32
 }`
         }]
     }, {
-        name: "(TODO) Color",
+        name: "Color",
         icon: "Contrast",
         snippets: [{
             name: "HSV ↔ RGB",
@@ -810,54 +758,55 @@ fn dot_noise_fbm(p: vec3f) -> f32
             author: "Sam Hocevar (RGB→HSV)",
             options: [{
                 label: "HSV → RGB",
-                code: `vec3 hsv_to_rgb(vec3 c)
+                code: `fn hsv_to_rgb(c: vec3f) -> vec3f
 {
-    vec3 p = abs(fract(c.xxx + vec3(1.0, 2.0/3.0, 1.0/3.0)) * 6.0 - 3.0);
-    return c.z * mix(vec3(1.0), clamp(p - 1.0, 0.0, 1.0), c.y);
+    let p = abs(fract(c.xxx + vec3f(1.0, 2.0/3.0, 1.0/3.0)) * 6.0 - 3.0);
+    return c.z * mix(vec3f(1.0), clamp(p - 1.0, vec3f(0.0), vec3f(1.0)), c.y);
 }`
             }, {
                 label: "RGB → HSV",
-                code: `vec3 rgb_to_hsv(vec3 c)
+                code: `fn rgb_to_hsv(c: vec3f) -> vec3f
 {
-    vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
-    vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
-    vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
-    float d = q.x - min(q.w, q.y);
-    float e = 1.0e-10;
-    return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+    let K = vec4f(0.0, -1.0/3.0, 2.0/3.0, -1.0);
+    let p = mix(vec4f(c.bg, K.wz), vec4f(c.gb, K.xy), vec4f(step(c.b, c.g)));
+    let q = mix(vec4f(p.xyw, c.r), vec4f(c.r, p.yzx), vec4f(step(p.x, c.r)));
+    let d = q.x - min(q.w, q.y);
+    let e = 1.0e-10;
+    return vec3f(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
 }`
             }]
         }, {
             name: "Cosine Palette",
             description: "Cosine gradient palette (4 vec3 parameters)",
             author: "Inigo Quilez (iquilezles.org/articles/palettes)",
-            code: `vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d)
+            dependencies: ["TAU"],
+            code: `fn palette(t: f32, a: vec3f, b: vec3f, c: vec3f, d: vec3f) -> vec3f
 {
     return a + b * cos(TAU * (c * t + d));
 }
 
 // Example presets:
-// Rainbow:   palette(t, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.0, 0.33, 0.67))
-// Warm:      palette(t, vec3(0.5), vec3(0.5), vec3(1.0), vec3(0.0, 0.1, 0.2))
-// Cool:      palette(t, vec3(0.5), vec3(0.5), vec3(1.0, 1.0, 0.5), vec3(0.8, 0.9, 0.3))`
+// Rainbow:   palette(t, vec3f(0.5), vec3f(0.5), vec3f(1.0), vec3f(0.0, 0.33, 0.67))
+// Warm:      palette(t, vec3f(0.5), vec3f(0.5), vec3f(1.0), vec3f(0.0, 0.1, 0.2))
+// Cool:      palette(t, vec3f(0.5), vec3f(0.5), vec3f(1.0, 1.0, 0.5), vec3f(0.8, 0.9, 0.3))`
         }, {
             name: "Linear ↔ sRGB",
             description: "Linear ↔ sRGB with IEC 61966-2-1 transfer curve",
             options: [{
                 label: "Linear → sRGB",
-                code: `vec3 linear_to_srgb(vec3 c)
+                code: `fn linear_to_srgb(c: vec3f) -> vec3f
 {
-    vec3 lo = 12.92 * c;
-    vec3 hi = 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055;
-    return mix(lo, hi, step(vec3(0.0031308), c));
+    let lo = 12.92 * c;
+    let hi = 1.055 * pow(c, vec3f(1.0 / 2.4)) - 0.055;
+    return mix(lo, hi, step(vec3f(0.0031308), c));
 }`
             }, {
                 label: "sRGB → Linear",
-                code: `vec3 srgb_to_linear(vec3 c)
+                code: `fn srgb_to_linear(c: vec3f) -> vec3f
 {
-    vec3 lo = c / 12.92;
-    vec3 hi = pow((c + 0.055) / 1.055, vec3(2.4));
-    return mix(lo, hi, step(vec3(0.04045), c));
+    let lo = c / 12.92;
+    let hi = pow((c + vec3f(0.055)) / 1.055, vec3f(2.4));
+    return mix(lo, hi, step(vec3f(0.04045), c));
 }`
             }]
         }, {
@@ -866,38 +815,35 @@ fn dot_noise_fbm(p: vec3f) -> f32
             author: "Krzysztof Narkowicz (ACES), Erik Reinhard et al.",
             options: [{
                 label: "ACES",
-                code: `vec3 tonemap_aces(vec3 x)
+                code: `fn tonemap_aces(x: vec3f) -> vec3f
 {
-    float a = 2.51;
-    float b = 0.03;
-    float c = 2.43;
-    float d = 0.59;
-    float e = 0.14;
-    return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+    return clamp(
+        (x * (2.51 * x + vec3f(0.03))) / (x * (2.43 * x + vec3f(0.59)) + vec3f(0.14)),
+        vec3f(0.0), vec3f(1.0));
 }`
             }, {
                 label: "Reinhard",
-                code: `vec3 tonemap_reinhard(vec3 x)
+                code: `fn tonemap_reinhard(x: vec3f) -> vec3f
 {
-    return x / (1.0 + x);
+    return x / (vec3f(1.0) + x);
 }`
             }, {
                 label: "Reinhard (white point)",
-                code: `vec3 tonemap_reinhard_ext(vec3 x, float white)
+                code: `fn tonemap_reinhard_ext(x: vec3f, white: f32) -> vec3f
 {
-    vec3 num = x * (1.0 + x / (white * white));
-    return num / (1.0 + x);
+    let num = x * (vec3f(1.0) + x / (white * white));
+    return num / (vec3f(1.0) + x);
 }`
             }]
         }, {
             name: "Hue Rotation",
             description: "Rotate the hue of an RGB color",
             author: "W3C CSS Filters (hue-rotate matrix)",
-            code: `vec3 hue_rotate(vec3 col, float angle)
+            code: `fn hue_rotate(col: vec3f, angle: f32) -> vec3f
 {
-    float s = sin(angle);
-    float c = cos(angle);
-    mat3 m = mat3(
+    let s = sin(angle);
+    let c = cos(angle);
+    let m = mat3x3f(
         0.299 + 0.701*c + 0.168*s,  0.587 - 0.587*c + 0.330*s,  0.114 - 0.114*c - 0.497*s,
         0.299 - 0.299*c - 0.328*s,  0.587 + 0.413*c + 0.035*s,  0.114 - 0.114*c + 0.292*s,
         0.299 - 0.300*c + 1.250*s,  0.587 - 0.588*c - 1.050*s,  0.114 + 0.886*c - 0.203*s
@@ -908,9 +854,9 @@ fn dot_noise_fbm(p: vec3f) -> f32
             name: "Luminance",
             description: "Perceived brightness of an RGB color",
             author: "ITU-R BT.709 coefficients",
-            code: `float luminance(vec3 col)
+            code: `fn luminance(col: vec3f) -> f32
 {
-    return dot(col, vec3(0.2126, 0.7152, 0.0722));
+    return dot(col, vec3f(0.2126, 0.7152, 0.0722));
 }`
         }, {
             name: "OKLab - OKLch",
@@ -918,18 +864,15 @@ fn dot_noise_fbm(p: vec3f) -> f32
             author: "Björn Ottosson (bottosson.github.io/posts/oklab)",
             options: [{
                 label: "RGB → OKLab",
-                code: `float ok_cbrt(float x)
-{
-    return sign(x) * pow(abs(x), 1.0 / 3.0);
-}
+                code: `fn ok_cbrt(x: f32) -> f32 { return sign(x) * pow(abs(x), 1.0 / 3.0); }
 
-vec3 rgb_to_oklab(vec3 c)
+fn rgb_to_oklab(c: vec3f) -> vec3f
 {
-    float l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
-    float m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
-    float s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
-    float l_ = ok_cbrt(l), m_ = ok_cbrt(m), s_ = ok_cbrt(s);
-    return vec3(
+    let l = 0.4122214708 * c.r + 0.5363325363 * c.g + 0.0514459929 * c.b;
+    let m = 0.2119034982 * c.r + 0.6806995451 * c.g + 0.1073969566 * c.b;
+    let s = 0.0883024619 * c.r + 0.2817188376 * c.g + 0.6299787005 * c.b;
+    let l_ = ok_cbrt(l); let m_ = ok_cbrt(m); let s_ = ok_cbrt(s);
+    return vec3f(
         0.2104542553 * l_ + 0.7936177850 * m_ - 0.0040720468 * s_,
         1.9779984951 * l_ - 2.4285922050 * m_ + 0.4505937099 * s_,
         0.0259040371 * l_ + 0.7827717662 * m_ - 0.8086757660 * s_
@@ -937,13 +880,13 @@ vec3 rgb_to_oklab(vec3 c)
 }`
             }, {
                 label: "OKLab → RGB",
-                code: `vec3 oklab_to_rgb(vec3 c)
+                code: `fn oklab_to_rgb(c: vec3f) -> vec3f
 {
-    float l_ = c.r + 0.3963377774 * c.g + 0.2158037573 * c.b;
-    float m_ = c.r - 0.1055613458 * c.g - 0.0638541728 * c.b;
-    float s_ = c.r - 0.0894841775 * c.g - 1.2914855480 * c.b;
-    float l = l_ * l_ * l_, m = m_ * m_ * m_, s = s_ * s_ * s_;
-    return vec3(
+    let l_ = c.r + 0.3963377774 * c.g + 0.2158037573 * c.b;
+    let m_ = c.r - 0.1055613458 * c.g - 0.0638541728 * c.b;
+    let s_ = c.r - 0.0894841775 * c.g - 1.2914855480 * c.b;
+    let l = l_ * l_ * l_; let m = m_ * m_ * m_; let s = s_ * s_ * s_;
+    return vec3f(
         4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
         -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
         -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s
@@ -951,19 +894,19 @@ vec3 rgb_to_oklab(vec3 c)
 }`
             }, {
                 label: "OKLab → OKLch",
-                code: `vec3 oklab_to_oklch(vec3 ok)
+                code: `fn oklab_to_oklch(ok: vec3f) -> vec3f
 {
-    float L = ok.r;
-    float C = sqrt(ok.g * ok.g + ok.b * ok.b);
-    float H = atan(ok.b, ok.g);
-    return vec3(L, C, H);
+    let L = ok.r;
+    let C = sqrt(ok.g * ok.g + ok.b * ok.b);
+    let H = atan2(ok.b, ok.g);
+    return vec3f(L, C, H);
 }`
             }, {
                 label: "OKLch → OKLab",
-                code: `vec3 oklch_to_oklab(vec3 lch)
+                code: `fn oklch_to_oklab(lch: vec3f) -> vec3f
 {
-    float L = lch.r, C = lch.g, H = lch.b;
-    return vec3(L, C * cos(H), C * sin(H));
+    let L = lch.r; let C = lch.g; let H = lch.b;
+    return vec3f(L, C * cos(H), C * sin(H));
 }`
             }, {
                 label: "OKLab Mix",
@@ -971,29 +914,29 @@ vec3 rgb_to_oklab(vec3 c)
                 code: `// Perceptually uniform mix via LMS cone space. Compact, no separate conversion helpers.
 // https://bottosson.github.io/posts/oklab
 
-vec3 oklab_mix(vec3 colA, vec3 colB, float h)
+fn oklab_mix(colA: vec3f, colB: vec3f, h: f32) -> vec3f
 {
-    const mat3 kCONEtoLMS = mat3(
+    const kCONEtoLMS: mat3x3f = mat3x3f(
          0.4121656120,  0.5362752080,  0.0514575653,
          0.2118591070,  0.6807189584,  0.1074065790,
          0.0883097947,  0.2818474174,  0.6302613616);
-    const mat3 kLMStoCONE = mat3(
+    const kLMStoCONE: mat3x3f = mat3x3f(
          4.0767245293, -3.3072168827,  0.2307590544,
         -1.2681437731,  2.6093323231, -0.3411344290,
         -0.0041119885, -0.7034763098,  1.7068625689);
-    vec3 lmsA = pow(kCONEtoLMS * colA, vec3(1.0 / 3.0));
-    vec3 lmsB = pow(kCONEtoLMS * colB, vec3(1.0 / 3.0));
-    vec3 lms = mix(lmsA, lmsB, h);
+    let lmsA = pow(kCONEtoLMS * colA, vec3f(1.0 / 3.0));
+    let lmsB = pow(kCONEtoLMS * colB, vec3f(1.0 / 3.0));
+    let lms = mix(lmsA, lmsB, h);
     return kLMStoCONE * (lms * lms * lms);
 }`
             }]
         }, {
             name: "Saturation",
             description: "Adjust color saturation; s=0 grayscale, s=1 original, s>1 oversaturated",
-            code: `vec3 saturation(vec3 col, float sat)
+            code: `fn saturation(col: vec3f, sat: f32) -> vec3f
 {
-    float luminance = dot(col, vec3(0.2126, 0.7152, 0.0722));
-    return mix(vec3(luminance), col, sat);
+    let lum = dot(col, vec3f(0.2126, 0.7152, 0.0722));
+    return mix(vec3f(lum), col, sat);
 }`
         }]
     }, {
@@ -1891,7 +1834,7 @@ vec3 ray_triangle(vec3 ro, vec3 rd, vec3 v0, vec3 v1, vec3 v2)
 vec3 triangle_normal(vec3 v0, vec3 v1, vec3 v2) { return normalize(cross(v1 - v0, v2 - v0)); }`
             }]
         }]
-}];
+    }];
 export const WGSL_SHADER_FUNCTIONS = [{
     name: "abs",
     signature: "abs(x)",
@@ -2310,6 +2253,9 @@ export const WGSL_SHADER_FUNCTIONS = [{
     description: "Load a uniform value from workgroup memory with implicit barrier"
 }];
 
+export const GLSL_CODE_UTILS = {
+    "hash_u": ``
+};
 export const GLSL_CODE_LIBRARY = [
     {
         name: "Constants",
@@ -2821,35 +2767,37 @@ float simplex_noise(vec4 v)
             }]
         }, {
             name: "Voronoi",
-            description: "Distance to nearest cell center; Voronoi diagram–style cell noise",
+            description: "Cell noise returning F1 distance, F2 distance, and cell ID (includes rand)",
             author: "Georgy Voronoi (Voronoi diagrams)",
             options: [{
                 label: "2D",
-                code: `float voronoi(vec2 p)
+                code: `vec3 voronoi(vec2 p)
 {
     vec2 i = floor(p);
     vec2 f = fract(p);
-    float min_dist = 1.0;
+    float f1 = 1.0, f2 = 1.0;
+    vec2 cell_id = vec2(0.0);
     for (int y = -1; y <= 1; y++)
     {
         for (int x = -1; x <= 1; x++)
         {
             vec2 neighbor = vec2(float(x), float(y));
             vec2 point = rand2(i + neighbor);
-            vec2 diff = neighbor + point - f;
-            float dist = length(diff);
-            min_dist = min(min_dist, dist);
+            float dist = length(neighbor + point - f);
+            if (dist < f1) { f2 = f1; f1 = dist; cell_id = i + neighbor; }
+            else if (dist < f2) { f2 = dist; }
         }
     }
-    return min_dist;
+    return vec3(f1, f2, rand1(cell_id));
 }`
             }, {
                 label: "3D",
-                code: `float voronoi(vec3 p)
+                code: `vec3 voronoi(vec3 p)
 {
     vec3 i = floor(p);
     vec3 f = fract(p);
-    float min_dist = 1.0;
+    float f1 = 1.0, f2 = 1.0;
+    vec3 cell_id = vec3(0.0);
     for (int z = -1; z <= 1; z++)
     {
         for (int y = -1; y <= 1; y++)
@@ -2858,18 +2806,18 @@ float simplex_noise(vec4 v)
             {
                 vec3 neighbor = vec3(float(x), float(y), float(z));
                 vec3 point = rand3(i + neighbor);
-                vec3 diff = neighbor + point - f;
-                float dist = length(diff);
-                min_dist = min(min_dist, dist);
+                float dist = length(neighbor + point - f);
+                if (dist < f1) { f2 = f1; f1 = dist; cell_id = i + neighbor; }
+                else if (dist < f2) { f2 = dist; }
             }
         }
     }
-    return min_dist;
+    return vec3(f1, f2, rand1(cell_id.xy + cell_id.z * 31.0));
 }`
             }]
         }, {
             name: "Worley Noise",
-            description: "Cellular texture basis function; F1 distance to nearest feature point",
+            description: "F1 distance to nearest feature point (includes rand)",
             author: "Steven Worley (SIGGRAPH 1996)",
             options: [{
                 label: "2D",
@@ -2884,9 +2832,7 @@ float simplex_noise(vec4 v)
         {
             vec2 neighbor = vec2(float(x), float(y));
             vec2 point = rand2(i + neighbor);
-            vec2 diff = neighbor + point - f;
-            float dist = length(diff);
-            min_dist = min(min_dist, dist);
+            min_dist = min(min_dist, length(neighbor + point - f));
         }
     }
     return min_dist;
@@ -2906,9 +2852,7 @@ float simplex_noise(vec4 v)
             {
                 vec3 neighbor = vec3(float(x), float(y), float(z));
                 vec3 point = rand3(i + neighbor);
-                vec3 diff = neighbor + point - f;
-                float dist = length(diff);
-                min_dist = min(min_dist, dist);
+                min_dist = min(min_dist, length(neighbor + point - f));
             }
         }
     }
@@ -2921,7 +2865,8 @@ float simplex_noise(vec4 v)
             author: "Xor (mini.gmshaders.com/p/turbulence)",
             options: [{
                 label: "2D",
-                code: `// Turbulence: layered sine-wave displacements with golden-ratio rotation.
+                code: `// Turbulence — 2D | Xor (mini.gmshaders.com/p/turbulence)
+// Turbulence: layered sine-wave displacements with golden-ratio rotation.
 // TURB_NUM, TURB_AMP, TURB_SPEED, TURB_FREQ, TURB_EXP – see Constants.
 #define TURB_NUM   10.0
 #define TURB_AMP   0.7
@@ -2948,7 +2893,8 @@ vec2 turbulence(vec2 pos, float time)
 }`
             }, {
                 label: "3D",
-                code: `// Turbulence 3D: layered sine-wave displacements with golden-ratio rotation.
+                code: `// Turbulence — 3D | Xor (mini.gmshaders.com/p/turbulence)
+// Turbulence 3D: layered sine-wave displacements with golden-ratio rotation.
 #define TURB_NUM   10.0
 #define TURB_AMP   0.7
 #define TURB_SPEED 0.3
@@ -3045,6 +2991,7 @@ float dot_noise_fbm(vec3 p)
             name: "Cosine Palette",
             description: "Cosine gradient palette (4 vec3 parameters)",
             author: "Inigo Quilez (iquilezles.org/articles/palettes)",
+            dependencies: ["TAU"],
             code: `vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d)
 {
     return a + b * cos(TAU * (c * t + d));
@@ -4105,7 +4052,7 @@ vec3 ray_triangle(vec3 ro, vec3 rd, vec3 v0, vec3 v1, vec3 v2)
 vec3 triangle_normal(vec3 v0, vec3 v1, vec3 v2) { return normalize(cross(v1 - v0, v2 - v0)); }`
             }]
         }]
-}];
+    }];
 export const GLSL_SHADER_FUNCTIONS = [{
     name: "abs",
     signature: "abs(x)",

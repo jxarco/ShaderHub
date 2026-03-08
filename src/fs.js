@@ -343,7 +343,7 @@ class FS
             { id: FS.USERS_COLLECTION_ID, name: 'users' },
             { id: FS.ASSETS_COLLECTION_ID, name: 'assets' },
             { id: FS.INTERACTIONS_COLLECTION_ID, name: 'interactions' },
-            { id: FS.COLLECTIONS_COLLECTION_ID, name: 'collections' },
+            { id: FS.COLLECTIONS_COLLECTION_ID, name: 'collections' }
         ];
 
         const backup = {
@@ -354,7 +354,7 @@ class FS
 
         for ( const col of collections )
         {
-            console.log( `Backing up ${ col.name }...` );
+            console.log( `Backing up ${col.name}...` );
             const docs = [];
             const limit = 100;
             let offset = 0;
@@ -375,8 +375,8 @@ class FS
                 offset += limit;
             }
 
-            backup.collections[ col.name ] = { total: docs.length, documents: docs };
-            console.log( `  ${ col.name }: ${ docs.length } documents` );
+            backup.collections[col.name] = { total: docs.length, documents: docs };
+            console.log( `  ${col.name}: ${docs.length} documents` );
         }
 
         const json = JSON.stringify( backup, null, 2 );
@@ -384,7 +384,7 @@ class FS
         const url = URL.createObjectURL( blob );
         const a = document.createElement( 'a' );
         a.href = url;
-        a.download = `shaderhub-dbs-${ new Date().toISOString().slice( 0, 10 ) }.json`;
+        a.download = `shaderhub-dbs-${new Date().toISOString().slice( 0, 10 )}.json`;
         a.click();
         URL.revokeObjectURL( url );
 
@@ -412,12 +412,12 @@ class FS
             fileOffset += 100;
         }
 
-        console.log( `  Found ${ files.length } files, downloading...` );
+        console.log( `  Found ${files.length} files, downloading...` );
 
         for ( let i = 0; i < files.length; i++ )
         {
-            const file = files[ i ];
-            console.log( `  [${ i + 1 }/${ files.length }] ${ file.name }` );
+            const file = files[i];
+            console.log( `  [${i + 1}/${files.length}] ${file.name}` );
             try
             {
                 const data = await this.storage.getFileDownload( {
@@ -428,7 +428,7 @@ class FS
             }
             catch ( err )
             {
-                console.error( `  Failed to download ${ file.name }:`, err.message );
+                console.error( `  Failed to download ${file.name}:`, err.message );
             }
         }
 
@@ -436,7 +436,7 @@ class FS
         const zipUrl = URL.createObjectURL( zipBlob );
         const zipLink = document.createElement( 'a' );
         zipLink.href = zipUrl;
-        zipLink.download = `shaderhub-files-${ new Date().toISOString().slice( 0, 10 ) }.zip`;
+        zipLink.download = `shaderhub-files-${new Date().toISOString().slice( 0, 10 )}.zip`;
         zipLink.click();
         URL.revokeObjectURL( zipUrl );
 

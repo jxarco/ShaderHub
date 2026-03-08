@@ -22,7 +22,7 @@ export const ORDER_BY_MAPPING = {
     'popular': { field: 'like_count', direction: 'desc' },
     'trending': { field: 'view_count', direction: 'desc' },
     'recent': { field: '$createdAt', direction: 'desc' },
-    'a-z': { field: 'name', direction: 'asc' },
+    'a-z': { field: 'name', direction: 'asc' }
 };
 
 export const UNIFORM_CHANNELS_COUNT = 4;
@@ -44,7 +44,7 @@ export const DEFAULT_UNIFORM_FIELDS = {
         { name: 'delta', size: 2 }, // Delta movement (dx, dy)
         { name: 'press', size: 1 }, // Mouse down state (-1 or button)
         { name: 'click', size: 1 }, // Mouse pressed/clicked state
-        { name: 'scroll', size: 1 }, // Mouse scroll
+        { name: 'scroll', size: 1 } // Mouse scroll
     ]
 };
 

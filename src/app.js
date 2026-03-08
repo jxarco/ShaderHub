@@ -45,9 +45,7 @@ const ShaderHub = {
     {
         const date = Date.now(), yt = new Date( date );
         this.currentDate = yt;
-        this.date = [yt.getFullYear(), yt.getMonth(), yt.getDate(), date % 864e5 / 1e3],
-
-        this.audioContext = new AudioContext( { sampleRate: 48000 } );
+        this.date = [ yt.getFullYear(), yt.getMonth(), yt.getDate(), date % 864e5 / 1e3 ], this.audioContext = new AudioContext( { sampleRate: 48000 } );
         this.shaderPreviewPath = `${this.imagesRootPath}/shader_preview.png`;
 
         const params = new URLSearchParams( window.location.search );
@@ -154,7 +152,7 @@ const ShaderHub = {
             if ( !this._lastShaderCompilationWithErrors && !this._compilingShader )
             {
                 await pass.execute( this.renderer );
-                if( pass.forceScreen ) break;
+                if ( pass.forceScreen ) break;
             }
         }
 
@@ -759,13 +757,13 @@ const ShaderHub = {
         const typeGen = ( t ) => `<span class="text-info font-code text-xs">(${usingWebGPU ? t : Constants.WGSL_TO_GLSL[t]})</span>`;
         const valueGen = ( v ) => `<span class="font-medium">${v}</span>`;
 
-        if( name == 'iTime' ) return `${typeGen( 'f32' )} ${valueGen( this.elapsedTime.toFixed( 3 ) )}`;
-        if( name == 'iTimeDelta' ) return `${typeGen( 'f32' )} ${valueGen( this.timeDelta.toFixed( 3 ) )}`;
-        if( name == 'iFrame' ) return `${typeGen( 'i32' )} ${valueGen( this.frameCount.toString() )}`;
-        if( name == 'iResolution' ) return `${typeGen( 'vec2f' )} ${valueGen( `${this.resolutionX}, ${this.resolutionY}` )}`;
-        if( name == 'iDate' ) return `${typeGen( 'vec4f' )} ${valueGen( `${this.date[0]}, ${this.date[1]}, ${this.date[2]}, ${this.date[3]}` )}`;
-        if( /^iChannel[0-9]$/.test( name ) ) return `${typeGen( 'texture_2d' )}`;
-        if( name == 'iMouse' )
+        if ( name == 'iTime' ) return `${typeGen( 'f32' )} ${valueGen( this.elapsedTime.toFixed( 3 ) )}`;
+        if ( name == 'iTimeDelta' ) return `${typeGen( 'f32' )} ${valueGen( this.timeDelta.toFixed( 3 ) )}`;
+        if ( name == 'iFrame' ) return `${typeGen( 'i32' )} ${valueGen( this.frameCount.toString() )}`;
+        if ( name == 'iResolution' ) return `${typeGen( 'vec2f' )} ${valueGen( `${this.resolutionX}, ${this.resolutionY}` )}`;
+        if ( name == 'iDate' ) return `${typeGen( 'vec4f' )} ${valueGen( `${this.date[0]}, ${this.date[1]}, ${this.date[2]}, ${this.date[3]}` )}`;
+        if ( /^iChannel[0-9]$/.test( name ) ) return `${typeGen( 'texture_2d' )}`;
+        if ( name == 'iMouse' )
         {
             return [
                 `${typeGen( 'vec2f' )} pos: ${valueGen( `${this.mousePosition[0]}, ${this.mousePosition[1]}` )}`,
@@ -773,16 +771,16 @@ const ShaderHub = {
                 `${typeGen( 'vec2f' )} delta: ${valueGen( `${this.lastMousePosition[0] - this.mousePosition[0]}, ${this.lastMousePosition[1] - this.mousePosition[1]}` )}`,
                 `${typeGen( 'f32' )} press: ${valueGen( `${this._mouseDown ?? -1.0}` )}`,
                 `${typeGen( 'f32' )} click: ${valueGen( `${this._mousePressed ?? -1.0}` )}`,
-                `${typeGen( 'f32' )} scroll: ${valueGen( `${this.mouseScroll}` )}`,
+                `${typeGen( 'f32' )} scroll: ${valueGen( `${this.mouseScroll}` )}`
             ].join( '<br>' );
         }
-        if( !this.currentPass ) return null;
+        if ( !this.currentPass ) return null;
 
-        const u = this.currentPass.uniforms.find( (u) => u.name === name );
-        if( u ) return `${typeGen( u.type )} ${valueGen( u.value )}`;
+        const u = this.currentPass.uniforms.find( ( u ) => u.name === name );
+        if ( u ) return `${typeGen( u.type )} ${valueGen( u.value )}`;
 
         const d = this.currentPass.defines[name];
-        if( d !== undefined ) return `${valueGen( d )}`;
+        if ( d !== undefined ) return `${valueGen( d )}`;
 
         return null;
     },
@@ -819,33 +817,32 @@ const ShaderHub = {
         const availableFunctions = usingWebGPU ? ShaderCode.WGSL_SHADER_FUNCTIONS : ShaderCode.GLSL_SHADER_FUNCTIONS;
         let iGetSuggestion = null;
 
-        customSuggestions.push( ...ShaderCode.COMMON_SHADER_CONSTANTS.map( c => {
-            return { label: c.name, insertText: c.value, detail: c.detail, kind: 'constant' }
+        customSuggestions.push( ...ShaderCode.COMMON_SHADER_CONSTANTS.map( ( c ) => {
+            return { label: c.name, insertText: c.value, detail: c.detail, kind: 'constant' };
         } ) );
 
-        customSuggestions.push( ...availableFunctions.map( f => {
+        customSuggestions.push( ...availableFunctions.map( ( f ) => {
             const firstParam = f.signature.match( /\(([^,)]+)/ )?.[1]?.trim() ?? '';
-            return { label: f.name, detail: f.signature, kind: 'function', insertText: f.signature, cursorOffset: f.name.length + 1, selectLength: firstParam.length }
+            return { label: f.name, detail: f.signature, kind: 'function', insertText: f.signature, cursorOffset: f.name.length + 1, selectLength: firstParam.length };
         } ) );
 
-        if( usingWebGPU )
+        if ( usingWebGPU )
         {
-
         }
         else
         {
             // Extract function signatures from snippet code
-            const l = c => [...c.matchAll(/(?:float|vec[234]|mat[234]|int|uint|void|bool)\s+(\w+)\s*\(/g)];
+            const l = ( c ) => [ ...c.matchAll( /(?:float|vec[234]|mat[234]|int|uint|void|bool)\s+(\w+)\s*\(/g ) ];
             // Get last signature
-            const c = d => {
+            const c = ( d ) => {
                 var u;
-                return ( ( u = l( d ).pop() ) == null ? void 0 : u[ 1 ] ) ?? "";
-            }
+                return ( ( u = l( d ).pop() ) == null ? void 0 : u[1] ) ?? '';
+            };
 
             iGetSuggestion = ( d, f, u ) => {
                 const g = c( f.code );
                 const m = g ? f.label ? `${g} (${f.label})` : g : f.label ? `${u.name} (${f.label})` : u.name;
-                const w = ["lib", g, u.name, f.label, d.name].filter( Boolean ).join( " " );
+                const w = [ 'lib', g, u.name, f.label, d.name ].filter( Boolean ).join( ' ' );
                 return {
                     label: `${m}`,
                     detail: u.description,
@@ -853,23 +850,23 @@ const ShaderHub = {
                     icon: 'BookOpenText',
                     filterText: w,
                     sortText: `3_${d.name}_${u.name}_${f.label}`
-                }
+                };
             };
         }
 
-        if( iGetSuggestion !== null )
+        if ( iGetSuggestion !== null )
         {
             const results = [];
-            for( const cat of library )
+            for ( const cat of library )
             {
-                for( const snippet of cat.snippets )
+                for ( const snippet of cat.snippets )
                 {
-                    const options = snippet.options ?? [{
-                        label: "",
-                        code: snippet.code ?? ""
-                    }];
+                    const options = snippet.options ?? [ {
+                        label: '',
+                        code: snippet.code ?? ''
+                    } ];
 
-                    for( const o of options )
+                    for ( const o of options )
                     {
                         results.push( iGetSuggestion( cat, o, snippet ) );
                     }
@@ -884,12 +881,61 @@ const ShaderHub = {
 
     updateCurrentSuggestions()
     {
-        if( !ui.editor )
+        if ( !ui.editor )
         {
             return;
         }
 
         ui.editor.setCustomSuggestions( this.getCurrentSuggestions() );
+    },
+
+    getSnippetCode( snippet, usingWebGPU )
+    {
+        const utilsLib = usingWebGPU ? ShaderCode.WGSL_CODE_UTILS : ShaderCode.GLSL_CODE_UTILS;
+        const codeLib = usingWebGPU ? ShaderCode.WGSL_CODE_LIBRARY : ShaderCode.GLSL_CODE_LIBRARY;
+
+        const seen = new Set();
+        const parts = [];
+
+        const resolveSnippetObj = ( s ) => {
+            for ( const dep of ( s.dependencies ?? [] ) ) resolveDep( dep );
+            if ( s.code ) parts.push( s.code );
+        };
+
+        const resolveDep = ( id ) => {
+            if ( seen.has( id ) ) return;
+            seen.add( id );
+
+            // Named shader constants (as #define)
+            const constant = ShaderCode.COMMON_SHADER_CONSTANTS?.find( c => c.name === id );
+            if ( constant ) { parts.push( `#define ${constant.name} ${constant.value}` ); return; }
+
+            // Utility functions (mod289_v3, hash_u, …)
+            if ( utilsLib?.[id] ) { parts.push( utilsLib[id] ); return; }
+
+            // Full snippets from code library (using paths)
+            const [ catName, snipName, optLabel ] = id.split( '/' );
+            const cat = codeLib?.find( ( c ) => c.name === catName );
+            const snip = cat?.snippets?.find( ( s ) => s.name === snipName );
+            if ( !snip ) return;
+
+            if ( optLabel )
+            {
+                const opt = snip.options?.find( ( o ) => o.label === optLabel );
+                if ( opt ) resolveSnippetObj( opt );
+            }
+            else if ( snip.code )
+            {
+                resolveSnippetObj( snip );
+            }
+            else if ( snip.options?.[0] )
+            {
+                resolveSnippetObj( snip.options[0] );
+            }
+        };
+
+        resolveSnippetObj( snippet );
+        return parts.join( '\n\n' );
     },
 
     getShaderPreviewName( uid )
@@ -989,7 +1035,7 @@ const ShaderHub = {
 
                 // Update user shader count
                 ui.dbUser = await fs.updateDocument( FS.USERS_COLLECTION_ID, curUser['$id'], {
-                    'shader_count': parseInt( curUser['shader_count'] ) + 1,
+                    'shader_count': parseInt( curUser['shader_count'] ) + 1
                 } );
 
                 this.shader.uid = result['$id'];
@@ -1063,7 +1109,7 @@ const ShaderHub = {
 
             // Update user shader count
             ui.dbUser = await fs.updateDocument( FS.USERS_COLLECTION_ID, curUser['$id'], {
-                'shader_count': Math.max( parseInt( curUser['shader_count'] ) - 1, 0 ) ,
+                'shader_count': Math.max( parseInt( curUser['shader_count'] ) - 1, 0 )
             } );
 
             // Shader files
@@ -1078,7 +1124,7 @@ const ShaderHub = {
 
             dialog.destroy();
 
-            if( onDelete )
+            if ( onDelete )
             {
                 onDelete( uid );
             }
@@ -1107,7 +1153,7 @@ const ShaderHub = {
         const shaderUid = this.shader.uid;
         const shaderName = `${this.shader.name}_remix`;
         const newFileId = await this.saveShaderFiles( false, shaderName );
-        
+
         // Create a new shader in the DB
         const result = await fs.createDocument( FS.SHADERS_COLLECTION_ID, {
             'name': this.shader.name,
@@ -1123,7 +1169,7 @@ const ShaderHub = {
 
         // Update user shader count
         ui.dbUser = await fs.updateDocument( FS.USERS_COLLECTION_ID, curUser['$id'], {
-            'shader_count': parseInt( curUser['shader_count'] ) + 1,
+            'shader_count': parseInt( curUser['shader_count'] ) + 1
         } );
 
         // Upload canvas snapshot
@@ -1251,29 +1297,30 @@ const ShaderHub = {
             elapsedTime: 0.0,
             frameCount: 0,
             lastTime: 0.0,
-            clean: function() {
-                this.mustClean = true;    
+            clean: function()
+            {
+                this.mustClean = true;
             },
-            frame: async function() {
-
+            frame: async function()
+            {
                 that.renderer = renderer;
 
                 const now = LX.getTime();
 
                 this.timeDelta = ( now - this.lastTime ) / 1000;
 
-                if( this.mustClean )
+                if ( this.mustClean )
                 {
                     this.timeDelta = 0.0;
                     this.mustClean = false;
                 }
-                
+
                 renderer.updateFrame( this.timeDelta, this.elapsedTime, this.frameCount, shader );
                 renderer.updateResolution( W, H, shader );
 
                 this.elapsedTime += this.timeDelta;
                 this.frameCount++;
-                
+
                 this.lastTime = now;
 
                 for ( let i = 0; i < shader.passes.length; ++i )
@@ -1320,7 +1367,7 @@ const ShaderHub = {
                     }
                 }
 
-                that.rafId = requestAnimationFrame( that.raf ) ;
+                that.rafId = requestAnimationFrame( that.raf );
             }
         };
 
@@ -1930,14 +1977,14 @@ const ShaderHub = {
 
     async _makeAIPrompt( prompt )
     {
-        const response = await fetch("https://api.anthropic.com/v1/messages", {
-            method: "POST",
+        const response = await fetch( 'https://api.anthropic.com/v1/messages', {
+            method: 'POST',
             headers: {
-                "x-api-key": localStorage.getItem("ANTHROPIC_KEY"),
-                "Content-Type": "application/json"
+                'x-api-key': localStorage.getItem( 'ANTHROPIC_KEY' ),
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify( prompt )
-        });
+        } );
 
         return await response.text();
     },
@@ -1945,7 +1992,7 @@ const ShaderHub = {
     async _explainLinesAI( selectedLines, fullShaderCode )
     {
         const promptBody = {
-            model: "claude-haiku-4-5-20251001",
+            model: 'claude-haiku-4-5-20251001',
             max_tokens: 1000,
             system: `You are a GLSL shader expert. Explain shader code clearly and concisely.
                 Keep explanations beginner-friendly but technically accurate.
@@ -1953,7 +2000,7 @@ const ShaderHub = {
                 Never explain lines the user didn't select unless it's necessary for context.`,
             messages: [
                 {
-                    role: "user",
+                    role: 'user',
                     content: `Full shader for context:
                 \`\`\`glsl
                 ${fullShaderCode}
@@ -1965,7 +2012,7 @@ const ShaderHub = {
                 \`\`\``
                 }
             ]
-        }
+        };
 
         return this._makeAIPrompt( promptBody );
     }

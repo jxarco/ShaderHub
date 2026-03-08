@@ -1,6 +1,7 @@
 # 0.18
 - Debug Render Pass buffers.
 - More WGSL function autocomplete constants and utils.
+- Translated Noise and Color WGSL Snippets.
 - Fixed show shader code in mobile.
 - `iMouse.scroll` uniform.
 - `iRefreshRate` uniform.

@@ -1081,7 +1081,9 @@ class ShaderPass
 
         const iDeleteRange = ( from, to ) => {
             for ( let i = from; i <= to; i++ )
+            {
                 lines[i] = '';
+            }
         };
 
         // Scan forward skipping nested #if blocks until one of 'tags' is found at depth 0.
@@ -1092,7 +1094,7 @@ class ShaderPass
             while ( i < lines.length )
             {
                 const line = lines[i];
-                if ( line.startsWith( '#if' ) && !tags.some( t => line.startsWith( t ) ) )
+                if ( line.startsWith( '#if' ) && !tags.some( ( t ) => line.startsWith( t ) ) )
                 {
                     depth++;
                 }
@@ -1101,13 +1103,13 @@ class ShaderPass
                     if ( depth > 0 ) depth--;
                     else
                     {
-                        let tagFound = tags.find( t => line.startsWith( t ) );
+                        let tagFound = tags.find( ( t ) => line.startsWith( t ) );
                         if ( tagFound ) return [ i, tagFound, line ];
                     }
                 }
                 else if ( depth === 0 )
                 {
-                    let tagFound = tags.find( t => line.startsWith( t ) );
+                    let tagFound = tags.find( ( t ) => line.startsWith( t ) );
                     if ( tagFound ) return [ i, tagFound, line ];
                 }
                 i++;
@@ -1507,7 +1509,8 @@ Shader.RENDER_MAIN_TEMPLATE = `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -
 }`.split( '\n' );
 
 Shader.RENDER_TEXTURE_TEMPLATE = {
-    channels: [ { index: 0, id: '68bdc7df000157b32148', category: 'texture' } ], code: `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
+    channels: [ { index: 0, id: '68bdc7df000157b32148', category: 'texture' } ],
+    code: `fn mainImage(fragUV : vec2f, fragCoord : vec2f) -> vec4f {
     // Normalized pixel coordinates (from 0 to 1)
     let uv : vec2f = fragUV; // The same as: fragCoord/iResolution.xy;
 

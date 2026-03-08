@@ -572,7 +572,8 @@ GLShader.RENDER_MAIN_TEMPLATE = `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
 }`.split( '\n' );
 
 GLShader.RENDER_TEXTURE_TEMPLATE = {
-    channels: [ { index: 0, id: '68bdc7df000157b32148', category: 'texture' } ], code: `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
+    channels: [ { index: 0, id: '68bdc7df000157b32148', category: 'texture' } ],
+    code: `vec4 mainImage(vec2 fragUV, vec2 fragCoord) {
     // Normalized pixel coordinates (from 0 to 1)
     vec2 uv = fragUV; // The same as: fragCoord/iResolution.xy;
 
