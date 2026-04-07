@@ -1,6 +1,7 @@
 # 0.18.1
 - WebGL Texture samplers.
 - Mouse Events in Shader previews.
+- Fallback to WebGPU Compatibility mode only if necessary.
 
 # 0.18
 - Video channels.

@@ -11,9 +11,8 @@ class GPURenderer extends Renderer
 
     async init()
     {
-        this.adapter = await navigator.gpu?.requestAdapter( {
-            featureLevel: 'compatibility'
-        } );
+        this.adapter = await navigator.gpu?.requestAdapter( { featureLevel: 'core' } )
+            ?? await navigator.gpu?.requestAdapter( { featureLevel: 'compatibility' } );
 
         this.device = await this.adapter?.requestDevice();
         if ( this.quitIfWebGPUNotAvailable() === Constants.WEBGPU_ERROR )
