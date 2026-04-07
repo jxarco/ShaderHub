@@ -14,8 +14,7 @@ class Renderer
 
     async init()
     {
-        // Instance-level samplers — each renderer (main + previews) creates its own
-        // so they're always tied to the correct GPU device and never cross-contaminate
+        // Always tied to the correct GPU device and never cross-contaminate
         this.nearestSampler = this.createSampler();
         this.bilinearSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear' } );
         this.trilinearSampler = this.createSampler( { magFilter: 'linear', minFilter: 'linear', mipmapFilter: 'linear' } );

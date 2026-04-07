@@ -54,8 +54,17 @@ class GLShaderPass extends ShaderPass
                 {
                     texture = texture.texture; // get the inner texture.. well
                 }
+                const target = channel.category === 'cubemap' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D;
                 gl.activeTexture( gl.TEXTURE0 + i );
-                gl.bindTexture( channel.category === 'cubemap' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D, texture );
+                gl.bindTexture( target, texture );
+                const minFilter = channel.filter === 'mipmap' ? gl.LINEAR_MIPMAP_LINEAR : channel.filter === 'nearest' ? gl.NEAREST : gl.LINEAR;
+                const magFilter = channel.filter === 'nearest' ? gl.NEAREST : gl.LINEAR;
+                gl.texParameteri( target, gl.TEXTURE_MIN_FILTER, minFilter );
+                gl.texParameteri( target, gl.TEXTURE_MAG_FILTER, magFilter );
+                const wrap = channel.wrap === 'repeat' ? gl.REPEAT : gl.CLAMP_TO_EDGE;
+                gl.texParameteri( target, gl.TEXTURE_WRAP_S, wrap );
+                gl.texParameteri( target, gl.TEXTURE_WRAP_T, wrap );
+                if ( channel.category === 'cubemap' ) gl.texParameteri( target, gl.TEXTURE_WRAP_R, wrap );
                 gl.uniform1i( this.uniformLocations[name], i );
             }
 
@@ -101,8 +110,17 @@ class GLShaderPass extends ShaderPass
                 {
                     texture = texture[this.frameCount % 2].texture;
                 }
+                const target = channel.category === 'cubemap' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D;
                 gl.activeTexture( gl.TEXTURE0 + i );
-                gl.bindTexture( channel.category === 'cubemap' ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D, texture );
+                gl.bindTexture( target, texture );
+                const minFilter = channel.filter === 'mipmap' ? gl.LINEAR_MIPMAP_LINEAR : channel.filter === 'nearest' ? gl.NEAREST : gl.LINEAR;
+                const magFilter = channel.filter === 'nearest' ? gl.NEAREST : gl.LINEAR;
+                gl.texParameteri( target, gl.TEXTURE_MIN_FILTER, minFilter );
+                gl.texParameteri( target, gl.TEXTURE_MAG_FILTER, magFilter );
+                const wrap = channel.wrap === 'repeat' ? gl.REPEAT : gl.CLAMP_TO_EDGE;
+                gl.texParameteri( target, gl.TEXTURE_WRAP_S, wrap );
+                gl.texParameteri( target, gl.TEXTURE_WRAP_T, wrap );
+                if ( channel.category === 'cubemap' ) gl.texParameteri( target, gl.TEXTURE_WRAP_R, wrap );
                 gl.uniform1i( this.uniformLocations[name], i );
             }
 

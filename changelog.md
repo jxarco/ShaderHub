@@ -1,3 +1,7 @@
+# 0.18.1
+- WebGL Texture samplers.
+- Mouse Events in Shader previews.
+
 # 0.18
 - Video channels.
 - Debug Render Pass buffers.

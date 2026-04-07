@@ -19,7 +19,7 @@ const fps = new FPSCounter();
 const Query = Appwrite.Query;
 
 const ShaderHub = {
-    version: '0.18',
+    version: '0.18.1',
 
     keyState: new Map(),
     keyToggleState: new Map(),
@@ -1308,6 +1308,30 @@ const ShaderHub = {
 
         // new render job
         const that = this;
+
+        // Mouse state for this preview canvas
+        const mouse = { pos: [ 0, 0 ], start: [ 0, 0 ], delta: [ 0, 0 ], press: -1, click: 0, scroll: 0 };
+        const getCanvasPos = ( e ) => {
+            const r = canvas.getBoundingClientRect();
+            return [ ( e.clientX - r.left ) * ( W / r.width ), H - ( e.clientY - r.top ) * ( H / r.height ) ];
+        };
+        canvas.addEventListener( 'mousemove', ( e ) => {
+            const [ x, y ] = getCanvasPos( e );
+            mouse.delta = [ x - mouse.pos[0], y - mouse.pos[1] ];
+            mouse.pos = [ x, y ];
+        } );
+        canvas.addEventListener( 'mousedown', ( e ) => {
+            mouse.start = getCanvasPos( e );
+            mouse.press = e.button;
+            mouse.click = 1;
+        } );
+        canvas.addEventListener( 'mouseup', () => {
+            mouse.press = -1;
+        } );
+        canvas.addEventListener( 'wheel', ( e ) => {
+            mouse.scroll += e.deltaY;
+        }, { passive: true } );
+
         const j = {
             fileId,
             timeDelta: 0.0,
@@ -1340,6 +1364,13 @@ const ShaderHub = {
                     this.date[3] = Date.now() % 864e5 / 1e3;
                     renderer.updateDate( this.date, shader );
                 }
+
+                renderer.updateMouse( [
+                    ...mouse.pos, ...mouse.start, ...mouse.delta,
+                    mouse.press, mouse.click, mouse.scroll
+                ], shader );
+                mouse.delta = [ 0, 0 ];
+                mouse.click = 0;
 
                 this.elapsedTime += this.timeDelta;
                 this.frameCount++;
@@ -1792,7 +1823,6 @@ const ShaderHub = {
         if ( !channel ) return;
 
         channel.filter = filterType;
-        pass.mustCompile = true;
     },
 
     updateUniformChannelWrap( pass, channelIndex, wrapType )
@@ -1801,7 +1831,6 @@ const ShaderHub = {
         if ( !channel ) return;
 
         channel.wrap = wrapType;
-        pass.mustCompile = true;
     },
 
     closeUniformChannel( channel )

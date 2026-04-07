@@ -3813,21 +3813,33 @@ export const ui = {
                         className: 'p-0', buttonClass: 'sm ghost' } );
                 }
 
+                const usingWebGPU = ShaderHub.backend === 'webgpu';
+
                 panel.addButton( null, 'ChannelOptionsButton', async ( name, e ) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    // const svgClass = "2xs fill-current inline-flex! mr-2";
+
+                    const svgClass = "2xs fill-current inline-flex! mr-2";
+                    const TextureSettings = [];
+
+                    if ( !usingWebGPU && channel.category === 'texture' )
+                    {
+                        TextureSettings.push(
+                            { name: "Filter", submenu: [
+                                { name: `${ channel.filter === "linear" ? LX.makeIcon( "Circle", { svgClass } ).innerHTML : "" }Linear`, callback: async () => ShaderHub.updateUniformChannelFilter( pass, channelIndex, "linear" ) },
+                                { name: `${ channel.filter === "mipmap" ? LX.makeIcon( "Circle", { svgClass } ).innerHTML : "" }Mipmap`, callback: async () => ShaderHub.updateUniformChannelFilter( pass, channelIndex, "mipmap" ) },
+                                { name: `${ channel.filter === "nearest" ? LX.makeIcon( "Circle", { svgClass } ).innerHTML : "" }Nearest`, callback: async () => ShaderHub.updateUniformChannelFilter( pass, channelIndex, "nearest" ) },
+                            ] },
+                            { name: "Wrap", submenu: [
+                                { name: `${ channel.wrap === "clamp" ? LX.makeIcon( "Circle", { svgClass } ).innerHTML : "" }Clamp to Edge`, callback: async () => ShaderHub.updateUniformChannelWrap( pass, channelIndex, "clamp" ) },
+                                { name: `${ channel.wrap === "repeat" ? LX.makeIcon( "Circle", { svgClass } ).innerHTML : "" }Repeat`, callback: async () => ShaderHub.updateUniformChannelWrap( pass, channelIndex, "repeat" ) },
+                            ] },
+                            null
+                        );
+                    }
+
                     LX.addDropdownMenu( e.target, [
-                        // { name: "Filter", submenu: [
-                        //     { name: `${ channel.filter === "linear" ? LX.makeIcon( "Circle", { svgClass } ).innerHTML : "" }Linear`, callback: async () => ShaderHub.updateUniformChannelFilter( pass, channelIndex, "linear" ) },
-                        //     { name: `${ channel.filter === "mipmap" ? LX.makeIcon( "Circle", { svgClass } ).innerHTML : "" }Mipmap`, callback: async () => ShaderHub.updateUniformChannelFilter( pass, channelIndex, "mipmap" ) },
-                        //     { name: `${ channel.filter === "nearest" ? LX.makeIcon( "Circle", { svgClass } ).innerHTML : "" }Nearest`, callback: async () => ShaderHub.updateUniformChannelFilter( pass, channelIndex, "nearest" ) },
-                        // ] },
-                        // { name: "Wrap", submenu: [
-                        //     { name: `${ channel.wrap === "clamp" ? LX.makeIcon( "Circle", { svgClass } ).innerHTML : "" }Clamp to Edge`, callback: async () => ShaderHub.updateUniformChannelWrap( pass, channelIndex, "clamp" ) },
-                        //     { name: `${ channel.wrap === "repeat" ? LX.makeIcon( "Circle", { svgClass } ).innerHTML : "" }Repeat`, callback: async () => ShaderHub.updateUniformChannelWrap( pass, channelIndex, "repeat" ) },
-                        // ] },
-                        // null,
+                        ...TextureSettings,
                         { name: 'Remove', className: 'destructive', callback: async () => await ShaderHub.removeUniformChannel( channelIndex ) }
                     ], { side: 'top', align: 'end' } );
                 }, { icon: 'Settings', title: 'Channel Options', tooltip: true, className: 'p-0', buttonClass: 'pointer-events-auto sm ghost' } );
