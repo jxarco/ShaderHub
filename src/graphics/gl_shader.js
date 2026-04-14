@@ -728,7 +728,7 @@ GLShader.RENDER_KEYBOARD_TEMPLATE = {
 }`.split( '\n' )
 };
 
-Shader.RENDER_FONT_TEMPLATE = {
+GLShader.RENDER_FONT_TEMPLATE = {
     channels: [ { index: 0, id: '69a016f70033957390db', category: 'texture' } ],
     code: `// Character index in the atlas follows ASCII ordering.
 //   Uppercase: A=65 B=66 ... Z=90

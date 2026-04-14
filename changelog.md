@@ -2,6 +2,7 @@
 - WebGL Texture samplers.
 - Mouse Events in Shader previews.
 - Fallback to WebGPU Compatibility mode only if necessary.
+- Fixed WebGPU Font template.
 
 # 0.18
 - Video channels.
